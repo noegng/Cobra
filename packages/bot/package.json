@@ -11,8 +11,17 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.94",
     "@cobra/db": "workspace:*",
     "@cobra/shared": "workspace:*",
-    "viem": "2.57.14"
+    "ai": "7.0.159",
+    "drizzle-orm": "0.45.4",
+    "grammy": "1.46.0",
+    "qrcode": "1.5.4",
+    "viem": "2.57.14",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.6"
   }
 }

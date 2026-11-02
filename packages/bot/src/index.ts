@@ -1,36 +1,53 @@
 /**
  * @cobra/bot — WS4. Telegram bot (grammY) + LLM agent with tools (plan §3, §7).
- * FROZEN public signatures below; internals are yours.
- * The webhook route in apps/web just calls `createBot(...)` and grammY's `webhookCallback`.
+ * FROZEN public signatures below (createBot return type narrowed from `unknown` to the grammY Bot — compatible).
+ * The webhook route in apps/web calls `createWebhookHandler(...)` (or `createBot(...)` + grammY's `webhookCallback`).
  */
+import { Api, webhookCallback } from "grammy";
 import type { Db } from "@cobra/db";
 import type { Notifier } from "@cobra/shared";
+import { buildBot, type BotDeps, type BotOptions, type CobraBot } from "./bot";
+import { createNotifierWithApi } from "./notifier";
+import { runDailyCloseImpl, runRemindersImpl } from "./scheduler";
 
-export interface BotOptions {
-  token: string;
-  db: Db;
-  anthropicApiKey: string;
-  /** Public base URL of the web app, e.g. https://cobra.example — used for /pay/<id> links. */
-  publicBaseUrl: string;
-  /** Optional speech-to-text for voice notes. */
-  transcribe?: (audio: ArrayBuffer, mime: string) => Promise<string>;
+export type { BotOptions, BotDeps, CobraBot, CobraContext } from "./bot";
+export { buildBot, registerBotCommands, COMMANDS } from "./bot";
+export { createNotifierWithApi, isBotNotifier, type BotNotifier } from "./notifier";
+export { parseAmount, formatAmount, amountStyleFor, type AmountError, type AmountResult, type AmountStyle } from "./amount";
+export { matchCharge } from "./fastpath";
+export { buildTools, runAgent, systemPrompt, modelFromEnv, DEFAULT_MODEL, ALTERNATIVE_MODEL, TOOL_NAMES } from "./agent";
+export { buildRipioOfframpLink, payUrl, staticPayUrl, waShareUrl, qrPng, type RipioSessionMinter } from "./links";
+export { createGroqTranscriber, groqTranscriberFromEnv, type Transcribe } from "./transcribe-groq";
+export { REMINDER_LEAD_MS, INVOICE_RATE_LIMIT } from "./invoices";
+
+/** Returns a configured grammY `Bot`. */
+export function createBot(opts: BotOptions): CobraBot {
+  return buildBot(opts);
 }
 
-/** Returns a configured grammY `Bot` (typed loosely here to keep the stub dependency-free). */
-export function createBot(_opts: BotOptions): unknown {
-  throw new Error("not implemented (WS4)");
+/**
+ * Fetch-style webhook handler for apps/web (Next.js route handler / any std `Request -> Response` runtime).
+ * `secretToken` = TELEGRAM_WEBHOOK_SECRET (Telegram sends it in `X-Telegram-Bot-Api-Secret-Token`).
+ */
+export function createWebhookHandler(
+  opts: BotOptions & { secretToken?: string },
+  deps: BotDeps = {},
+): (req: Request) => Promise<Response> {
+  const { secretToken, ...botOpts } = opts;
+  const bot = buildBot(botOpts, deps);
+  return webhookCallback(bot, "std/http", { secretToken, onTimeout: "return", timeoutMilliseconds: 25_000 });
 }
 
-export function createTelegramNotifier(_opts: { token: string; db: Db }): Notifier {
-  throw new Error("not implemented (WS4)");
+export function createTelegramNotifier(opts: { token: string; db: Db }): Notifier {
+  return createNotifierWithApi(new Api(opts.token), opts.db);
 }
 
 /** Daily close (21:00 merchant local time by default): totals + CSV. Idempotent per merchant/day. */
-export async function runDailyClose(_opts: { db: Db; notifier: Notifier; now: Date }): Promise<void> {
-  throw new Error("not implemented (WS4)");
+export async function runDailyClose(opts: { db: Db; notifier: Notifier; now: Date }): Promise<void> {
+  await runDailyCloseImpl(opts);
 }
 
 /** Reminders for unpaid open invoices (with share link). */
-export async function runReminders(_opts: { db: Db; notifier: Notifier; now: Date; publicBaseUrl: string }): Promise<void> {
-  throw new Error("not implemented (WS4)");
+export async function runReminders(opts: { db: Db; notifier: Notifier; now: Date; publicBaseUrl: string }): Promise<void> {
+  await runRemindersImpl(opts);
 }
