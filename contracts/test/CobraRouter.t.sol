@@ -601,6 +601,43 @@ contract CobraRouterTest is RouterTestBase {
         vm.stopPrank();
     }
 
+    function test_blocklistedMerchant_failsClosed() public {
+        ICobraRouter.Invoice memory inv = _invoice(4500e18);
+        ICobraRouter.Leg[] memory legs = _signed(inv, _legs1(_usdcLeg(2_730_000)));
+        wARS.setBlocked(merchant, true);
+        uint256 usdcBefore = usdc.balanceOf(payer);
+        vm.expectRevert(bytes("ST"));
+        _payAsRelayer(inv, legs);
+        assertEq(usdc.balanceOf(payer), usdcBefore);
+        assertFalse(router.isPaid(router.hashInvoice(inv)));
+        wARS.setBlocked(merchant, false);
+        _payAsRelayer(inv, legs); // unblocked: the same signatures still work
+        assertEq(wARS.balanceOf(merchant), 4500e18);
+    }
+
+    function test_blocklistedRouterOrPayer_failsClosed() public {
+        ICobraRouter.Invoice memory inv = _invoice(4500e18);
+        ICobraRouter.Leg[] memory legs = _signed(inv, _legs1(_usdcLeg(2_730_000)));
+        usdc.setBlocked(address(router), true);
+        vm.expectRevert(bytes("Blocked"));
+        _payAsRelayer(inv, legs);
+        usdc.setBlocked(address(router), false);
+        usdc.setBlocked(payer, true);
+        vm.expectRevert(bytes("Blocked"));
+        _payAsRelayer(inv, legs);
+        assertFalse(router.isPaid(router.hashInvoice(inv)));
+    }
+
+    function test_pausedTokenOut_failsClosed() public {
+        ICobraRouter.Invoice memory inv = _invoice(4500e18);
+        ICobraRouter.Leg[] memory legs = _signed(inv, _legs1(_usdcLeg(2_730_000)));
+        wARS.setPaused(true); // mint in the mock swap router still works; the payout transfer reverts
+        vm.expectRevert(bytes("ST"));
+        _payAsRelayer(inv, legs);
+        assertEq(usdc.balanceOf(payer), 100_000e6);
+        assertFalse(router.isPaid(router.hashInvoice(inv)));
+    }
+
     function test_codelessToken_reverts() public {
         ICobraRouter.Invoice memory inv = _invoice(1);
         inv.tokenOut = makeAddr("eoa");

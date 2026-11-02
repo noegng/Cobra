@@ -60,7 +60,21 @@ contract MockERC20 {
         }
     }
 
+    /// @notice LatamStable / FiatToken-style controls: pause and per-address blocklist.
+    bool public paused;
+    mapping(address => bool) public blocked;
+
+    function setPaused(bool v) external {
+        paused = v;
+    }
+
+    function setBlocked(address who, bool v) external {
+        blocked[who] = v;
+    }
+
     function _transfer(address from, address to, uint256 amount) internal virtual {
+        require(!paused, "EnforcedPause");
+        require(!blocked[from] && !blocked[to], "Blocked");
         require(to != address(0), "ERC20: to zero");
         require(balanceOf[from] >= amount, "ERC20: balance");
         balanceOf[from] -= amount;
