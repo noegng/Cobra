@@ -1,0 +1,17 @@
+{
+  "name": "@cobra/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "vectors": "tsx scripts/gen-vectors.ts"
+  },
+  "dependencies": {
+    "viem": "2.57.14"
+  }
+}

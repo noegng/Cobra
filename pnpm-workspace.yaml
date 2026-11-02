@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+# esbuild postinstall (binary download) is required by tsx/vitest/drizzle-kit
+allowBuilds:
+  esbuild: true

@@ -1,0 +1,23 @@
+{
+  "name": "cobra",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "pnpm -r --parallel --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "vectors": "pnpm --filter @cobra/shared vectors",
+    "contracts:test": "cd contracts && forge test",
+    "dev:web": "pnpm --filter @cobra/web dev",
+    "dev:worker": "pnpm --filter @cobra/worker dev"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

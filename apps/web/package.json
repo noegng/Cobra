@@ -1,0 +1,15 @@
+{
+  "name": "@cobra/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@cobra/shared": "workspace:*",
+    "@cobra/db": "workspace:*",
+    "@cobra/solver": "workspace:*",
+    "@cobra/bot": "workspace:*"
+  }
+}

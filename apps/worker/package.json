@@ -1,0 +1,21 @@
+{
+  "name": "@cobra/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@cobra/bot": "workspace:*",
+    "@cobra/db": "workspace:*",
+    "@cobra/indexer": "workspace:*",
+    "@cobra/relayer": "workspace:*",
+    "@cobra/shared": "workspace:*",
+    "@cobra/solver": "workspace:*",
+    "viem": "2.57.14"
+  }
+}

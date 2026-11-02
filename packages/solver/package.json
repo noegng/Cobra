@@ -1,0 +1,17 @@
+{
+  "name": "@cobra/solver",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@cobra/shared": "workspace:*",
+    "viem": "2.57.14"
+  }
+}
