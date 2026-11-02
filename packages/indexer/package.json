@@ -7,12 +7,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p ."
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "fixture": "cd test/fixtures && forge inspect --root . --contracts . --use 0.8.28 --evm-version cancun PaidEmitter.sol:PaidEmitter bytecode > PaidEmitter.bin && rm -rf cache out"
   },
   "dependencies": {
     "@cobra/db": "workspace:*",
     "@cobra/shared": "workspace:*",
+    "drizzle-orm": "0.45.4",
     "viem": "2.57.14"
   }
 }

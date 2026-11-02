@@ -8,10 +8,14 @@
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "replay": "tsx scripts/replay-quotes.ts"
   },
   "dependencies": {
     "@cobra/shared": "workspace:*",
     "viem": "2.57.14"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2"
   }
 }
