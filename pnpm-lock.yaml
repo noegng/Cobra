@@ -266,6 +266,9 @@ importers:
 
   packages/relayer:
     dependencies:
+      '@celo/attribution-tags':
+        specifier: 0.5.0
+        version: 0.5.0(typescript@5.9.3)(viem@2.57.14(typescript@5.9.3))
       '@cobra/db':
         specifier: workspace:*
         version: link:../db
@@ -295,6 +298,15 @@ packages:
 
   '@adraffy/ens-normalize@1.11.1':
     resolution: {integrity: sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==}
+
+  '@celo/attribution-tags@0.5.0':
+    resolution: {integrity: sha512-vh08K5lBd59eG2e6KG1tx24nh0tGRGNoVIwTd6cTXgavE5DAp5uO3dQnWzt+uPFyqGGBK6YxQg9QKK7/Ge3kfw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      viem: ^2
+    peerDependenciesMeta:
+      viem:
+        optional: true
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -1383,6 +1395,15 @@ packages:
 snapshots:
 
   '@adraffy/ens-normalize@1.11.1': {}
+
+  '@celo/attribution-tags@0.5.0(typescript@5.9.3)(viem@2.57.14(typescript@5.9.3))':
+    dependencies:
+      ox: 0.14.59(typescript@5.9.3)
+    optionalDependencies:
+      viem: 2.57.14(typescript@5.9.3)
+    transitivePeerDependencies:
+      - typescript
+      - zod
 
   '@drizzle-team/brocli@0.10.2': {}
 

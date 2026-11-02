@@ -11,6 +11,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@celo/attribution-tags": "0.5.0",
     "@cobra/db": "workspace:*",
     "@cobra/shared": "workspace:*",
     "viem": "2.57.14"
