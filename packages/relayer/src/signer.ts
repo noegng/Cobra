@@ -279,7 +279,7 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     throw new SignerRefusedError("blocked_method", name);
   };
   // Address-only client: anything not overridden below cannot reach the key.
-  const walletClient = createWalletClient({ account: address, chain, transport }).extend(() => ({
+  const overrides: Record<string, (args: never) => Promise<unknown>> = {
     sendTransaction: (args: { to?: Address | null; data?: Hex; value?: bigint; nonce?: number; gas?: bigint; maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint }) => {
       if (!args.to) return Promise.reject(new SignerRefusedError("wrong_target"));
       return send({ ...args, to: args.to, data: args.data ?? "0x" });
@@ -287,7 +287,7 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     writeContract: (args: { address: Address; abi: readonly unknown[]; functionName: string; args?: readonly unknown[]; value?: bigint; nonce?: number; gas?: bigint }) =>
       send({
         to: args.address,
-        data: encodeFunctionData({ abi: args.abi as never, functionName: args.functionName as never, args: args.args as never }),
+        data: encodeFunctionData({ abi: args.abi, functionName: args.functionName, args: args.args } as Parameters<typeof encodeFunctionData>[0]),
         ...(args.value !== undefined && { value: args.value }),
         ...(args.nonce !== undefined && { nonce: args.nonce }),
         ...(args.gas !== undefined && { gas: args.gas }),
@@ -302,7 +302,10 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     signTypedData: blocked("signTypedData"),
     signAuthorization: blocked("signAuthorization"),
     sendCalls: blocked("sendCalls"),
-  })) as unknown as WalletClient;
+  };
+  const walletClient = createWalletClient({ account: address, chain, transport }).extend(
+    () => overrides as never,
+  ) as unknown as WalletClient;
 
   const signer: RelayerSigner = { address, chain, walletClient, send, check };
   signers.set(walletClient, signer);
