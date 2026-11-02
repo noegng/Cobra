@@ -5,7 +5,9 @@ export const INVOICE_TRANSITIONS: Record<InvoiceStatus, readonly InvoiceStatus[]
   open: ["submitted", "expired", "cancelled", "paid"], // open->paid: self-submitted ALLOWANCE payment seen by indexer
   submitted: ["paid", "open"], // -> open when the tx failed
   paid: [],
-  expired: [],
+  // The router enforces block.timestamp <= deadline, so a matching Paid event on an expired row is an
+  // on-time payment indexed after the expiry job ran: it must still be recorded as paid.
+  expired: ["paid"],
   cancelled: [],
 };
 
