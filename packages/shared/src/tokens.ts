@@ -16,8 +16,10 @@ export interface TokenInfo {
 }
 
 /**
- * Celo mainnet token registry. Capabilities below are PROVISIONAL until
- * docs/research/onchain-verification.md confirms them.
+ * Celo mainnet token registry — VERIFIED on-chain 2026-11-02 (docs/research/onchain-verification.md).
+ * USD stables: Circle/Tether, all support EIP-3009 + EIP-2612, all have active blocklists.
+ * wFIAT: Ripio LatamStable (OZ v5 upgradeable, pausable, blocklist role), EIP-2612 only.
+ * USDT has no version() getter: its domain version "1" was derived from DOMAIN_SEPARATOR — hardcode it.
  */
 export const TOKENS: readonly TokenInfo[] = [
   {
@@ -27,8 +29,8 @@ export const TOKENS: readonly TokenInfo[] = [
     currency: "USD",
     kind: "usd",
     pullKinds: [PullKind.EIP3009, PullKind.PERMIT2, PullKind.ALLOWANCE],
-    eip712: null,
-    verified: false,
+    eip712: { name: "USDC", version: "2" },
+    verified: true,
   },
   {
     symbol: "USDT",
@@ -36,9 +38,19 @@ export const TOKENS: readonly TokenInfo[] = [
     decimals: 6,
     currency: "USD",
     kind: "usd",
-    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE],
-    eip712: null,
-    verified: false,
+    pullKinds: [PullKind.EIP3009, PullKind.PERMIT2, PullKind.ALLOWANCE],
+    eip712: { name: "Tether USD", version: "1" },
+    verified: true,
+  },
+  {
+    symbol: "USAT",
+    address: getAddress("0xD2ab3C9A02DBBAB236BfEC45D1d755DF4267F771"),
+    decimals: 6,
+    currency: "USD",
+    kind: "usd",
+    pullKinds: [PullKind.EIP3009, PullKind.PERMIT2, PullKind.ALLOWANCE],
+    eip712: { name: "Tether America USD", version: "1" },
+    verified: true,
   },
   {
     symbol: "wARS",
@@ -46,9 +58,9 @@ export const TOKENS: readonly TokenInfo[] = [
     decimals: 18,
     currency: "ARS",
     kind: "wfiat",
-    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE],
-    eip712: null,
-    verified: false,
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Peso Argentino", version: "1" },
+    verified: true,
   },
   {
     symbol: "wBRL",
@@ -56,9 +68,49 @@ export const TOKENS: readonly TokenInfo[] = [
     decimals: 18,
     currency: "BRL",
     kind: "wfiat",
-    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE],
-    eip712: null,
-    verified: false,
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Real Brasileño", version: "1" },
+    verified: true,
+  },
+  {
+    symbol: "wMXN",
+    address: getAddress("0x337e7456b420bd3481e7fa61fa9850343d610d34"),
+    decimals: 18,
+    currency: "MXN",
+    kind: "wfiat",
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Peso Mexicano", version: "1" },
+    verified: true,
+  },
+  {
+    symbol: "wCOP",
+    address: getAddress("0x8a1d45e102e886510e891d2ec656a708991e2d76"),
+    decimals: 18,
+    currency: "COP",
+    kind: "wfiat",
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Peso Colombiano", version: "1" },
+    verified: true,
+  },
+  {
+    symbol: "wCLP",
+    address: getAddress("0x61D450a098b6a7f69fC4b98CE68198fe59768651"),
+    decimals: 18,
+    currency: "CLP",
+    kind: "wfiat",
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Peso Chileno", version: "1" },
+    verified: true,
+  },
+  {
+    symbol: "wPEN",
+    address: getAddress("0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE"),
+    decimals: 18,
+    currency: "PEN",
+    kind: "wfiat",
+    pullKinds: [PullKind.PERMIT2, PullKind.ALLOWANCE], // EIP-2612 only, no EIP-3009
+    eip712: { name: "Sol Peruano", version: "1" },
+    verified: true,
   },
 ];
 

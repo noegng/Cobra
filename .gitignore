@@ -17,3 +17,6 @@ contracts/broadcast/
 # Never commit keys
 *.key
 keystore*/
+
+# Claude Code agent worktrees
+.claude/worktrees/
