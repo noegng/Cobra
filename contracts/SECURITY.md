@@ -58,7 +58,8 @@ This is an author self-review. It is **not** an audit.
 
 1. Is the merchant balance-delta check (stricter than the spec, reverts with `InsufficientOutput(received, want)`) wanted?
    It also rejects any tokenOut whose transfer delivers more or less than requested.
-2. Is a 4-hop cap acceptable to the solver (WS2)? Today's routes are at most 2 hops.
+2. Is the 4-hop cap acceptable? The WS2 solver on `main` (71d7426) emits direct or two-hop paths and `MAX_LEGS = 3`,
+   so it fits today.
 3. Should `pay` reject `payer == address(0)` and `amountOut == 0`? Today it relies on tokens and Permit2 rejecting a
    zero signer (Permit2 and FiatToken do; the behaviour of USDT's implementation was not checked).
 4. EIP-7702 / ERC-1271 payers (see above): WS5 should detect `payer.code.length > 0` and either test the signature
