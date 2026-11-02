@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getAddress, isAddress, zeroAddress } from "viem";
+import { english, portuguese, spanish } from "viem/accounts";
 import { merchants, type Db } from "@cobra/db";
 import {
   CELO,
@@ -33,6 +34,20 @@ export function settlementTokenFor(country: CountryCode): TokenInfo | null {
   return token;
 }
 
+const BIP39 = [english, spanish, portuguese].map((list) => new Set(list.map((w) => w.normalize("NFKD"))));
+const SEED_LENGTHS = new Set([12, 15, 18, 21, 24]);
+
+/**
+ * Whole message is a private key (64 hex chars, with or without 0x) or a BIP-39 mnemonic (en/es/pt wordlists).
+ * Note: a bare invoice id has the same shape as a private key; we err on the side of warning.
+ */
+export function looksLikeSecret(text: string): boolean {
+  if (/^(?:0x)?[0-9a-fA-F]{64}$/.test(text.trim())) return true;
+  const words = text.toLowerCase().normalize("NFKD").split(/[\s,]+/).filter(Boolean);
+  if (!SEED_LENGTHS.has(words.length)) return false;
+  return BIP39.some((set) => words.every((w) => set.has(w)));
+}
+
 export type AddressCheck =
   | { ok: true; address: `0x${string}` }
   | { ok: false; error: "invalid" | "checksum" | "forbidden" | "secret" };
@@ -43,11 +58,7 @@ export type AddressCheck =
  */
 export function checkPayoutAddress(input: string): AddressCheck {
   const s = input.trim();
-  const words = s.split(/\s+/);
-  if (/^(0x)?[0-9a-fA-F]{64}$/.test(s)) return { ok: false, error: "secret" };
-  if ((words.length === 12 || words.length === 15 || words.length === 18 || words.length === 21 || words.length === 24) && words.every((w) => /^[a-z]+$/i.test(w))) {
-    return { ok: false, error: "secret" };
-  }
+  if (looksLikeSecret(s)) return { ok: false, error: "secret" };
   if (!/^0x[0-9a-fA-F]{40}$/.test(s)) return { ok: false, error: "invalid" };
   if (!isAddress(s, { strict: true })) return { ok: false, error: "checksum" };
   const address = getAddress(s);
