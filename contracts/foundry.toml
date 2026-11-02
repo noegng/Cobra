@@ -9,7 +9,7 @@ evm_version = "cancun"
 optimizer = true
 optimizer_runs = 10_000
 via_ir = false
-fs_permissions = [{ access = "read", path = "./test/vectors" }]
+fs_permissions = [{ access = "read", path = "./test/vectors" }, { access = "read", path = "./out" }]
 
 [profile.default.fuzz]
 runs = 512
