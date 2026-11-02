@@ -81,6 +81,7 @@ const es = {
   llm_error: "Tuve un problema para responder. Inténtalo de nuevo o usa /ayuda.",
   busy: "Vas muy rápido. Espera unos segundos.",
   private_only: "Solo funciono en chat privado.",
+  cannot_move_funds: "No puedo enviar ni mover dinero: Cobrá solo crea cobros que se pagan a tu propia billetera. No se hizo ningún cambio.",
 } as const;
 
 type Key = keyof typeof es;
@@ -159,6 +160,7 @@ const pt: Strings = {
   llm_error: "Tive um problema para responder. Tente de novo ou use /ajuda.",
   busy: "Muito rápido! Espere alguns segundos.",
   private_only: "Só funciono em conversa privada.",
+  cannot_move_funds: "Não posso enviar nem movimentar dinheiro: o Cobrá só cria cobranças pagas na sua própria carteira. Nenhuma alteração foi feita.",
 };
 
 const en: Strings = {
@@ -234,6 +236,7 @@ const en: Strings = {
   llm_error: "I had a problem answering. Try again or use /help.",
   busy: "Slow down a little. Wait a few seconds.",
   private_only: "I only work in private chats.",
+  cannot_move_funds: "I can't send or move money: Cobrá only creates payment requests paid to your own wallet. Nothing was changed.",
 };
 
 const STRINGS: Record<Language, Strings> = { es, pt, en };

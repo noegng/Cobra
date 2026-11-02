@@ -288,6 +288,8 @@ export interface AgentResult {
   text: string;
   effects: AgentEffects;
   toolCalls: string[];
+  /** Calls to tools that do not exist (e.g. "transfer_funds"): a strong prompt-injection signal. */
+  unknownToolCalls: string[];
 }
 
 export async function runAgent(args: { model: LanguageModel; ctx: ToolContext; text: string }): Promise<AgentResult> {
@@ -303,5 +305,7 @@ export async function runAgent(args: { model: LanguageModel; ctx: ToolContext; t
     maxRetries: 1,
   });
   const toolCalls = result.steps.flatMap((s) => s.toolCalls.map((c) => c.toolName));
-  return { text: result.text.trim(), effects, toolCalls };
+  const known = new Set<string>(TOOL_NAMES);
+  const unknownToolCalls = toolCalls.filter((n) => !known.has(n));
+  return { text: result.text.trim(), effects, toolCalls, unknownToolCalls };
 }

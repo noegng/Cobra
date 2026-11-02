@@ -96,13 +96,13 @@ export async function findInvoice(db: Db, merchantId: string, ref: string): Prom
     .select()
     .from(invoices)
     .where(and(eq(invoices.merchantId, merchantId), cond))
-    .orderBy(desc(invoices.createdAt))
+    .orderBy(desc(invoices.createdAt), desc(invoices.reference))
     .limit(1);
   return row ?? null;
 }
 
 export async function latestInvoice(db: Db, merchantId: string): Promise<InvoiceRow | null> {
-  const [row] = await db.select().from(invoices).where(eq(invoices.merchantId, merchantId)).orderBy(desc(invoices.createdAt)).limit(1);
+  const [row] = await db.select().from(invoices).where(eq(invoices.merchantId, merchantId)).orderBy(desc(invoices.createdAt), desc(invoices.reference)).limit(1);
   return row ?? null;
 }
 
@@ -115,7 +115,7 @@ export async function listInvoices(
   const where = opts.status
     ? and(eq(invoices.merchantId, merchantId), eq(invoices.status, opts.status))
     : eq(invoices.merchantId, merchantId);
-  return db.select().from(invoices).where(where).orderBy(desc(invoices.createdAt)).limit(limit);
+  return db.select().from(invoices).where(where).orderBy(desc(invoices.createdAt), desc(invoices.reference)).limit(limit);
 }
 
 export interface InvoiceStatusInfo {

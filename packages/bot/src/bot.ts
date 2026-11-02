@@ -295,6 +295,14 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     log("agent_ok", { merchantId: merchant.id, tools: result.toolCalls });
     const m = toolCtx.merchant; // may have changed language
     const outLang = merchantLang(m);
+    if (result.unknownToolCalls.length > 0) {
+      // The model tried to call a tool that does not exist (e.g. "transfer_funds"): treat the turn as injected.
+      // Its text is discarded (it may claim funds were sent) and any payout proposal from this turn is dropped.
+      log("agent_suspicious", { merchantId: merchant.id, unknownTools: result.unknownToolCalls });
+      if (result.effects.payoutConfirmation) await deleteState(db, stateKeys.pendingPayout(m.id));
+      result.effects.payoutConfirmation = null;
+      result.text = t(outLang, "cannot_move_funds");
+    }
     if (result.text) await ctx.reply(result.text, { link_preview_options: { is_disabled: true } });
     for (const inv of result.effects.invoices) await sendInvoice(ctx, m, inv);
     for (const d of result.effects.documents) {
