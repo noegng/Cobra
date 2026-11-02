@@ -5,3 +5,5 @@ packages:
 # esbuild postinstall (binary download) is required by tsx/vitest/drizzle-kit
 allowBuilds:
   esbuild: true
+  # WS5 (apps/web): WalletConnect's @reown/appkit postinstall is only a version-check script — not needed.
+  "@reown/appkit": false
