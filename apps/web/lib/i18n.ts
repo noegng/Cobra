@@ -1,0 +1,269 @@
+/** Tiny i18n: es / pt / en dictionaries, Accept-Language negotiation, `lang` cookie override. */
+import type { Language } from "@cobra/shared";
+
+export const LANGS: readonly Language[] = ["es", "pt", "en"];
+export const LANG_COOKIE = "lang";
+
+const es = {
+  pay_title: "Pagar",
+  merchant: "Comercio",
+  amount: "Monto",
+  pays_to: "Paga a",
+  show_full: "ver completa",
+  hide_full: "ocultar",
+  domain_check: "Verificá que la dirección del sitio sea",
+  expires_in: "Vence en",
+  expired: "Este cobro venció. Pedile al comercio uno nuevo.",
+  not_open: "Este cobro ya no está disponible.",
+  already_paid: "Este cobro ya está pagado.",
+  connect: "Conectar billetera",
+  connect_injected: "Billetera del navegador",
+  connect_wc: "WalletConnect",
+  no_wallet: "No se detectó billetera. Abrí este enlace desde MiniPay, Valora o MetaMask, o usá WalletConnect.",
+  connected_as: "Conectado",
+  disconnect: "Desconectar",
+  wrong_network: "Cambiá a la red Celo",
+  switch_network: "Cambiar a Celo",
+  get_quote: "Calcular cómo pagar",
+  quoting: "Buscando la mejor ruta…",
+  plan_title: "Tu pago",
+  you_pay: "Pagás",
+  fee: "costo",
+  cost: "Costo total",
+  savings: "Ahorro vs ruta directa",
+  no_gas: "Sin gas: firmás y nosotros enviamos la transacción.",
+  sign: "Firmar y pagar",
+  sign_step: "Firma {i} de {n}",
+  signing: "Esperando tu firma en la billetera…",
+  submitting: "Enviando…",
+  waiting_tx: "Pago enviado, esperando confirmación en Celo…",
+  paid: "¡Pagado!",
+  receipt: "Comprobante",
+  view_explorer: "Ver en Celoscan",
+  retry: "Reintentar",
+  requote: "Recalcular",
+  quote_expired: "La cotización venció. Recalculá para seguir.",
+  insufficient: "No tenés saldo suficiente en Celo para este pago.",
+  no_route: "No encontramos una ruta de pago con tus saldos.",
+  over_cap: "El monto supera el límite por pago.",
+  generic_error: "Algo salió mal. Probá de nuevo.",
+  rejected: "Firma cancelada.",
+  pay_fiat: "Pagar en pesos",
+  direct_transfer: "Alternativa: transferí exactamente este monto a la dirección del comercio y mostrale el comprobante.",
+  copy: "Copiar",
+  copied: "Copiado",
+  self_pay: "Pagar desde mi billetera (con gas)",
+  self_pay_hint: "Tu billetera envía la transacción y paga el gas en USDC/USDT.",
+  approve: "Autorizar {token}",
+  approve_permit2: "Autorización única de {token} (requiere gas)",
+  sending_tx: "Confirmá la transacción en tu billetera…",
+  enter_amount: "Ingresá el monto",
+  continue: "Continuar",
+  invalid_amount: "Monto inválido. Usá solo números, por ejemplo 4500 o 4500,50.",
+  dashboard: "Panel del comercio",
+  link_expired: "Este enlace venció o no es válido. Pedí uno nuevo al bot con /panel.",
+  totals_today: "Cobrado hoy",
+  totals_all: "Cobrado (total)",
+  open_invoices: "Cobros abiertos",
+  export_csv: "Exportar CSV",
+  date: "Fecha",
+  reference: "Ref.",
+  status: "Estado",
+  tx: "Tx",
+  status_open: "abierto",
+  status_submitted: "enviado",
+  status_paid: "pagado",
+  status_expired: "vencido",
+  status_cancelled: "cancelado",
+  language: "Idioma",
+  home_tagline: "Cobrá en pesos, recibí en stablecoins. Pagos en Celo con una sola firma.",
+} as const;
+
+export type Dict = Record<keyof typeof es, string>;
+
+const pt: Dict = {
+  pay_title: "Pagar",
+  merchant: "Loja",
+  amount: "Valor",
+  pays_to: "Pagamento para",
+  show_full: "ver completo",
+  hide_full: "ocultar",
+  domain_check: "Confira se o endereço do site é",
+  expires_in: "Expira em",
+  expired: "Esta cobrança expirou. Peça uma nova à loja.",
+  not_open: "Esta cobrança não está mais disponível.",
+  already_paid: "Esta cobrança já foi paga.",
+  connect: "Conectar carteira",
+  connect_injected: "Carteira do navegador",
+  connect_wc: "WalletConnect",
+  no_wallet: "Nenhuma carteira detectada. Abra este link no MiniPay, Valora ou MetaMask, ou use o WalletConnect.",
+  connected_as: "Conectado",
+  disconnect: "Desconectar",
+  wrong_network: "Mude para a rede Celo",
+  switch_network: "Mudar para Celo",
+  get_quote: "Calcular como pagar",
+  quoting: "Buscando a melhor rota…",
+  plan_title: "Seu pagamento",
+  you_pay: "Você paga",
+  fee: "custo",
+  cost: "Custo total",
+  savings: "Economia vs rota direta",
+  no_gas: "Sem gás: você assina e nós enviamos a transação.",
+  sign: "Assinar e pagar",
+  sign_step: "Assinatura {i} de {n}",
+  signing: "Aguardando sua assinatura na carteira…",
+  submitting: "Enviando…",
+  waiting_tx: "Pagamento enviado, aguardando confirmação na Celo…",
+  paid: "Pago!",
+  receipt: "Comprovante",
+  view_explorer: "Ver no Celoscan",
+  retry: "Tentar de novo",
+  requote: "Recalcular",
+  quote_expired: "A cotação expirou. Recalcule para continuar.",
+  insufficient: "Você não tem saldo suficiente na Celo para este pagamento.",
+  no_route: "Não encontramos uma rota de pagamento com seus saldos.",
+  over_cap: "O valor excede o limite por pagamento.",
+  generic_error: "Algo deu errado. Tente de novo.",
+  rejected: "Assinatura cancelada.",
+  pay_fiat: "Pagar em reais",
+  direct_transfer: "Alternativa: transfira exatamente este valor para o endereço da loja e mostre o comprovante.",
+  copy: "Copiar",
+  copied: "Copiado",
+  self_pay: "Pagar pela minha carteira (com gás)",
+  self_pay_hint: "Sua carteira envia a transação e paga o gás em USDC/USDT.",
+  approve: "Autorizar {token}",
+  approve_permit2: "Autorização única de {token} (requer gás)",
+  sending_tx: "Confirme a transação na sua carteira…",
+  enter_amount: "Digite o valor",
+  continue: "Continuar",
+  invalid_amount: "Valor inválido. Use só números, por exemplo 45 ou 45,90.",
+  dashboard: "Painel da loja",
+  link_expired: "Este link expirou ou é inválido. Peça um novo ao bot com /painel.",
+  totals_today: "Recebido hoje",
+  totals_all: "Recebido (total)",
+  open_invoices: "Cobranças abertas",
+  export_csv: "Exportar CSV",
+  date: "Data",
+  reference: "Ref.",
+  status: "Status",
+  tx: "Tx",
+  status_open: "aberta",
+  status_submitted: "enviada",
+  status_paid: "paga",
+  status_expired: "expirada",
+  status_cancelled: "cancelada",
+  language: "Idioma",
+  home_tagline: "Cobre em reais, receba em stablecoins. Pagamentos na Celo com uma só assinatura.",
+};
+
+const en: Dict = {
+  pay_title: "Pay",
+  merchant: "Merchant",
+  amount: "Amount",
+  pays_to: "Pays to",
+  show_full: "show full",
+  hide_full: "hide",
+  domain_check: "Check that the site address is",
+  expires_in: "Expires in",
+  expired: "This payment request expired. Ask the merchant for a new one.",
+  not_open: "This payment request is no longer available.",
+  already_paid: "This payment request is already paid.",
+  connect: "Connect wallet",
+  connect_injected: "Browser wallet",
+  connect_wc: "WalletConnect",
+  no_wallet: "No wallet detected. Open this link in MiniPay, Valora or MetaMask, or use WalletConnect.",
+  connected_as: "Connected",
+  disconnect: "Disconnect",
+  wrong_network: "Switch to the Celo network",
+  switch_network: "Switch to Celo",
+  get_quote: "Find how to pay",
+  quoting: "Finding the best route…",
+  plan_title: "Your payment",
+  you_pay: "You pay",
+  fee: "cost",
+  cost: "Total cost",
+  savings: "Savings vs direct route",
+  no_gas: "No gas: you sign, we send the transaction.",
+  sign: "Sign and pay",
+  sign_step: "Signature {i} of {n}",
+  signing: "Waiting for your signature in the wallet…",
+  submitting: "Submitting…",
+  waiting_tx: "Payment sent, waiting for confirmation on Celo…",
+  paid: "Paid!",
+  receipt: "Receipt",
+  view_explorer: "View on Celoscan",
+  retry: "Retry",
+  requote: "Re-quote",
+  quote_expired: "The quote expired. Re-quote to continue.",
+  insufficient: "You don't have enough balance on Celo for this payment.",
+  no_route: "We couldn't find a payment route with your balances.",
+  over_cap: "The amount exceeds the per-payment limit.",
+  generic_error: "Something went wrong. Please try again.",
+  rejected: "Signature cancelled.",
+  pay_fiat: "Pay with local currency",
+  direct_transfer: "Alternative: send exactly this amount to the merchant's address and show them the receipt.",
+  copy: "Copy",
+  copied: "Copied",
+  self_pay: "Pay from my wallet (uses gas)",
+  self_pay_hint: "Your wallet sends the transaction and pays gas in USDC/USDT.",
+  approve: "Approve {token}",
+  approve_permit2: "One-time {token} approval (uses gas)",
+  sending_tx: "Confirm the transaction in your wallet…",
+  enter_amount: "Enter the amount",
+  continue: "Continue",
+  invalid_amount: "Invalid amount. Use digits only, e.g. 4500 or 4500.50.",
+  dashboard: "Merchant dashboard",
+  link_expired: "This link expired or is invalid. Ask the bot for a new one.",
+  totals_today: "Collected today",
+  totals_all: "Collected (all time)",
+  open_invoices: "Open requests",
+  export_csv: "Export CSV",
+  date: "Date",
+  reference: "Ref.",
+  status: "Status",
+  tx: "Tx",
+  status_open: "open",
+  status_submitted: "submitted",
+  status_paid: "paid",
+  status_expired: "expired",
+  status_cancelled: "cancelled",
+  language: "Language",
+  home_tagline: "Charge in local currency, settle in stablecoins. One-signature payments on Celo.",
+};
+
+export const DICTS: Record<Language, Dict> = { es, pt, en };
+
+export function isLang(v: unknown): v is Language {
+  return v === "es" || v === "pt" || v === "en";
+}
+
+/** Cookie wins, then Accept-Language (q-weighted), then `fallback`. */
+export function negotiateLanguage(acceptLanguage: string | null | undefined, cookie: string | null | undefined, fallback: Language = "es"): Language {
+  if (isLang(cookie)) return cookie;
+  if (acceptLanguage) {
+    const prefs = acceptLanguage
+      .split(",")
+      .map((part) => {
+        const [tag = "", ...params] = part.trim().split(";");
+        const q = params.map((p) => p.trim()).find((p) => p.startsWith("q="));
+        return { tag: tag.toLowerCase(), q: q ? Number(q.slice(2)) : 1 };
+      })
+      .filter((p) => p.tag && Number.isFinite(p.q) && p.q > 0)
+      .sort((a, b) => b.q - a.q);
+    for (const p of prefs) {
+      const base = p.tag.split("-")[0];
+      if (isLang(base)) return base;
+    }
+  }
+  return fallback;
+}
+
+export function localeFor(lang: Language, currency?: string): string {
+  if (lang === "pt") return "pt-BR";
+  if (lang === "en") return "en-US";
+  return currency === "MXN" ? "es-MX" : currency === "COP" ? "es-CO" : currency === "CLP" ? "es-CL" : currency === "PEN" ? "es-PE" : "es-AR";
+}
+
+export function tr(dict: Dict, key: keyof Dict, vars: Record<string, string | number> = {}): string {
+  return dict[key].replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+}
