@@ -39,8 +39,7 @@ abstract contract SigUtils is Test {
         uint256 validBefore,
         bytes32 nonce
     ) internal view returns (bytes memory) {
-        bytes32 structHash =
-            keccak256(abi.encode(RWA_TYPEHASH, vm.addr(pk), to, value, validAfter, validBefore, nonce));
+        bytes32 structHash = keccak256(abi.encode(RWA_TYPEHASH, vm.addr(pk), to, value, validAfter, validBefore, nonce));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", IDomain(token).DOMAIN_SEPARATOR(), structHash));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
         return abi.encode(validAfter, validBefore, v, r, s);

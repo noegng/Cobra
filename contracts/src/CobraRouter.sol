@@ -155,14 +155,15 @@ contract CobraRouter is ICobraRouter {
 
         address swapRouter = SWAP_ROUTER;
         token.safeApprove(swapRouter, received);
-        ISwapRouter02(swapRouter).exactInput(
-            ISwapRouter02.ExactInputParams({
-                path: leg.path,
-                recipient: address(this),
-                amountIn: received,
-                amountOutMinimum: 0 // aggregate InsufficientOutput check protects the merchant
-            })
-        );
+        ISwapRouter02(swapRouter)
+            .exactInput(
+                ISwapRouter02.ExactInputParams({
+                    path: leg.path,
+                    recipient: address(this),
+                    amountIn: received,
+                    amountOutMinimum: 0 // aggregate InsufficientOutput check protects the merchant
+                })
+            );
         token.safeApprove(swapRouter, 0);
 
         uint256 balAfter = IERC20Minimal(token).balanceOf(address(this));
@@ -180,18 +181,19 @@ contract CobraRouter is ICobraRouter {
         } else if (kind == PullKind.PERMIT2) {
             (uint256 nonce, uint256 deadline, bytes memory signature) =
                 abi.decode(leg.pullData, (uint256, uint256, bytes));
-            ISignatureTransfer(PERMIT2).permitWitnessTransferFrom(
-                ISignatureTransfer.PermitTransferFrom({
-                    permitted: ISignatureTransfer.TokenPermissions({token: leg.token, amount: leg.amountIn}),
-                    nonce: nonce,
-                    deadline: deadline
-                }),
-                ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: leg.amountIn}),
-                payer,
-                witness,
-                PERMIT2_WITNESS_TYPE_STRING,
-                signature
-            );
+            ISignatureTransfer(PERMIT2)
+                .permitWitnessTransferFrom(
+                    ISignatureTransfer.PermitTransferFrom({
+                        permitted: ISignatureTransfer.TokenPermissions({token: leg.token, amount: leg.amountIn}),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: leg.amountIn}),
+                    payer,
+                    witness,
+                    PERMIT2_WITNESS_TYPE_STRING,
+                    signature
+                );
         } else {
             // ALLOWANCE
             if (msg.sender != payer) revert PayerMustBeSender();
@@ -213,7 +215,8 @@ contract CobraRouter is ICobraRouter {
     ///      first token == leg.token, last token == tokenOut.
     function _validatePath(bytes calldata path, address tokenIn, address tokenOut) private pure {
         uint256 len = path.length;
-        if (len < ADDR_SIZE + HOP_SIZE || (len - ADDR_SIZE) % HOP_SIZE != 0 || (len - ADDR_SIZE) / HOP_SIZE > MAX_HOPS) {
+        if (len < ADDR_SIZE + HOP_SIZE || (len - ADDR_SIZE) % HOP_SIZE != 0 || (len - ADDR_SIZE) / HOP_SIZE > MAX_HOPS)
+        {
             revert InvalidPath();
         }
         if (address(bytes20(path[:ADDR_SIZE])) != tokenIn) revert InvalidPath();

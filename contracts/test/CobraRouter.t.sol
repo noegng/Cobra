@@ -113,10 +113,8 @@ contract CobraRouterTest is RouterTestBase {
 
     function test_threeLegs_allSigned_relayed() public {
         ICobraRouter.Invoice memory inv = _invoice(4500e18);
-        ICobraRouter.Leg[] memory legs = _signed(
-            inv,
-            _legs3(_usdcLeg(1e6), _usdtLeg(1e6, EIP3009), _directLeg(1200e18, PERMIT2))
-        );
+        ICobraRouter.Leg[] memory legs =
+            _signed(inv, _legs3(_usdcLeg(1e6), _usdtLeg(1e6, EIP3009), _directLeg(1200e18, PERMIT2)));
         _payAsRelayer(inv, legs);
         assertEq(wARS.balanceOf(merchant), 4500e18);
         _assertRouterEmpty();
@@ -234,7 +232,9 @@ contract CobraRouterTest is RouterTestBase {
         _payAsRelayer(inv, new ICobraRouter.Leg[](0));
 
         ICobraRouter.Leg[] memory four = new ICobraRouter.Leg[](4);
-        for (uint256 i; i < 4; ++i) four[i] = _directLeg(1125e18, PERMIT2);
+        for (uint256 i; i < 4; ++i) {
+            four[i] = _directLeg(1125e18, PERMIT2);
+        }
         _sign(router, PAYER_PK, inv, four);
         vm.expectRevert(ICobraRouter.InvalidLegs.selector);
         _payAsRelayer(inv, four);
@@ -297,14 +297,18 @@ contract CobraRouterTest is RouterTestBase {
 
     function test_revert_invalidPath_tooManyHops() public {
         bytes memory p = abi.encodePacked(address(usdc));
-        for (uint256 i; i < 4; ++i) p = abi.encodePacked(p, FEE, address(usdt));
+        for (uint256 i; i < 4; ++i) {
+            p = abi.encodePacked(p, FEE, address(usdt));
+        }
         p = abi.encodePacked(p, FEE, address(wARS)); // 5 hops
         _expectInvalidPath(address(usdc), p);
     }
 
     function test_fourHops_ok() public {
         bytes memory p = abi.encodePacked(address(usdc));
-        for (uint256 i; i < 3; ++i) p = abi.encodePacked(p, FEE, address(usdt));
+        for (uint256 i; i < 3; ++i) {
+            p = abi.encodePacked(p, FEE, address(usdt));
+        }
         p = abi.encodePacked(p, FEE, address(wARS)); // 4 hops
         ICobraRouter.Invoice memory inv = _invoice(1650e18);
         ICobraRouter.Leg[] memory legs = _signed(inv, _legs1(_leg(address(usdc), 1e6, EIP3009, p)));
@@ -491,7 +495,9 @@ contract CobraRouterTest is RouterTestBase {
         vm.prank(relayer);
         vm.expectRevert(BAD_PERMIT2_SIG); // spender = msg.sender = relayer != router
         permit2.permitWitnessTransferFrom(
-            ISignatureTransfer.PermitTransferFrom(ISignatureTransfer.TokenPermissions(address(usdt), 1e6), nonce, deadline),
+            ISignatureTransfer.PermitTransferFrom(
+                ISignatureTransfer.TokenPermissions(address(usdt), 1e6), nonce, deadline
+            ),
             ISignatureTransfer.SignatureTransferDetails(relayer, 1e6),
             payer,
             witness,

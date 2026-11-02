@@ -41,7 +41,8 @@ contract VectorsTest is Test {
         assertEq(router.exposed_LEG_COMMITMENT_TYPEHASH(), vm.parseJsonBytes32(json, ".typeHashes.LegCommitment"));
         assertEq(router.exposed_PAYMENT_INTENT_TYPEHASH(), vm.parseJsonBytes32(json, ".typeHashes.PaymentIntent"));
         // Sanity: the JSON's typeHashes are keccak of its typeStrings.
-        string[5] memory keys = ["Invoice", "LegCommitment", "PaymentIntent", "PERMIT2_WITNESS", "ReceiveWithAuthorization"];
+        string[5] memory keys =
+            ["Invoice", "LegCommitment", "PaymentIntent", "PERMIT2_WITNESS", "ReceiveWithAuthorization"];
         for (uint256 i; i < keys.length; ++i) {
             assertEq(
                 keccak256(bytes(vm.parseJsonString(json, string.concat(".typeStrings.", keys[i])))),
@@ -96,7 +97,9 @@ contract VectorsTest is Test {
                 assertEq(keccak256(legs[i].path), vm.parseJsonBytes32(json, string.concat(lb, ".pathHash")), name);
             }
 
-            assertEq(router.hashIntent(inv, payer, legs), vm.parseJsonBytes32(json, string.concat(base, ".intentHash")), name);
+            assertEq(
+                router.hashIntent(inv, payer, legs), vm.parseJsonBytes32(json, string.concat(base, ".intentHash")), name
+            );
             bytes32 digest = router.intentDigest(inv, payer, legs);
             assertEq(digest, vm.parseJsonBytes32(json, string.concat(base, ".intentDigest")), name);
             for (uint256 i; i < n; ++i) {
