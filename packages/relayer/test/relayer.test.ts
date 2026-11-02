@@ -221,6 +221,30 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     expect((await inv(seed.invoiceId)).status).toBe("open");
   });
 
+  it("never overwrites a submission the indexer already confirmed / failed", async () => {
+    const r = relayer(signer());
+    const seed = await seedSubmission(db, { router, token3009 });
+    await a.test.setAutomine(false);
+    await r.tick();
+    // indexer wins the race (e.g. superseded by another payer): submission failed, invoice paid
+    await db.update(submissions).set({ status: "failed", error: "superseded" }).where(eq(submissions.id, seed.submissionId));
+    await db.update(invoices).set({ status: "paid" }).where(eq(invoices.id, seed.invoiceId));
+    await a.test.setNextBlockTimestamp({ timestamp: seed.inv.deadline + 1n });
+    await a.test.mine({ blocks: 1 }); // our tx reverts
+    await r.tick();
+    const row = await sub(seed.submissionId);
+    expect(row.status).toBe("failed");
+    expect(row.error).toBe("superseded");
+    expect((await inv(seed.invoiceId)).status).toBe("paid");
+
+    const seed2 = await seedSubmission(db, { router, token3009, expiresInSec: 3600 });
+    await r.tick();
+    await db.update(submissions).set({ status: "confirmed" }).where(eq(submissions.id, seed2.submissionId));
+    await a.test.mine({ blocks: 1 });
+    await r.tick();
+    expect((await sub(seed2.submissionId)).status).toBe("confirmed");
+  });
+
   it("stuck tx is replaced on the SAME nonce with bumped fees; only one gets mined", async () => {
     const s = signer();
     const r = relayer(s, { stuckAfterMs: 0 });
@@ -310,7 +334,7 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
   });
 
   it("low gas balance alerts the operator through the notifier (throttled)", async () => {
-    const text = vi.fn(async () => {});
+    const text = vi.fn(async (_to: string, _msg: string) => {});
     const notifier = { text, invoicePaid: vi.fn(async () => {}) };
     const r = relayer(signer(), { notifier, operatorChatId: "op-1", minBalanceWei: 10n ** 30n, balanceCheckEveryMs: 0 });
     await tick(r);

@@ -182,12 +182,18 @@ export function createRelayer(cfg: RelayerConfig) {
     return chainId;
   }
 
-  async function fail(id: string, error: string) {
-    await db
+  /**
+   * Conditional: never overwrites a row the indexer already set to `confirmed` / `failed` (superseded).
+   * Returns true only if THIS call moved the row to failed.
+   */
+  async function fail(id: string, error: string): Promise<boolean> {
+    const rows = await db
       .update(submissions)
       .set({ status: "failed", error: error.slice(0, 500), updatedAt: now() })
-      .where(and(eq(submissions.id, id), inArray(submissions.status, ["pending", "sending", "sent"])));
-    log("submission_failed", { submissionId: id, error });
+      .where(and(eq(submissions.id, id), inArray(submissions.status, ["pending", "sending", "sent"])))
+      .returning({ id: submissions.id });
+    log("submission_failed", { submissionId: id, error, applied: rows.length > 0 });
+    return rows.length > 0;
   }
 
   async function reopen(invoiceId: string) {
@@ -211,10 +217,12 @@ export function createRelayer(cfg: RelayerConfig) {
     for (const r of rows) {
       if (!r.txHash) {
         // never signed (the hash is persisted before broadcast) → safe to redo from scratch
-        await db
+        const moved = await db
           .update(submissions)
           .set({ status: "pending", txNonce: null, updatedAt: now() })
-          .where(and(eq(submissions.id, r.id), eq(submissions.status, "sending"), sql`${submissions.txHash} is null`));
+          .where(and(eq(submissions.id, r.id), eq(submissions.status, "sending"), sql`${submissions.txHash} is null`))
+          .returning({ id: submissions.id });
+        if (moved.length === 0) continue;
         await reopen(r.invoiceId);
         log("recover_requeued", { submissionId: r.id });
       } else {
@@ -486,8 +494,7 @@ export function createRelayer(cfg: RelayerConfig) {
           log("tx_mined", { submissionId: row.id, txHash: hash, block: String(receipt.blockNumber) });
         } else {
           const reason = await decodeMinedRevert(row, invRow, receipt.blockNumber);
-          await fail(row.id, `tx_reverted:${reason}`);
-          await reopen(row.invoiceId);
+          if (await fail(row.id, `tx_reverted:${reason}`)) await reopen(row.invoiceId);
         }
         continue;
       }
@@ -506,8 +513,7 @@ export function createRelayer(cfg: RelayerConfig) {
           await db.update(submissions).set({ status: "sent", updatedAt: now() }).where(and(eq(submissions.id, row.id), eq(submissions.status, "sending")));
           log("tx_mined_other_hash", { submissionId: row.id });
         } else {
-          await fail(row.id, "nonce_consumed_not_paid");
-          await reopen(row.invoiceId);
+          if (await fail(row.id, "nonce_consumed_not_paid")) await reopen(row.invoiceId);
         }
         continue;
       }
