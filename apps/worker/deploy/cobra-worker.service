@@ -1,0 +1,59 @@
+# /etc/systemd/system/cobra-worker.service
+# Cobrá VPS worker: relayer (signs CobraRouter.pay), indexer, expiry, reminders, daily close.
+#
+# Secrets live ONLY in /etc/cobra/worker.env (root:cobra, mode 0640), never in the repo:
+#   DATABASE_URL, RPC_URL, ROUTER_ADDRESS, ROUTER_DEPLOY_BLOCK, PUBLIC_BASE_URL, TELEGRAM_BOT_TOKEN,
+#   RELAYER_PRIVATE_KEY, ATTRIBUTION_CODE, [ATTRIBUTION_WALLET_CODE], OPERATOR_TELEGRAM_CHAT_ID,
+#   [KILL_SWITCH=false], [REF_RATES], [RELAYER_MIN_BALANCE_CELO], [RELAYER_POLL_MS]
+# See apps/worker/README.md.
+
+[Unit]
+Description=Cobra worker (relayer + indexer + schedulers)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=cobra
+Group=cobra
+WorkingDirectory=/opt/cobra/apps/worker
+EnvironmentFile=/etc/cobra/worker.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env pnpm start
+# SIGTERM → graceful shutdown (relayer persists in-flight txHash, indexer commits its batch); main.ts force-exits after 20 s
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+# 78 = EX_CONFIG (invalid env): do not restart-loop, fix /etc/cobra/worker.env first
+RestartPreventExitStatus=78
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+UMask=0077
+# Core dumps could contain the key
+LimitCORE=0
+# pnpm / tsx caches
+ReadWritePaths=/opt/cobra/.cache
+Environment=XDG_CACHE_HOME=/opt/cobra/.cache
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cobra-worker
+
+[Install]
+WantedBy=multi-user.target

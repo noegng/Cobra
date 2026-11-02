@@ -291,12 +291,18 @@ importers:
 
   packages/relayer:
     dependencies:
+      '@celo/attribution-tags':
+        specifier: 0.5.0
+        version: 0.5.0(typescript@5.9.3)(viem@2.57.14(typescript@5.9.3)(zod@4.6.7))(zod@4.6.7)
       '@cobra/db':
         specifier: workspace:*
         version: link:../db
       '@cobra/shared':
         specifier: workspace:*
         version: link:../shared
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@electric-sql/pglite@0.5.14)(postgres@4.0.0)
       viem:
         specifier: 2.57.14
         version: 2.57.14(typescript@5.9.3)(zod@4.6.7)
@@ -346,6 +352,15 @@ packages:
   '@ai-sdk/provider@4.0.35':
     resolution: {integrity: sha512-yBz6fmLS8MSCIzy7NiHEUAq56ZLD4ZA1GR6bpXBxgbwUacP1La7LuwAr/xy9jSzthem4F8Xu2OrhvU/JrE9fYA==}
     engines: {node: '>=22'}
+
+  '@celo/attribution-tags@0.5.0':
+    resolution: {integrity: sha512-vh08K5lBd59eG2e6KG1tx24nh0tGRGNoVIwTd6cTXgavE5DAp5uO3dQnWzt+uPFyqGGBK6YxQg9QKK7/Ge3kfw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      viem: ^2
+    peerDependenciesMeta:
+      viem:
+        optional: true
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -1642,6 +1657,15 @@ snapshots:
   '@ai-sdk/provider@4.0.35':
     dependencies:
       json-schema: 0.4.0
+
+  '@celo/attribution-tags@0.5.0(typescript@5.9.3)(viem@2.57.14(typescript@5.9.3)(zod@4.6.7))(zod@4.6.7)':
+    dependencies:
+      ox: 0.14.59(typescript@5.9.3)(zod@4.6.7)
+    optionalDependencies:
+      viem: 2.57.14(typescript@5.9.3)(zod@4.6.7)
+    transitivePeerDependencies:
+      - typescript
+      - zod
 
   '@drizzle-team/brocli@0.10.2': {}
 

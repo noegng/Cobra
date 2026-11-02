@@ -11,8 +11,10 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@celo/attribution-tags": "0.5.0",
     "@cobra/db": "workspace:*",
     "@cobra/shared": "workspace:*",
+    "drizzle-orm": "0.45.4",
     "viem": "2.57.14"
   }
 }

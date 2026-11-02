@@ -6,6 +6,7 @@
 import type { Db } from "@cobra/db";
 import type { Notifier } from "@cobra/shared";
 import type { Address, PublicClient, WalletClient } from "viem";
+import { runRelayer } from "./relayer";
 
 export interface RelayerOptions {
   db: Db;
@@ -22,6 +23,26 @@ export interface Stoppable {
   stop(): Promise<void>;
 }
 
-export function startRelayer(_opts: RelayerOptions): Stoppable {
-  throw new Error("not implemented (WS3)");
+/**
+ * `walletClient` MUST be `createRelayerSigner(...).walletClient` (guarded + attributed); any other client is rejected.
+ */
+export function startRelayer(opts: RelayerOptions): Stoppable {
+  return runRelayer(opts);
 }
+
+export {
+  createRelayerSigner,
+  createRegistrationSender,
+  signerOf,
+  SignerRefusedError,
+  PAY_SELECTOR,
+  identityRegistryAbi,
+  type RelayerSigner,
+  type RelayerSignerOptions,
+  type RefusalCode,
+  type SendRequest,
+} from "./signer";
+export { type RatesSource } from "./rates";
+export { claimNext, createRelayer, payCalldata, type RelayerConfig } from "./relayer";
+export { verifyLegs } from "./verify";
+export { buildRegistrationFile, registerCalldata, type AgentRegistrationFile } from "./agent";
