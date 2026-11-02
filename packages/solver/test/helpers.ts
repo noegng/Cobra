@@ -1,5 +1,5 @@
 import { getAddress, type Address } from "viem";
-import { PullKind, toBaseUnits, type ReferenceRates, type TokenInfo } from "@cobra/shared";
+import { PullKind, toBaseUnits, type QuoteSource, type ReferenceRates, type TokenInfo } from "@cobra/shared";
 import { PoolSimulator, poolFromPrice, type SimPool } from "../src/simulator";
 
 const addr = (n: number): Address => getAddress(`0x${n.toString(16).padStart(40, "0")}`);
@@ -62,7 +62,7 @@ export function sim(pools: SimPool[] = mainnetLikePools()): PoolSimulator {
   return new PoolSimulator(pools);
 }
 
-export const baseOpts = (quoter = sim()) => ({
+export const baseOpts = (quoter: QuoteSource = sim()) => ({
   quoter,
   registry: REGISTRY,
   now: () => 1_700_000_000_000,
