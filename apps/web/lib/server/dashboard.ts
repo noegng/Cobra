@@ -1,7 +1,15 @@
-/** Merchant dashboard queries + CSV (read-only). */
-import { desc, eq } from "drizzle-orm";
+/** Merchant dashboard (read-only), built on WS6's shared queries in @cobra/db/queries. */
+import { eq, inArray } from "drizzle-orm";
 import { fromBaseUnits, toBaseUnits } from "@cobra/shared";
-import { invoices, merchants, payments, type Db } from "@cobra/db";
+import { merchants, payments, type Db } from "@cobra/db";
+import {
+  countInvoicesByStatus,
+  dailyTotalsByMerchant,
+  listInvoicesByMerchant,
+  localDay,
+  paymentCsvRows,
+  toCsv,
+} from "@cobra/db/queries";
 import { effectiveStatus } from "./invoices";
 
 export const DASHBOARD_MAX_ROWS = 500;
@@ -14,65 +22,47 @@ export interface DashboardRow {
   amountLocal: string;
   currency: string;
   status: string;
-  source: string;
-  paidAt: Date | null;
   txHash: string | null;
-  payer: string | null;
 }
 
 export interface DashboardData {
   merchant: { id: string; displayName: string | null; currency: string; payoutAddress: string; language: string; timezone: string };
   rows: DashboardRow[];
+  /** Only on-chain-confirmed money (payments rows) counts, in the merchant's currency and timezone. */
   totals: { currency: string; paidCount: number; paidTotal: string; openCount: number; todayPaidTotal: string; todayPaidCount: number };
 }
 
 const SUM_DECIMALS = 18;
+const EPOCH_DAY = "2026-01-01";
+
+function sumLocal(rows: { currency: string; count: number; amountLocal: string }[], currency: string) {
+  let total = 0n;
+  let count = 0;
+  for (const r of rows) {
+    if (r.currency !== currency) continue;
+    total += toBaseUnits(r.amountLocal, SUM_DECIMALS);
+    count += r.count;
+  }
+  return { total: fromBaseUnits(total, SUM_DECIMALS), count };
+}
 
 export async function loadDashboard(db: Db, merchantId: string, now: number): Promise<DashboardData | null> {
   const [m] = await db.select().from(merchants).where(eq(merchants.id, merchantId));
   if (!m) return null;
-  const list = await db
-    .select({ invoice: invoices, payment: payments })
-    .from(invoices)
-    .leftJoin(payments, eq(payments.invoiceId, invoices.id))
-    .where(eq(invoices.merchantId, merchantId))
-    .orderBy(desc(invoices.createdAt))
-    .limit(DASHBOARD_MAX_ROWS);
-
-  const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: m.timezone });
-  const today = dayKey(new Date(now));
-  let paidTotal = 0n;
-  let todayTotal = 0n;
-  let paidCount = 0;
-  let todayCount = 0;
-  let openCount = 0;
-  const rows: DashboardRow[] = list.map(({ invoice, payment }) => {
-    const status = effectiveStatus(invoice, now);
-    if (status === "paid" && invoice.currency === m.currency) {
-      const v = toBaseUnits(invoice.amountLocal, SUM_DECIMALS);
-      paidTotal += v;
-      paidCount++;
-      const paidAt = invoice.paidAt ?? payment?.paidAt ?? invoice.createdAt;
-      if (dayKey(paidAt) === today) {
-        todayTotal += v;
-        todayCount++;
-      }
-    }
-    if (status === "open" || status === "submitted") openCount++;
-    return {
-      id: invoice.id,
-      createdAt: invoice.createdAt,
-      reference: invoice.reference,
-      description: invoice.description,
-      amountLocal: invoice.amountLocal,
-      currency: invoice.currency,
-      status,
-      source: invoice.source,
-      paidAt: invoice.paidAt ?? payment?.paidAt ?? null,
-      txHash: payment?.txHash ?? null,
-      payer: payment?.payer ?? null,
-    };
-  });
+  const today = localDay(new Date(now), m.timezone);
+  const [list, todayRows, allRows, counts] = await Promise.all([
+    listInvoicesByMerchant(db, merchantId, { limit: DASHBOARD_MAX_ROWS }),
+    dailyTotalsByMerchant(db, merchantId, { from: today, to: today, timezone: m.timezone }),
+    dailyTotalsByMerchant(db, merchantId, { from: EPOCH_DAY, to: today, timezone: m.timezone }),
+    countInvoicesByStatus(db, merchantId),
+  ]);
+  const ids = list.map((i) => i.id);
+  const pays = ids.length
+    ? await db.select({ invoiceId: payments.invoiceId, txHash: payments.txHash }).from(payments).where(inArray(payments.invoiceId, ids))
+    : [];
+  const txByInvoice = new Map(pays.map((p) => [p.invoiceId, p.txHash]));
+  const t = sumLocal(todayRows, m.currency);
+  const a = sumLocal(allRows, m.currency);
   return {
     merchant: {
       id: m.id,
@@ -82,46 +72,28 @@ export async function loadDashboard(db: Db, merchantId: string, now: number): Pr
       language: m.language,
       timezone: m.timezone,
     },
-    rows,
+    rows: list.map((i) => ({
+      id: i.id,
+      createdAt: i.createdAt,
+      reference: i.reference,
+      description: i.description,
+      amountLocal: i.amountLocal,
+      currency: i.currency,
+      status: effectiveStatus(i, now),
+      txHash: txByInvoice.get(i.id) ?? null,
+    })),
     totals: {
       currency: m.currency,
-      paidCount,
-      paidTotal: fromBaseUnits(paidTotal, SUM_DECIMALS),
-      openCount,
-      todayPaidCount: todayCount,
-      todayPaidTotal: fromBaseUnits(todayTotal, SUM_DECIMALS),
+      paidCount: a.count,
+      paidTotal: a.total,
+      openCount: counts.open + counts.submitted,
+      todayPaidCount: t.count,
+      todayPaidTotal: t.total,
     },
   };
 }
 
-/** RFC 4180 field; also neutralises spreadsheet formula injection (=,+,-,@ prefixes). */
-export function csvField(v: string | null | undefined): string {
-  let s = v ?? "";
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-export function dashboardCsv(data: DashboardData): string {
-  const header = ["invoice_id", "created_at", "reference", "description", "amount_local", "currency", "status", "source", "paid_at", "tx_hash", "payer"];
-  const lines = [header.join(",")];
-  for (const r of data.rows) {
-    lines.push(
-      [
-        r.id,
-        r.createdAt.toISOString(),
-        r.reference,
-        r.description,
-        r.amountLocal,
-        r.currency,
-        r.status,
-        r.source,
-        r.paidAt ? r.paidAt.toISOString() : "",
-        r.txHash,
-        r.payer,
-      ]
-        .map(csvField)
-        .join(","),
-    );
-  }
-  return lines.join("\r\n") + "\r\n";
+/** Accountant export: confirmed payments (WS6 `paymentCsvRows` + formula-safe `toCsv`). */
+export async function dashboardCsv(db: Db, merchantId: string): Promise<string> {
+  return toCsv(await paymentCsvRows(db, merchantId));
 }

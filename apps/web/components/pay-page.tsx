@@ -54,6 +54,10 @@ function errorKey(code: string | undefined): keyof Dict {
       return "no_route";
     case "over_cap":
       return "over_cap";
+    case "temporarily_unavailable":
+    case "upstream_unavailable":
+    case "solver_unavailable":
+      return "temporarily_unavailable";
     default:
       return "generic_error";
   }

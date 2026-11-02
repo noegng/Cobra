@@ -308,6 +308,14 @@ describe("quote rejections", () => {
     expect(await fx.db.select().from(quotes)).toHaveLength(0);
   });
 
+  it("solver outage marker (failed quotes) → 503 retryable, no fallbacks", async () => {
+    const fx = await setup();
+    fx.setSolver(() => ({ ok: false, reason: "no_route", fallback: "ripio", detail: "no pool path to wARS (7 failed quotes)" }));
+    const { res, body } = await quote(fx);
+    expect(res.status).toBe(503);
+    expect(body).toEqual({ error: "temporarily_unavailable", retryable: true });
+  });
+
   it("solver crash → 503 without leaking details; rate limit → 429", async () => {
     const fx = await setup();
     fx.setSolver(() => {
@@ -345,7 +353,7 @@ describe("POST /api/m/:slug/invoice (static QR)", () => {
   it("parses strictly", async () => {
     const fx = await setup();
     for (const bad of ["", "0", "0,00", "-5", "1e3", "4.500,00", "4,500.00", "12.345", "abc", " 1 2", 4500, null]) {
-      const res = await handleCreateStaticInvoice(req("POST", { amountLocal: bad }), "cafe-luna", fx.deps);
+      const res = await handleCreateStaticInvoice(req("POST", { amountLocal: bad }, { "x-forwarded-for": `ip-${String(bad)}-${typeof bad}` }), "cafe-luna", fx.deps);
       expect(res.status, String(bad)).toBe(400);
     }
     expect((await handleCreateStaticInvoice(req("POST", { amountLocal: "10" }), "nobody", fx.deps)).status).toBe(404);

@@ -21,7 +21,7 @@ import { getCaps, isKillSwitchOn, onchainInvoiceFromRow, payments, quotes, submi
 import { parseLocalAmount } from "../amount";
 import { rampUrlFor } from "../ramp";
 import { toWire, type QuoteError, type QuoteOk, type StatusResponse, type ToSignEntry, type WireTypedData } from "../wire";
-import type { PayerChainState } from "./balances";
+import { permit2ReadyTokens, type PayerChainState } from "./balances";
 import { INVOICE_ID_RE, SLUG_RE, UUID_RE, apiError, clientIp, json, logEvent, readJsonBody } from "./http";
 import { StaticInvoiceError, createStaticInvoice, effectiveStatus, loadInvoice, toPublicInvoice } from "./invoices";
 import type { RateLimiter } from "./rate-limit";
@@ -36,7 +36,8 @@ export interface ApiDeps {
   permit2: Address;
   readPayerState(payer: Address): Promise<PayerChainState>;
   getReferenceRates(): Promise<ReferenceRates>;
-  solve(input: SolverInput, opts: { capUsd: number }): Promise<SolveResult>;
+  /** `permit2Ready`: tokens whose Permit2 allowance already covers the payer's balance (WS2 SolverOptions). */
+  solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult>;
   rateLimiter: RateLimiter;
   env: Record<string, string | undefined>;
 }
@@ -58,6 +59,14 @@ function isUniqueViolation(err: unknown): boolean {
     e = o.cause;
   }
   return false;
+}
+
+/**
+ * Solver outage markers (WS2 `detail`): "(7 failed quotes)" / ", 7 failed quotes" (QuoterV2 RPC down),
+ * "no_ref_rate" / "missing reference rate" (FX sources down). Retry, don't push the payer to a fallback.
+ */
+export function isTransientSolverFailure(detail: string | undefined): boolean {
+  return !!detail && /\b[1-9]\d* failed quotes?\b|no_ref_rate|missing reference rate/.test(detail);
 }
 
 const LIVE_SUBMISSION = ["pending", "sending", "sent", "confirmed"] as const;
@@ -109,7 +118,7 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   try {
     result = await deps.solve(
       { invoice: { tokenOut: inv.tokenOut, amountOut: inv.amountOut, deadline: inv.deadline }, balances: state.balances, refRates },
-      { capUsd: caps.perPaymentUsd },
+      { capUsd: caps.perPaymentUsd, permit2Ready: permit2ReadyTokens(state) },
     );
   } catch (e) {
     logEvent("quote.solver_error", { invoiceId: id, kind: e instanceof Error ? e.name : "unknown" });
@@ -126,6 +135,12 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   };
 
   if (!result.ok) {
+    // WS2: an RPC/quoter outage comes back as no_route / insufficient_balance with "(N failed quotes)" in
+    // `detail`. That is not the payer's fault: offer a retry, never the Ripio / direct-transfer fallbacks.
+    if (isTransientSolverFailure(result.detail)) {
+      logEvent("quote.transient_failure", { invoiceId: id, reason: result.reason });
+      return json({ error: "temporarily_unavailable", retryable: true } satisfies QuoteError, 503);
+    }
     const lang = loaded.merchant.language === "pt" ? "pt" : loaded.merchant.language === "en" ? "en" : "es";
     const rampUrl =
       result.reason === "insufficient_balance"

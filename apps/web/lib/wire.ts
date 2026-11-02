@@ -76,6 +76,8 @@ export interface DirectTransferFallback {
 export interface QuoteError {
   error: string;
   message?: string;
+  /** true = upstream outage (RPC / FX): show "retry", not the ramp / direct-transfer fallbacks. */
+  retryable?: boolean;
   fallback?: "direct_wfiat" | "ripio";
   /** Ripio on-ramp link, only when a partner account is configured. */
   rampUrl?: string | null;

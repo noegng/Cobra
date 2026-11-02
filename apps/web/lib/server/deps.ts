@@ -6,11 +6,10 @@ import { createPublicClient, getAddress, http, isAddress, type Address } from "v
 import { celo } from "viem/chains";
 import { CELO, CELO_CHAIN_ID } from "@cobra/shared";
 import { createDb, type Db } from "@cobra/db";
-import { createUniswapQuoter, solve } from "@cobra/solver";
+import { createReferenceRateSource, createUniswapQuoter, solve } from "@cobra/solver";
 import type { ApiDeps } from "./api";
 import { readPayerState, type MulticallClient } from "./balances";
 import { createMemoryRateLimiter } from "./rate-limit";
-import { getReferenceRates } from "./rates";
 
 let db: Db | null = null;
 let deps: ApiDeps | null = null;
@@ -32,9 +31,11 @@ function envAddress(name: string, fallback: Address | null): Address | null {
 
 export function getApiDeps(): ApiDeps {
   if (deps) return deps;
-  const client = createPublicClient({ chain: celo, transport: http(process.env.RPC_URL || CELO.rpcUrl) });
+  // WS2: batch the solver's QuoterV2 eth_calls through Multicall3 (one round-trip per tick).
+  const client = createPublicClient({ chain: celo, transport: http(process.env.RPC_URL || CELO.rpcUrl), batch: { multicall: true } });
   const quoterAddress = envAddress("QUOTER_V2_ADDRESS", CELO.uniswapV3.quoterV2.address)!;
-  let quoter: ReturnType<typeof createUniswapQuoter> | null = null;
+  const quoter = createUniswapQuoter(client as Parameters<typeof createUniswapQuoter>[0], quoterAddress);
+  const rates = createReferenceRateSource(); // ARS = dólar cripto, BRL; cached 60 s, never throws
   deps = {
     db: getDb(),
     now: () => Date.now(),
@@ -42,12 +43,9 @@ export function getApiDeps(): ApiDeps {
     router: envAddress("ROUTER_ADDRESS", null),
     permit2: CELO.permit2.address,
     readPayerState: (payer) => readPayerState(client as unknown as MulticallClient, payer, CELO.permit2.address),
-    getReferenceRates: () => getReferenceRates(),
-    solve: (input, opts) => {
-      // Created lazily so a not-yet-implemented solver only fails the quote call (503), never the build.
-      quoter ??= createUniswapQuoter(client as Parameters<typeof createUniswapQuoter>[0], quoterAddress);
-      return solve(input, { quoter, capUsd: opts.capUsd });
-    },
+    getReferenceRates: () => rates(),
+    // Every verified pool is on the 0.01% tier: feeTiers [100] cuts ~30 eth_calls to ~12 per quote.
+    solve: (input, opts) => solve(input, { quoter, capUsd: opts.capUsd, permit2Ready: opts.permit2Ready, feeTiers: [100] }),
     rateLimiter: createMemoryRateLimiter(),
     env: process.env,
   };
