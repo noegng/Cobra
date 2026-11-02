@@ -42,7 +42,7 @@ export {
   type RefusalCode,
   type SendRequest,
 } from "./signer";
-export { createHttpRates, type RatesSource } from "./rates";
+export { type RatesSource } from "./rates";
 export { claimNext, createRelayer, payCalldata, type RelayerConfig } from "./relayer";
 export { verifyLegs } from "./verify";
 export { buildRegistrationFile, registerCalldata, type AgentRegistrationFile } from "./agent";

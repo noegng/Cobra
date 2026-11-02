@@ -6,7 +6,7 @@ import { setFlag, type Db } from "@cobra/db";
 import { createTestDb } from "@cobra/db/testing";
 import { createRelayerSigner, PAY_SELECTOR, SignerRefusedError, type RelayerSigner } from "../src/signer";
 import { buildRegistrationFile, registerCalldata, REGISTRATION_TYPE } from "../src/agent";
-import { createHttpRates, usdValueScaled, USD_SCALE } from "../src/rates";
+import { usdValueScaled, USD_SCALE } from "../src/rates";
 import { ANVIL_KEYS, ATTRIBUTION_CODE, RATES, WARS } from "./helpers";
 
 const ROUTER: Address = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -120,19 +120,6 @@ describe("rates", () => {
   it("scaled USD values are exact integers", () => {
     expect(usdValueScaled(10n ** 6n, 6, "USD", {})).toBe(USD_SCALE);
     expect(() => usdValueScaled(1n, 18, "BRL", {})).toThrow(/missing_rate/);
-  });
-  it("http rates invert per-USD quotes, cache, and apply overrides", async () => {
-    let calls = 0;
-    const fetchFn = (async () => {
-      calls++;
-      return new Response(JSON.stringify({ rates: { ARS: 1600, BRL: 5 } }));
-    }) as typeof fetch;
-    const get = createHttpRates({ fetchFn, overrides: { BRL: 0.19 } });
-    const r = await get();
-    expect(r.ARS).toBeCloseTo(1 / 1600);
-    expect(r.BRL).toBe(0.19);
-    await get();
-    expect(calls).toBe(1);
   });
 });
 

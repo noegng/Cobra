@@ -165,7 +165,8 @@ export function createRelayer(cfg: RelayerConfig) {
   const minedOk = new Set<string>(); // submission ids whose tx succeeded: indexer finalises
 
   async function alert(kind: string, message: string) {
-    log("operator_alert", { kind, message });
+    // level "warn": the worker forwards `level: "alert"` logs itself; this path already notifies directly
+    log("operator_alert", { level: "warn", kind, message });
     if (!cfg.notifier || !cfg.operatorChatId) return;
     const t = Date.now();
     if (t - (lastAlert.get(kind) ?? 0) < alertThrottle) return;
