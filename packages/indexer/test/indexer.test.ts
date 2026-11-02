@@ -222,23 +222,26 @@ describe("startIndexer — reconciliation against anvil", () => {
     expect(s.notifier.texts).toEqual([]); // no merchant spam for foreign/griefing events
   });
 
-  it("expired/cancelled-but-paid and double payment: recorded, merchant alerted once, never dropped", async () => {
+  it("expired-but-on-time is paid; late/cancelled/double payment: recorded, merchant alerted once, never dropped", async () => {
     const s = await setup();
     const m = await seedMerchant(s.db, { language: "pt", currency: "BRL" });
-    const expired = await seedInvoice(s.db, m.id, { status: "expired" });
+    const onTime = await seedInvoice(s.db, m.id, { status: "expired" }); // expiry job ran before indexing
+    const late = await seedInvoice(s.db, m.id, { status: "expired", expiresAt: new Date(Date.now() - 3_600_000) });
     const cancelled = await seedInvoice(s.db, m.id, { status: "cancelled" });
     const twice = await seedInvoice(s.db, m.id);
-    await chain.emitPaid(s.router, { invoiceId: expired.id as Hex, amountOut: AMOUNT });
+    await chain.emitPaid(s.router, { invoiceId: onTime.id as Hex, amountOut: AMOUNT });
+    await chain.emitPaid(s.router, { invoiceId: late.id as Hex, amountOut: AMOUNT });
     await chain.emitPaid(s.router, { invoiceId: cancelled.id as Hex, amountOut: AMOUNT });
     await chain.emitPaid(s.router, { invoiceId: twice.id as Hex, amountOut: AMOUNT });
     const last = await chain.emitPaid(s.router, { invoiceId: twice.id as Hex, amountOut: AMOUNT });
     s.start();
     await waitCursorPast(s.db, last.block);
-    await waitFor(async () => s.notifier.texts.length === 3 && s.notifier.paid.length === 1, 5000, "alerts");
+    await waitFor(async () => s.notifier.texts.length === 3 && s.notifier.paid.length === 2, 5000, "alerts");
 
     const reasons = (await s.db.select().from(unmatchedEvents)).map((r) => r.reason).sort();
     expect(reasons).toEqual(["already_paid", "paid_while_cancelled", "paid_while_expired"]);
-    expect((await invoiceOf(s.db, expired.id)).status).toBe("expired");
+    expect((await invoiceOf(s.db, onTime.id)).status).toBe("paid");
+    expect((await invoiceOf(s.db, late.id)).status).toBe("expired");
     expect(s.notifier.texts.every((t) => t.merchantId === m.id && /Você recebeu/.test(t.message))).toBe(true);
     expect(s.logs.filter((l) => l.msg === "indexer_alert_merchant_paid_unmatched")).toHaveLength(3);
   });

@@ -129,10 +129,16 @@ async function reconcileLog(tx: Db, l: PaidLog, now: Date): Promise<{ outcome: L
   if (existing || inv.status === "paid") {
     return unmatched(tx, l, "already_paid", { dbStatus: inv.status, firstPaymentTx: existing?.txHash ?? null }, inv, now);
   }
-  if (inv.status === "expired") return unmatched(tx, l, "paid_while_expired", { dbStatus: inv.status }, inv, now);
+  // expired -> paid is legitimate when the payment block is within the invoice deadline (the router enforces
+  // the deadline on-chain; the expiry job may simply have run first). A later block means the on-chain
+  // Invoice carried a different deadline than the DB row: keep it out of the happy path.
+  const deadline = BigInt(Math.floor(inv.expiresAt.getTime() / 1000));
+  if (inv.status === "expired" && l.blockTimestamp > deadline) {
+    return unmatched(tx, l, "paid_while_expired", { dbStatus: inv.status }, inv, now);
+  }
   if (inv.status === "cancelled") return unmatched(tx, l, "paid_while_cancelled", { dbStatus: inv.status }, inv, now);
 
-  // 3. open | submitted -> paid.
+  // 3. open | submitted | expired(on time) -> paid.
   const paidAt = new Date(Number(l.blockTimestamp) * 1000);
   const [sub] = await tx
     .select()
@@ -158,7 +164,7 @@ async function reconcileLog(tx: Db, l: PaidLog, now: Date): Promise<{ outcome: L
     blockNumber: l.blockNumber,
     paidAt,
   });
-  const moved = await transitionInvoice(tx, inv.id, ["open", "submitted"], "paid", { paidAt });
+  const moved = await transitionInvoice(tx, inv.id, ["open", "submitted", "expired"], "paid", { paidAt });
   if (!moved) throw new Error(`invoice ${inv.id} left ${inv.status} while locked`); // aborts the batch; retried
 
   if (sub) {
