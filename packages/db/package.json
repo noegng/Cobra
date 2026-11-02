@@ -18,7 +18,8 @@
     "@cobra/shared": "workspace:*",
     "@electric-sql/pglite": "0.5.14",
     "drizzle-orm": "0.45.4",
-    "postgres": "4.0.0"
+    "postgres": "4.0.0",
+    "viem": "2.57.14"
   },
   "devDependencies": {
     "drizzle-kit": "0.31.11"

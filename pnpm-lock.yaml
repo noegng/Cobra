@@ -244,6 +244,9 @@ importers:
       postgres:
         specifier: 4.0.0
         version: 4.0.0
+      viem:
+        specifier: 2.57.14
+        version: 2.57.14(typescript@5.9.3)
     devDependencies:
       drizzle-kit:
         specifier: 0.31.11
