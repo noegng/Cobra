@@ -323,6 +323,7 @@ contract CobraRouterTest is RouterTestBase {
     /// Fresh Permit2-only intent: [USDT→wARS, wARS direct], signed by the payer.
     function _intentPermit2() internal view returns (ICobraRouter.Invoice memory inv, ICobraRouter.Leg[] memory legs) {
         inv = _invoice(4500e18);
+        inv.id = keccak256("permit2-intent"); // distinct from _intent3009's invoice
         legs = _signed(inv, _legs2(_usdtLeg(1e6, PERMIT2), _directLeg(2850e18, PERMIT2)));
     }
 
@@ -571,6 +572,10 @@ contract CobraRouterTest is RouterTestBase {
     }
 
     function test_noReturnTokens_usdtStyle() public {
+        vm.startPrank(payer);
+        mUSD.approve(address(router), 2e18);
+        wARS.approve(address(router), 1300e18);
+        vm.stopPrank();
         mUSD.setNoReturn(true);
         wARS.setNoReturn(true);
         ICobraRouter.Invoice memory inv = _invoice(4500e18);
@@ -579,11 +584,8 @@ contract CobraRouterTest is RouterTestBase {
             _directLeg(1300e18, ALLOWANCE)
         ); // 3300 + 1300 = 4600 -> 100 surplus
         uint256 warsBefore = wARS.balanceOf(payer);
-        vm.startPrank(payer);
-        mUSD.approve(address(router), 2e18);
-        wARS.approve(address(router), 1300e18);
+        vm.prank(payer);
         router.pay(inv, payer, legs);
-        vm.stopPrank();
         assertEq(wARS.balanceOf(merchant), 4500e18);
         assertEq(warsBefore - wARS.balanceOf(payer), 1200e18);
         _assertRouterEmpty();

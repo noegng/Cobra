@@ -56,25 +56,28 @@ abstract contract SigUtils is Test {
         uint256 deadline,
         bytes32 witness
     ) internal view returns (bytes memory) {
+        bytes32 dataHash = _permit2DataHash(token, amount, spender, nonce, deadline, witness);
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", IDomain(permit2).DOMAIN_SEPARATOR(), dataHash));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        return abi.encode(nonce, deadline, abi.encodePacked(r, s, v));
+    }
+
+    function _permit2DataHash(
+        address token,
+        uint256 amount,
+        address spender,
+        uint256 nonce,
+        uint256 deadline,
+        bytes32 witness
+    ) internal pure returns (bytes32) {
         bytes32 typeHash = keccak256(
             abi.encodePacked(
                 "PermitWitnessTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline,",
                 WITNESS_TYPE_STRING
             )
         );
-        bytes32 dataHash = keccak256(
-            abi.encode(
-                typeHash,
-                keccak256(abi.encode(TOKEN_PERMISSIONS_TYPEHASH, token, amount)),
-                spender,
-                nonce,
-                deadline,
-                witness
-            )
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", IDomain(permit2).DOMAIN_SEPARATOR(), dataHash));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-        return abi.encode(nonce, deadline, abi.encodePacked(r, s, v));
+        bytes32 tp = keccak256(abi.encode(TOKEN_PERMISSIONS_TYPEHASH, token, amount));
+        return keccak256(abi.encode(typeHash, tp, spender, nonce, deadline, witness));
     }
 
     /// @notice Fills pullData for every leg as the payer `pk` would sign it for `router`.

@@ -37,7 +37,10 @@ contract MockSwapRouter is ISwapRouter02 {
         address tokenIn = address(bytes20(path[:20]));
         address tokenOut = address(bytes20(path[path.length - 20:]));
         uint256 pulled = params.amountIn * consumeBps / 10_000;
-        MockERC20(tokenIn).transferFrom(msg.sender, address(this), pulled);
+        // low-level: tolerate no-return tokens like the real SwapRouter02 (TransferHelper)
+        (bool ok, bytes memory ret) =
+            tokenIn.call(abi.encodeCall(MockERC20.transferFrom, (msg.sender, address(this), pulled)));
+        require(ok && (ret.length == 0 || abi.decode(ret, (bool))), "STF");
         amountOut = quote(tokenIn, tokenOut, pulled);
         require(amountOut >= params.amountOutMinimum, "Too little received");
         MockERC20(tokenOut).mint(params.recipient, amountOut);
