@@ -42,6 +42,28 @@ export function createTelegramNotifier(opts: { token: string; db: Db }): Notifie
   return createNotifierWithApi(new Api(opts.token), opts.db);
 }
 
+/**
+ * Wraps a merchant notifier so `text(operatorChatId, …)` goes straight to the operator's Telegram chat
+ * (Notifier.text otherwise expects a merchant id and would fail to resolve a raw chat id).
+ */
+export function withOperatorChat(
+  notifier: Notifier,
+  opts: { token: string; operatorChatId?: string; api?: Api },
+): Notifier {
+  const op = opts.operatorChatId;
+  if (!op) return notifier;
+  const api = opts.api ?? new Api(opts.token);
+  return Object.assign(Object.create(notifier) as Notifier, notifier, {
+    async text(id: string, message: string) {
+      if (id === op) {
+        await api.sendMessage(op, message, { link_preview_options: { is_disabled: true } });
+        return;
+      }
+      await notifier.text(id, message);
+    },
+  });
+}
+
 /** Daily close (21:00 merchant local time by default): totals + CSV. Idempotent per merchant/day. */
 export async function runDailyClose(opts: { db: Db; notifier: Notifier; now: Date }): Promise<void> {
   await runDailyCloseImpl(opts);

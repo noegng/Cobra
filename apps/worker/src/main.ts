@@ -8,7 +8,7 @@ import { createPublicClient, http, type PublicClient } from "viem";
 import { celo } from "viem/chains";
 import { createDb } from "@cobra/db";
 import { startIndexer, expireInvoices } from "@cobra/indexer";
-import { createTelegramNotifier, runDailyClose, runReminders } from "@cobra/bot";
+import { createTelegramNotifier, runDailyClose, runReminders, withOperatorChat } from "@cobra/bot";
 import { createRelayerSigner, startRelayer, type Stoppable } from "@cobra/relayer";
 import { createReferenceRateSource } from "@cobra/solver";
 import { createLogger, loadWorkerConfig, type WorkerConfig } from "./config";
@@ -28,7 +28,11 @@ delete process.env.RELAYER_PRIVATE_KEY;
 
 const db = createDb(cfg.databaseUrl);
 const publicClient = createPublicClient({ chain: celo, transport: http(cfg.rpcUrl) }) as PublicClient;
-const notifier = createTelegramNotifier({ token: cfg.telegramBotToken, db });
+// Operator alerts (relayer low balance, indexer unmatched payments) use text(operatorChatId, …).
+const notifier = withOperatorChat(createTelegramNotifier({ token: cfg.telegramBotToken, db }), {
+  token: cfg.telegramBotToken,
+  ...(cfg.operatorChatId && { operatorChatId: cfg.operatorChatId }),
+});
 
 // Forward `level: "alert"` logs (indexer_alert_merchant_paid_unmatched, indexer_notify_dead, …) to the operator.
 const alertSentAt = new Map<string, number>();

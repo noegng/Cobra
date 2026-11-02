@@ -1,5 +1,5 @@
 /**
- * Telegram webhook, isolated in one file because `createBot` (WS4) is still a stub returning `unknown`.
+ * Telegram webhook. The secret is checked here first, then the bot handler from @cobra/bot (WS4) runs.
  * Secret check: header X-Telegram-Bot-Api-Secret-Token must equal TELEGRAM_WEBHOOK_SECRET (constant time),
  * BEFORE the bot is constructed. grammY also re-checks it (`secretToken` option).
  * Set the webhook with: setWebhook(url=<base>/api/telegram, secret_token=<TELEGRAM_WEBHOOK_SECRET>).
@@ -36,19 +36,20 @@ export function createTelegramWebhook(opts: { secret: string | undefined; getCal
 
 let cached: WebhookHandler | null = null;
 
-/** Production callback: grammY `webhookCallback(createBot({...}), "std/http")`. */
+/** Production callback: `createWebhookHandler` from @cobra/bot (grammY std/http webhook). */
 export async function productionCallback(): Promise<WebhookHandler> {
   if (cached) return cached;
-  const [{ webhookCallback }, { createBot }, { getDb }] = await Promise.all([
-    import("grammy"),
-    import("@cobra/bot"),
-    import("./deps"),
-  ]);
+  const [{ createWebhookHandler }, { getDb }] = await Promise.all([import("@cobra/bot"), import("./deps")]);
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const publicBaseUrl = process.env.PUBLIC_BASE_URL;
   if (!token || !anthropicApiKey || !publicBaseUrl) throw new Error("telegram env incomplete");
-  const bot = createBot({ token, db: getDb(), anthropicApiKey, publicBaseUrl }) as Parameters<typeof webhookCallback>[0];
-  cached = webhookCallback(bot, "std/http", { secretToken: process.env.TELEGRAM_WEBHOOK_SECRET }) as WebhookHandler;
+  cached = createWebhookHandler({
+    token,
+    db: getDb(),
+    anthropicApiKey,
+    publicBaseUrl,
+    ...(process.env.TELEGRAM_WEBHOOK_SECRET && { secretToken: process.env.TELEGRAM_WEBHOOK_SECRET }),
+  });
   return cached;
 }
