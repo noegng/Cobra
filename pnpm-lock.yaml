@@ -260,6 +260,9 @@ importers:
       '@cobra/shared':
         specifier: workspace:*
         version: link:../shared
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@electric-sql/pglite@0.5.14)(postgres@4.0.0)
       viem:
         specifier: 2.57.14
         version: 2.57.14(typescript@5.9.3)
