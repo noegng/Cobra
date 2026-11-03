@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "pnpm -r --parallel --if-present test",
+    "test": "pnpm -r --workspace-concurrency=2 --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "vectors": "pnpm --filter @cobra/shared vectors",
     "contracts:test": "cd contracts && forge test",
