@@ -74,9 +74,9 @@ export const COMMANDS = {
 /** Command menus per language, for `setMyCommands` (run once at deploy: `registerBotCommands(new Api(token))`). */
 export async function registerBotCommands(api: Api): Promise<void> {
   const menus: Record<Language, Array<[string, string]>> = {
-    es: [["cobrar", "Crear un cobro"], ["facturas", "Últimos cobros"], ["cierre", "Cierre del día"], ["retirar", "Pasar a tu banco"], ["idioma", "Idioma"], ["ayuda", "Ayuda"]],
-    pt: [["cobrar", "Criar cobrança"], ["faturas", "Últimas cobranças"], ["fechamento", "Fechamento do dia"], ["sacar", "Levar para o banco"], ["idioma", "Idioma"], ["ajuda", "Ajuda"]],
-    en: [["charge", "Create a payment request"], ["invoices", "Latest requests"], ["close", "Daily close"], ["withdraw", "Cash out"], ["language", "Language"], ["help", "Help"]],
+    es: [["cobrar", "Crear un cobro"], ["facturas", "Últimos cobros"], ["cierre", "Cierre del día"], ["panel", "Tu panel web"], ["retirar", "Pasar a tu banco"], ["idioma", "Idioma"], ["ayuda", "Ayuda"]],
+    pt: [["cobrar", "Criar cobrança"], ["faturas", "Últimas cobranças"], ["fechamento", "Fechamento do dia"], ["painel", "Seu painel web"], ["sacar", "Levar para o banco"], ["idioma", "Idioma"], ["ajuda", "Ajuda"]],
+    en: [["charge", "Create a payment request"], ["invoices", "Latest requests"], ["close", "Daily close"], ["dashboard", "Your web dashboard"], ["withdraw", "Cash out"], ["language", "Language"], ["help", "Help"]],
   };
   for (const lang of LANGUAGES) {
     const commands = menus[lang].map(([command, description]) => ({ command, description }));

@@ -68,6 +68,17 @@ const es = {
   paying: "Pagando…",
   confirm_wallet: "Confirmá en tu billetera",
   preparing: "Preparando…",
+  // --- verify (WS10) ---
+  verify_title: "Verificar tu billetera",
+  verify_intro: "Firmá un mensaje para probar que la dirección de cobro es tuya. Es solo una firma: no envía ninguna transacción ni mueve fondos.",
+  verify_payout: "Dirección de cobro",
+  verify_sign: "Firmar mensaje",
+  verify_signing: "Esperando tu firma…",
+  verify_ok: "¡Listo! Tu billetera quedó verificada.",
+  verify_wrong_wallet: "Esta billetera no es la dirección de cobro del comercio. Conectá la billetera correcta.",
+  verify_failed: "No pudimos verificar la firma. Probá de nuevo.",
+  verify_nonce_expired: "El mensaje venció. Probá de nuevo.",
+  verify_verified: "verificada",
 } as const;
 
 export type Dict = Record<keyof typeof es, string>;
@@ -136,6 +147,17 @@ const pt: Dict = {
   paying: "Pagando…",
   confirm_wallet: "Confirme na sua carteira",
   preparing: "Preparando…",
+  // --- verify (WS10) ---
+  verify_title: "Verificar sua carteira",
+  verify_intro: "Assine uma mensagem para provar que o endereço de recebimento é seu. É só uma assinatura: não envia nenhuma transação nem move fundos.",
+  verify_payout: "Endereço de recebimento",
+  verify_sign: "Assinar mensagem",
+  verify_signing: "Aguardando sua assinatura…",
+  verify_ok: "Pronto! Sua carteira foi verificada.",
+  verify_wrong_wallet: "Esta carteira não é o endereço de recebimento da loja. Conecte a carteira correta.",
+  verify_failed: "Não foi possível verificar a assinatura. Tente de novo.",
+  verify_nonce_expired: "A mensagem expirou. Tente de novo.",
+  verify_verified: "verificada",
 };
 
 const en: Dict = {
@@ -202,6 +224,17 @@ const en: Dict = {
   paying: "Paying…",
   confirm_wallet: "Confirm in your wallet",
   preparing: "Preparing…",
+  // --- verify (WS10) ---
+  verify_title: "Verify your wallet",
+  verify_intro: "Sign a message to prove the payout address is yours. It is only a signature: it sends no transaction and moves no funds.",
+  verify_payout: "Payout address",
+  verify_sign: "Sign message",
+  verify_signing: "Waiting for your signature…",
+  verify_ok: "Done! Your wallet is verified.",
+  verify_wrong_wallet: "This wallet is not the merchant payout address. Connect the right wallet.",
+  verify_failed: "We could not verify the signature. Try again.",
+  verify_nonce_expired: "The message expired. Try again.",
+  verify_verified: "verified",
 };
 
 export const DICTS: Record<Language, Dict> = { es, pt, en };

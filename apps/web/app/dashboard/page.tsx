@@ -4,6 +4,7 @@ import { formatDecimal } from "../../lib/amount";
 import { verifyDashboardToken } from "@cobra/shared/dashboard-token";
 import { DICTS, isLang, localeFor, type Dict } from "../../lib/i18n";
 import { loadDashboard } from "../../lib/server/dashboard";
+import { isVerified } from "../../lib/server/verify-server";
 import { getDb } from "../../lib/server/deps";
 import { requestLanguage } from "../../lib/server/lang";
 import { LangSwitch } from "../../components/lang-switch";
@@ -16,6 +17,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const token = typeof sp.t === "string" ? sp.t : null;
   const claims = verifyDashboardToken(token, process.env.DASHBOARD_SECRET);
   const data = claims ? await loadDashboard(getDb(), claims.merchantId, Date.now()) : null;
+  const verified = data ? await isVerified(getDb(), data.merchant.id, data.merchant.payoutAddress) : false;
   const lang = await requestLanguage(data && isLang(data.merchant.language) ? data.merchant.language : "es");
   const t = DICTS[lang];
   if (!data || !token) {
@@ -38,7 +40,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </div>
       <section className="card">
         <h1 className="merchant">{data.merchant.displayName ?? "—"}</h1>
-        <p className="mono small break muted">{data.merchant.payoutAddress}</p>
+        <p className="mono small break muted">{data.merchant.payoutAddress}{verified ? ` · ✓ ${t.verify_verified}` : ""}</p>
       </section>
       <section className="tiles">
         <div className="card tile">
