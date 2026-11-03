@@ -25,7 +25,7 @@ describe("notifier", () => {
     const txHash = `0x${"cd".repeat(32)}` as Hex;
     await notifier.invoicePaid({ merchantId: m.id, invoiceId: `0x${"11".repeat(32)}`, amountLocal: "30", currency: "BRL", reference: "A-0007", txHash });
     expect(sent(calls, "sendMessage")[0]!.payload.chat_id).toBe(42);
-    expect(texts(calls)[0]).toBe(`Pagamento recebido! A-0007: R$ 30.\nComprovante: https://celoscan.io/tx/${txHash}`);
+    expect(texts(calls)[0]).toBe(`Pagamento recebido! A-0007: R$ 30 BRL → 30 wBRL na sua carteira.\nComprovante: https://celoscan.io/tx/${txHash}`);
     await notifier.text(m.id, "hola");
     await notifier.document(m.id, { filename: "x.csv", content: "a,b\r\n" }, "cap");
     expect(sent(calls, "sendDocument")[0]!.payload.document).toBeInstanceOf(InputFile);

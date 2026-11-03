@@ -1,6 +1,7 @@
 import { Api, InputFile } from "grammy";
 import type { Db } from "@cobra/db";
-import { explorerTx, type Notifier } from "@cobra/shared";
+import { explorerTx, tokenByAddress, type Notifier } from "@cobra/shared";
+import { amountStyleFor, formatAmount } from "./amount";
 import { t } from "./i18n";
 import { getMerchant } from "./merchants";
 import { merchantLang, money } from "./present";
@@ -24,9 +25,16 @@ export function createNotifierWithApi(api: Api, db: Db): BotNotifier {
   return {
     async invoicePaid({ merchantId, amountLocal, currency, reference, txHash }) {
       const { m, chatId } = await chatOf(merchantId);
+      const lang = merchantLang(m);
+      // "$ 100" alone reads as dollars: add the currency code, and what actually landed in the wallet (wFIAT is 1:1).
+      const token = tokenByAddress(m.settlementToken);
+      const received =
+        token && token.currency === currency
+          ? t(lang, "paid_received", { amount: formatAmount(amountLocal, "", amountStyleFor(m.country, m.language)).trim(), token: token.symbol })
+          : "";
       await api.sendMessage(
         chatId,
-        t(merchantLang(m), "paid", { ref: reference ?? "", amount: money(m, amountLocal, currency), url: explorerTx(txHash) }),
+        t(lang, "paid", { ref: reference ?? "", amount: `${money(m, amountLocal, currency)} ${currency}`, received, url: explorerTx(txHash) }),
         { link_preview_options: { is_disabled: true } },
       );
     },
