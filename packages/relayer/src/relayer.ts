@@ -258,6 +258,8 @@ export function createRelayer(cfg: RelayerConfig) {
     } catch {
       return { ok: false, reason: "bad_legs" };
     }
+    // WS7-1: a merchant paying its own invoice is free self-dealing that would burn the shared relay caps.
+    if (payer === getAddress(invRow.merchantAddress)) return { ok: false, reason: "self_payment" };
 
     if (!row.quoteId) return { ok: false, reason: "missing_quote" };
     const [q] = await db.select().from(quotes).where(eq(quotes.id, row.quoteId));

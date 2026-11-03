@@ -146,6 +146,7 @@ export interface SeedOpts {
   quoteExpiresInMs?: number;
   kinds?: ("eip3009" | "permit2")[];
   signerKey?: Hex; // who signs the legs (default payer)
+  merchant?: Address; // invoice merchant payout address (default MERCHANT)
 }
 
 export async function seedSubmission(db: Db, o: SeedOpts) {
@@ -161,12 +162,12 @@ export async function seedSubmission(db: Db, o: SeedOpts) {
     currency: "ARS",
     tokenOut: WARS,
     amountOut: amountOut.toString(),
-    merchantAddress: MERCHANT,
+    merchantAddress: o.merchant ?? MERCHANT,
     expiresAt,
   });
   const inv: OnchainInvoice = {
     id,
-    merchant: MERCHANT,
+    merchant: o.merchant ?? MERCHANT,
     tokenOut: WARS,
     amountOut,
     deadline: BigInt(Math.floor(expiresAt.getTime() / 1000)),

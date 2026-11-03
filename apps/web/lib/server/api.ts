@@ -102,6 +102,8 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   const status = effectiveStatus(row, now);
   if (status === "expired" || row.expiresAt.getTime() - now < MIN_REMAINING_MS) return apiError(410, "invoice_expired");
   if (status !== "open") return apiError(409, "invoice_not_open", { status });
+  // WS7-1: self-payment moves no value but consumes the relayer's shared daily budget — refuse it.
+  if (payer === getAddress(row.merchantAddress)) return apiError(400, "self_payment");
 
   const inv = onchainInvoiceFromRow(row);
   let state: PayerChainState;
@@ -237,6 +239,7 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   const plan = deserializePlan(quote.plan as SerializedPlan);
   if (signatures.length !== plan.legs.length) return apiError(400, "invalid_signatures");
   const payer = getAddress(quote.payer);
+  if (payer === getAddress(row.merchantAddress)) return apiError(400, "self_payment");
   const inv = onchainInvoiceFromRow(row);
   const signing = buildLegSigning({ router: deps.router, chainId: deps.chainId, permit2: deps.permit2, invoice: inv, payer, legs: plan.legs });
   if (signing.some((s) => s.kind === "ALLOWANCE")) return apiError(400, "allowance_requires_self_submit");

@@ -59,9 +59,14 @@ export async function isKillSwitchOn(db: Db, env: Record<string, string | undefi
 
 export interface Caps {
   perPaymentUsd: number;
+  /** Global rolling-24h total relayed (all merchants). */
   perDayUsd: number;
+  /** Rolling-24h total relayed to one merchant payout address (WS7-1). Missing => DEFAULT_CAPS value. */
+  perMerchantDayUsd?: number;
+  /** Rolling-24h total relayed for one payer address (WS7-1). Missing => DEFAULT_CAPS value. */
+  perPayerDayUsd?: number;
 }
-export const DEFAULT_CAPS: Caps = { perPaymentUsd: 200, perDayUsd: 2000 };
+export const DEFAULT_CAPS: Required<Caps> = { perPaymentUsd: 200, perDayUsd: 2000, perMerchantDayUsd: 500, perPayerDayUsd: 500 };
 export async function getCaps(db: Db): Promise<Caps> {
   return getFlag<Caps>(db, FLAG_KEYS.caps, DEFAULT_CAPS);
 }

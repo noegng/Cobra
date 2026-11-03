@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { privateKeyToAccount } from "viem/accounts";
 import { eq } from "drizzle-orm";
 import { fromDataSuffix, toDataSuffix } from "@celo/attribution-tags";
 import { createWalletClient, http, type Address, type Hash } from "viem";
@@ -176,6 +177,18 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     expect(row.status).toBe("failed");
     expect(row.error).toMatch(/cap_per_day/);
     expect(await nonceOf(s.address)).toBe(1);
+  });
+
+  it("WS7-1: self-payment (payer == invoice merchant) → failed without any tx", async () => {
+    const s = signer();
+    const self = privateKeyToAccount(ANVIL_KEYS.payer).address;
+    const seed = await seedSubmission(db, { router, token3009, merchant: self });
+    await tick(relayer(s));
+    const row = await sub(seed.submissionId);
+    expect(row.status).toBe("failed");
+    expect(row.error).toBe("self_payment");
+    expect((await inv(seed.invoiceId)).status).toBe("open");
+    expect(await nonceOf(s.address)).toBe(0);
   });
 
   it("expired quote / expiring invoice / wrong signer / simulation revert → failed without any tx", async () => {

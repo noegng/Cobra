@@ -83,3 +83,27 @@ forge script script/Deploy.s.sol --rpc-url https://forno.celo.org \
 
 A dry run without `--broadcast` succeeded against forno on 2 Nov 2026: about 2.45M gas, max ~0.98 CELO at a 200 gwei
 base fee.
+
+## Off-chain fixes (night security review, 3 Nov 2026)
+
+### WS7-1: the global 24h relayer cap could be used up by self-payments (medium)
+
+Merchant onboarding and static-QR invoices are open, and `CobraRouter.pay` allows `payer == inv.merchant` (the
+merchant balance delta is measured after the pull). One actor could pay their own ~200 USD invoices ten times in a row
+with the same wARS (W -> router -> W, gas paid by the relayer), fill the single global `perDayUsd` budget (2000 USD) and
+make the signer refuse every real merchant with `cap_per_day` for 24h. The router is unchanged; the fix is off-chain:
+
+- **Self-payment refused** in three places: `POST /api/invoices/:id/quote` and `/submit` return `400 self_payment`
+  (`apps/web/lib/server/api.ts`), relayer `validate()` fails the submission with `self_payment`
+  (`packages/relayer/src/relayer.ts`), and the signer refuses `pay()` calldata whose `payer == inv.merchant`
+  (`SignerRefusedError("self_payment")`, `packages/relayer/src/signer.ts`), so no path can reach the key with it.
+- **Per-merchant and per-payer rolling-24h caps** in the signer, next to the global one: relayed USD to one merchant
+  payout address must stay ≤ `caps.perMerchantDayUsd`, and for one payer address ≤ `caps.perPayerDayUsd` (refusals
+  `cap_per_merchant_day` / `cap_per_payer_day`). Both live in the existing `flags.caps` JSON; a stored flag without
+  them falls back to `DEFAULT_CAPS` (500 USD each), never to "unlimited".
+- Regression tests: `packages/relayer/test/signer.test.ts` (WS7-1 cases), `packages/relayer/test/relayer.test.ts`
+  (self-payment on anvil, no tx sent), `apps/web/test/api.test.ts` (quote and signed submit refused, nothing stored).
+
+Residual risk: with 500 USD per merchant and per payer, exhausting the 2000 USD global budget now needs at least four
+distinct merchant onboardings (Telegram accounts) and four distinct payer wallets, plus real circulating funds between
+them. Still sybil-able; a stronger follow-up is a lower cap for newly onboarded / unproven merchants.
