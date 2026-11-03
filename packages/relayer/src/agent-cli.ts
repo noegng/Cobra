@@ -6,7 +6,7 @@
  * checks the card is live at the agentURI, simulates, then sends through the narrow registration sender.
  */
 import { writeFileSync } from "node:fs";
-import { codeFromHostname } from "@celo/attribution-tags";
+import { HACKATHON_ATTRIBUTION_CODE } from "@cobra/shared";
 import { createPublicClient, getAddress, http, isAddress, parseEventLogs, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { celo } from "viem/chains";
@@ -65,7 +65,7 @@ export async function runRegisterCli(argv: readonly string[], env: Record<string
   print("agentURI", agentURI);
   print("IdentityRegistry (Celo 42220)", registry);
   print("calldata register(string)", registerCalldata(agentURI));
-  print("suggested ATTRIBUTION_CODE (codeFromHostname)", codeFromHostname(host));
+  print("ATTRIBUTION_CODE (Loops House submission)", HACKATHON_ATTRIBUTION_CODE);
   if (a.write) {
     writeFileSync(a.write, JSON.stringify(card, null, 2) + "\n");
     print("written", a.write);

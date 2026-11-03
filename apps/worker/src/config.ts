@@ -1,3 +1,4 @@
+import { HACKATHON_ATTRIBUTION_CODE } from "@cobra/shared";
 /**
  * Worker env validation. Errors name the variable but NEVER echo a secret value.
  */
@@ -40,7 +41,7 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
   const publicBaseUrl = req("PUBLIC_BASE_URL");
   const telegramBotToken = req("TELEGRAM_BOT_TOKEN");
   const key = req("RELAYER_PRIVATE_KEY");
-  const attributionCode = req("ATTRIBUTION_CODE");
+  const attributionCode = opt("ATTRIBUTION_CODE") ?? HACKATHON_ATTRIBUTION_CODE;
   const walletAttributionCode = opt("ATTRIBUTION_WALLET_CODE");
 
   if (routerRaw && !isAddress(routerRaw, { strict: false })) errors.push("ROUTER_ADDRESS is not an address");

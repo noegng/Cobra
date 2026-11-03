@@ -13,7 +13,7 @@ import {
   useSwitchChain,
   useWalletClient,
 } from "wagmi";
-import { CELO, explorerAddress, explorerTx, type Language } from "@cobra/shared";
+import { CELO, HACKATHON_ATTRIBUTION_CODE, explorerAddress, explorerTx, type Language } from "@cobra/shared";
 import { allowanceLegs, allowancePlan, approveCalldata, attributionSuffix, feeCurrencyFor, invoiceFromWire } from "../lib/allowance";
 import { formatDecimal, formatUnits } from "../lib/amount";
 import { DICTS, localeFor, tr, type Dict } from "../lib/i18n";
@@ -22,7 +22,7 @@ import { LangSwitch } from "./lang-switch";
 
 type Phase = "idle" | "quoting" | "quoted" | "signing" | "submitting" | "waiting" | "self_paying" | "paid";
 
-const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE;
+const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
 const TERMINAL = new Set(["paid", "expired", "cancelled"]);
 
 function short(addr: string) {

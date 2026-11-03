@@ -46,3 +46,4 @@ export { type RatesSource } from "./rates";
 export { claimNext, createRelayer, payCalldata, type RelayerConfig } from "./relayer";
 export { verifyLegs } from "./verify";
 export { buildRegistrationFile, registerCalldata, type AgentRegistrationFile } from "./agent";
+export { createRouterDeployer, loadRouterArtifact, routerDeployData, assertRouterCreation, CELO_ROUTER_ARGS, ROUTER_ARTIFACT_PATH, type RouterArtifact } from "./deploy";

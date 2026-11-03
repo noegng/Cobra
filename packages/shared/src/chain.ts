@@ -3,6 +3,13 @@ import type { Address } from "viem";
 export const CELO_CHAIN_ID = 42220 as const;
 
 /**
+ * ERC-8021 attribution code of the Cobrá submission (Loops House, "Agents on Open Rails").
+ * EVERY agent transaction must carry it — router deployment, ERC-8004 registration, pay(), approvals.
+ * Untagged transactions are never credited and cannot be fixed afterwards. Not a secret.
+ */
+export const HACKATHON_ATTRIBUTION_CODE = "celo_502e1bea2794" as const;
+
+/**
  * Celo mainnet protocol addresses.
  * `verified: false` means "taken from docs / memory, NOT yet checked on-chain".
  * Source of truth for verification: docs/research/onchain-verification.md
