@@ -16,7 +16,7 @@ export { createNotifierWithApi, isBotNotifier, type BotNotifier } from "./notifi
 export { parseAmount, formatAmount, amountStyleFor, type AmountError, type AmountResult, type AmountStyle } from "./amount";
 export { matchCharge } from "./fastpath";
 export { buildTools, runAgent, systemPrompt, modelFromEnv, DEFAULT_MODEL, ALTERNATIVE_MODEL, TOOL_NAMES } from "./agent";
-export { buildRipioOfframpLink, payUrl, staticPayUrl, waShareUrl, qrPng, type RipioSessionMinter } from "./links";
+export { buildRipioOfframpLink, payUrl, staticPayUrl, waShareUrl, qrPng } from "./links";
 export { createGroqTranscriber, groqTranscriberFromEnv, type Transcribe } from "./transcribe-groq";
 export { REMINDER_LEAD_MS, INVOICE_RATE_LIMIT } from "./invoices";
 

@@ -272,13 +272,13 @@ describe("quote rejections", () => {
     expect((await quote(fx)).res.status).toBe(410);
   });
 
-  it("insufficient balance → 422 with honest direct-transfer fallback, no ramp link without RIPIO_PARTNER", async () => {
+  it("insufficient balance → 422 with honest direct-transfer fallback, public Ripio on-ramp link", async () => {
     const fx = await setup();
     fx.setSolver(() => ({ ok: false, reason: "insufficient_balance", fallback: "ripio" }));
     const { res, body } = await quote(fx);
     expect(res.status).toBe(422);
     expect(body.error).toBe("insufficient_balance");
-    expect(body.rampUrl).toBeNull();
+    expect(body.rampUrl).toBe("https://ramp.ripio.com/");
     expect(body.directTransfer).toEqual({
       address: MERCHANT_PAYOUT,
       token: WARS.address,

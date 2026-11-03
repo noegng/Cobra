@@ -79,7 +79,7 @@ export interface QuoteError {
   /** true = upstream outage (RPC / FX): show "retry", not the ramp / direct-transfer fallbacks. */
   retryable?: boolean;
   fallback?: "direct_wfiat" | "ripio";
-  /** Ripio on-ramp link, only when a partner account is configured. */
+  /** Public Ripio on-ramp link (no partner account needed), offered on insufficient balance. */
   rampUrl?: string | null;
   directTransfer?: DirectTransferFallback;
 }

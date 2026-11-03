@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { explorerTx } from "@cobra/shared";
 import { formatDecimal } from "../../lib/amount";
-import { verifyDashboardToken } from "../../lib/dashboard-token";
+import { verifyDashboardToken } from "@cobra/shared/dashboard-token";
 import { DICTS, isLang, localeFor, type Dict } from "../../lib/i18n";
 import { loadDashboard } from "../../lib/server/dashboard";
 import { getDb } from "../../lib/server/deps";

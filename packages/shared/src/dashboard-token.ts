@@ -1,7 +1,8 @@
 /**
  * Short-lived, HMAC-signed merchant dashboard links: `${PUBLIC_BASE_URL}/dashboard?t=<token>`.
  *
- * THE BOT (WS4) CALLS:
+ * Import from "@cobra/shared/dashboard-token" (node:crypto, server-side only: kept out of the main barrel so client bundles stay clean).
+ * THE BOT CALLS:
  *   signDashboardToken({ merchantId }, process.env.DASHBOARD_SECRET!)          // default TTL 15 min
  *   → `${publicBaseUrl}/dashboard?t=${encodeURIComponent(token)}`
  *
