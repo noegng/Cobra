@@ -10,15 +10,24 @@
  *  - receipt missing / reverted / no matching log  -> payment removed, invoice un-paid, cursor rewound to the
  *    payment block so the loop re-scans (a re-included tx is applied again by the normal path, idempotently).
  *
- * RPC errors never revert anything (only a definitive "no such receipt" does).
+ * False-positive protection (the production RPC is a load-balanced public endpoint; one lagging backend can answer
+ * "receipt not found" for a final tx). A negative verdict only counts if (1) the node's head is at least
+ * `confirmations` past the payment block, (2) it was seen on `requiredMisses` consecutive checks at least
+ * `minSuspectGapMs` apart (counter in `flags`, `reorg_suspect:<txHash>`, cleared by any positive answer), and
+ * (3) on the last check a second read of the block at the payment height no longer lists the tx.
+ * RPC errors never revert anything.
  */
 import { and, eq, gt } from "drizzle-orm";
 import { parseEventLogs, TransactionReceiptNotFoundError, type Address, type Hex, type PublicClient } from "viem";
-import { chainCursor, invoices, merchants, payments, submissions, type Db } from "@cobra/db";
+import { chainCursor, flags, invoices, merchants, payments, submissions, type Db } from "@cobra/db";
 import { cobraRouterAbi, type Language } from "@cobra/shared";
 import { enqueue } from "./outbox";
 import { CURSOR_ID } from "./reconcile";
 import { errorMessage } from "./rpc-errors";
+
+export const SUSPECT_PREFIX = "reorg_suspect:";
+export const DEFAULT_REQUIRED_MISSES = 3;
+export const DEFAULT_MIN_SUSPECT_GAP_MS = 30_000;
 
 type Log = (msg: string, extra?: Record<string, unknown>) => void;
 
@@ -36,11 +45,17 @@ export async function verifyRecentPayments(o: {
   router: Address;
   head: bigint;
   window: number;
+  confirmations?: number;
+  requiredMisses?: number;
+  minSuspectGapMs?: number;
   log: Log;
   now?: Date;
 }): Promise<ReorgCheckResult> {
   const { db, publicClient, router, log } = o;
   const now = o.now ?? new Date();
+  const confirmations = BigInt(o.confirmations ?? 0);
+  const requiredMisses = o.requiredMisses ?? DEFAULT_REQUIRED_MISSES;
+  const minGap = o.minSuspectGapMs ?? DEFAULT_MIN_SUSPECT_GAP_MS;
   const res: ReorgCheckResult = { checked: 0, moved: 0, reverted: 0 };
   const floor = o.head > BigInt(o.window) ? o.head - BigInt(o.window) : 0n;
   const recent = await db.select().from(payments).where(gt(payments.blockNumber, floor));
@@ -63,7 +78,9 @@ export async function verifyRecentPayments(o: {
       }
       verdict = { ok: false, why: "receipt_missing" };
     }
+    const suspectKey = `${SUSPECT_PREFIX}${p.txHash.toLowerCase()}`;
     if (verdict.ok) {
+      await db.delete(flags).where(eq(flags.key, suspectKey)); // any positive answer clears the suspicion
       if (verdict.block !== p.blockNumber) {
         await db.update(payments).set({ blockNumber: verdict.block }).where(eq(payments.id, p.id));
         res.moved++;
@@ -77,7 +94,43 @@ export async function verifyRecentPayments(o: {
       }
       continue;
     }
+    // 1. the node must itself be caught up past the payment block
+    let nodeHead: bigint;
+    try {
+      nodeHead = await publicClient.getBlockNumber({ cacheTime: 0 });
+    } catch (e) {
+      log("indexer_reorg_check_error", { level: "warn", txHash: p.txHash, error: errorMessage(e) });
+      continue;
+    }
+    if (nodeHead < p.blockNumber + confirmations) {
+      log("indexer_reorg_node_behind", { level: "warn", txHash: p.txHash, nodeHead: nodeHead.toString(), block: p.blockNumber.toString() });
+      continue;
+    }
+    // 2. consecutive misses, spaced apart
+    const [prev] = await db.select().from(flags).where(eq(flags.key, suspectKey));
+    const pv = prev?.value as { count?: number; firstSeen?: string; lastSeen?: string } | undefined;
+    let count = 1;
+    if (pv && typeof pv.count === "number" && pv.lastSeen) {
+      if (now.getTime() - new Date(pv.lastSeen).getTime() < minGap) continue; // too soon: not an independent observation
+      count = pv.count + 1;
+    }
+    const value = { count, firstSeen: pv?.firstSeen ?? now.toISOString(), lastSeen: now.toISOString(), why: verdict.why };
+    await db
+      .insert(flags)
+      .values({ key: suspectKey, value })
+      .onConflictDoUpdate({ target: flags.key, set: { value, updatedAt: now } });
+    log("indexer_reorg_suspect", { level: "warn", txHash: p.txHash, count, why: verdict.why });
+    if (count < requiredMisses) continue;
+    // 3. final confirmation: the block at that height must no longer list the tx
+    try {
+      const blk = await publicClient.getBlock({ blockNumber: p.blockNumber, includeTransactions: false });
+      if ((blk.transactions as Hex[]).some((t) => t.toLowerCase() === p.txHash.toLowerCase())) continue;
+    } catch (e) {
+      log("indexer_reorg_check_error", { level: "warn", txHash: p.txHash, error: errorMessage(e) });
+      continue;
+    }
     const rewound = await revertPayment(db, p, verdict.why, now);
+    await db.delete(flags).where(eq(flags.key, suspectKey));
     if (rewound === null) continue; // someone else already handled it
     res.reverted++;
     res.rewoundTo = res.rewoundTo === undefined || rewound < res.rewoundTo ? rewound : res.rewoundTo;

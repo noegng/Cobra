@@ -49,7 +49,7 @@ interface Setup {
   notifier: RecordingNotifier;
   logs: { msg: string; extra?: Record<string, unknown> }[];
   calls: RpcCall[];
-  start(over?: { confirmations?: number; maxBlockRange?: number; maxLogsRange?: number; faults?: { method: string; remaining: number }; reorgCheckIntervalMs?: number }): Stoppable;
+  start(over?: { confirmations?: number; maxBlockRange?: number; maxLogsRange?: number; faults?: { method: string; remaining: number }; reorgCheckIntervalMs?: number; reorgMinSuspectGapMs?: number }): Stoppable;
 }
 
 async function setup(): Promise<Setup> {
@@ -76,6 +76,7 @@ async function setup(): Promise<Setup> {
         maxBlockRange: over.maxBlockRange,
         pollIntervalMs: 20,
         ...(over.reorgCheckIntervalMs !== undefined && { reorgCheckIntervalMs: over.reorgCheckIntervalMs }),
+        ...(over.reorgMinSuspectGapMs !== undefined && { reorgMinSuspectGapMs: over.reorgMinSuspectGapMs }),
         notifier,
         log: (msg, extra) => logs.push({ msg, extra }),
       });
@@ -155,7 +156,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     // the block is reorged away
     await rpc("evm_revert", [snap]);
     await rpc("anvil_mine", ["0x3"]);
-    s.start({ reorgCheckIntervalMs: 0 });
+    s.start({ reorgCheckIntervalMs: 0, reorgMinSuspectGapMs: 0 });
     await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "submitted", 15_000, "invoice un-paid");
     expect(await s.db.select().from(payments).where(eq(payments.invoiceId, inv.id))).toEqual([]);
     expect((await invoiceOf(s.db, inv.id)).paidAt).toBeNull();

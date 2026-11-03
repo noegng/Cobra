@@ -42,6 +42,7 @@ export interface LoopOptions {
   pollIntervalMs: number;
   reorgWindow?: number;
   reorgCheckIntervalMs?: number;
+  reorgMinSuspectGapMs?: number;
   notifier?: Notifier;
   log: (msg: string, extra?: Record<string, unknown>) => void;
 }
@@ -93,7 +94,7 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
         const head = await o.publicClient.getBlockNumber({ cacheTime: 0 });
         if (reorgWindow > 0 && Date.now() - lastReorgCheck >= reorgEveryMs) {
           lastReorgCheck = Date.now();
-          const r = await verifyRecentPayments({ db: o.db, publicClient: o.publicClient, router: o.router, head, window: reorgWindow, log: o.log });
+          const r = await verifyRecentPayments({ db: o.db, publicClient: o.publicClient, router: o.router, head, window: reorgWindow, confirmations: o.confirmations, ...(o.reorgMinSuspectGapMs !== undefined && { minSuspectGapMs: o.reorgMinSuspectGapMs }), log: o.log });
           if (r.reverted > 0) {
             cursor = null; // the cursor was rewound in the DB: re-read it and re-scan
             await drain();
