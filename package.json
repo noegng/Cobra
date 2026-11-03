@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "vectors": "pnpm --filter @cobra/shared vectors",
     "contracts:test": "cd contracts && forge test",
+    "deploy:router": "cd contracts && forge build && cd .. && tsx scripts/agent/deploy-router.ts",
+    "agent:register": "tsx scripts/agent/register.ts",
     "dev:web": "pnpm --filter @cobra/web dev",
     "dev:worker": "pnpm --filter @cobra/worker dev"
   },
