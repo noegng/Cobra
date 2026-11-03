@@ -2,7 +2,7 @@
  * Small persistent state on top of the `flags` table, so the bot works on stateless serverless webhooks
  * (Vercel): onboarding progress, pending payout-address confirmations, reference counters, daily-close markers.
  */
-import { eq, sql } from "drizzle-orm";
+import { and, eq, like, lt, sql } from "drizzle-orm";
 import { flags, getFlag, setFlag, type Db } from "@cobra/db";
 import type { CountryCode, Language } from "@cobra/shared";
 
@@ -54,4 +54,24 @@ export async function nextCounter(db: Db, key: string): Promise<number> {
     })
     .returning({ value: flags.value });
   return Number(row!.value);
+}
+
+/**
+ * Telegram delivers webhook updates AT LEAST once: a slow or failed response makes it resend the same update, and
+ * the bot then answered every command twice. Claims `update_id` once (insert-or-nothing); false = already handled.
+ * Old markers are pruned now and then (they only need to outlive Telegram's retry window).
+ */
+export async function claimUpdate(db: Db, updateId: number, now: Date = new Date()): Promise<boolean> {
+  const rows = await db
+    .insert(flags)
+    .values({ key: `bot:update:${updateId}`, value: { at: now.toISOString() }, updatedAt: now })
+    .onConflictDoNothing()
+    .returning({ key: flags.key });
+  if (updateId % 50 === 0) {
+    await db
+      .delete(flags)
+      .where(and(like(flags.key, "bot:update:%"), lt(flags.updatedAt, new Date(now.getTime() - 2 * 24 * 3600_000))))
+      .catch(() => {});
+  }
+  return rows.length > 0;
 }

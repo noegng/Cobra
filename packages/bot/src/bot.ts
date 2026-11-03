@@ -24,7 +24,7 @@ import {
   type MerchantRow,
 } from "./merchants";
 import { invoiceCaption, invoiceLine, merchantLang, merchantName, money, shareLink } from "./present";
-import { deleteState, readState, stateKeys, writeState, type OnboardingState, type PendingPayout } from "./state";
+import { claimUpdate, deleteState, readState, stateKeys, writeState, type OnboardingState, type PendingPayout } from "./state";
 import { localDate } from "./time";
 
 export interface BotOptions {
@@ -105,6 +105,15 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
 
   bot.catch((err) => {
     log("bot_error", { update_id: err.ctx.update.update_id, error: err.error instanceof Error ? err.error.message : String(err.error) });
+  });
+
+  // At-least-once delivery: handle each Telegram update_id once (a resent update would answer twice).
+  bot.use(async (ctx, next) => {
+    if (!(await claimUpdate(db, ctx.update.update_id))) {
+      log("bot_duplicate_update", { update_id: ctx.update.update_id });
+      return;
+    }
+    await next();
   });
 
   // Private chats only; resolve merchant strictly from the Telegram user id.

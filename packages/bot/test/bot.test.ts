@@ -27,6 +27,16 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     db = await createTestDb();
   });
 
+  it("a resent Telegram update (same update_id) is handled once, never answered twice", async () => {
+    const { bot, calls } = makeBot(db, { model: forbiddenModel(), now: () => NOW });
+    const u = textUpdate(8, "/start");
+    await bot.handleUpdate(u);
+    const n = texts(calls).length;
+    expect(n).toBeGreaterThan(0);
+    await bot.handleUpdate(structuredClone(u)); // Telegram retry after a slow / failed webhook response
+    expect(texts(calls)).toHaveLength(n);
+  });
+
   it("onboarding in ~4 messages: /start (pt from language_code) -> country -> address checks -> static QR", async () => {
     const { bot, calls } = makeBot(db, { model: forbiddenModel(), now: () => NOW });
     await bot.handleUpdate(textUpdate(7, "/start", { language_code: "pt-BR" }));
