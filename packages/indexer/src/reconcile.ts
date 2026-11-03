@@ -159,8 +159,9 @@ async function reconcileLog(tx: Db, l: PaidLog, now: Date): Promise<{ outcome: L
     tokenOut: getAddress(l.tokenOut),
     amountOut: l.amountOut.toString(),
     legs: submissionPaid ? sub.legs : null,
-    costBps: plan?.costBps ?? null,
-    savingsBps: plan?.savingsBps ?? null,
+    // The plan's bps are fractional (e.g. 8.67); the payments columns are integers (frozen schema): round.
+    costBps: plan?.costBps == null ? null : Math.round(plan.costBps),
+    savingsBps: plan?.savingsBps == null ? null : Math.round(plan.savingsBps),
     blockNumber: l.blockNumber,
     paidAt,
   });

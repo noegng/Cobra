@@ -117,7 +117,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const inv = await seedInvoice(s.db, m.id, { status: "submitted" });
     const plan: SerializedPlan = {
       legs: [{ token: WBRL, amountIn: "100", kind: 1, path: "0x", quotedOut: "100" }],
-      tokenOut: WARS, minOut: AMOUNT.toString(), costBps: 42, naiveCostBps: 120, savingsBps: 78, quotedAt: 1, expiresAt: 2,
+      tokenOut: WARS, minOut: AMOUNT.toString(), costBps: 42.4, naiveCostBps: 120.2, savingsBps: 77.8, quotedAt: 1, expiresAt: 2, // real plans are fractional
     };
     const [q] = await s.db.insert(quotes).values({ invoiceId: inv.id, payer: PAYER, plan, expiresAt: new Date(Date.now() + 60_000) }).returning();
     const legs = [serializeLeg({ token: WBRL, amountIn: 100n, kind: 1, pullData: "0x1234", path: "0x" })];
@@ -128,7 +128,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     await waitCursorPast(s.db, ev.block);
 
     const [p] = await s.db.select().from(payments).where(eq(payments.invoiceId, inv.id));
-    expect(p).toMatchObject({ legs, costBps: 42, savingsBps: 78, txHash: ev.txHash });
+    expect(p).toMatchObject({ legs, costBps: 42, savingsBps: 78, txHash: ev.txHash }); // rounded into the integer columns
     expect((await invoiceOf(s.db, inv.id)).status).toBe("paid");
     const [sub2] = await s.db.select().from(submissions).where(eq(submissions.id, sub!.id));
     expect(sub2).toMatchObject({ status: "confirmed", txHash: ev.txHash });
