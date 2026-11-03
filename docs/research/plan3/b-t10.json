@@ -1,0 +1,1088 @@
+{
+ "bridge": "0x465e642387d3d73a57CDc1368fFA53A800bA5D47",
+ "chains": {
+  "celo": {
+   "chainId": 42220,
+   "hasCode": true,
+   "block": "81825064",
+   "paused": false,
+   "feeCollector": "0x2b839174fe62466067c22e2a4c8054071F9D8D68",
+   "nextDepositId": "41",
+   "limitedMinter": "0x46167cB034feC6ceC46CaeD4f61281f5Aa0Eb0e6",
+   "tokens": {
+    "wARS": {
+     "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1500000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "30000000000000000000000000",
+     "dailyMaxMint": "30000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wBRL": {
+     "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "8000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "29000000000000000000000",
+     "dailyMaxMint": "29000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wMXN": {
+     "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "27000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "100000000000000000000000",
+     "dailyMaxMint": "100000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCOP": {
+     "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5700000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "21000000000000000000000000",
+     "dailyMaxMint": "21000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCLP": {
+     "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1300000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "4750000000000000000000000",
+     "dailyMaxMint": "4750000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wPEN": {
+     "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+     "routes": {
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "18500000000000000000000",
+     "dailyMaxMint": "18500000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    }
+   }
+  },
+  "ethereum": {
+   "chainId": 1,
+   "hasCode": true,
+   "block": "26335681",
+   "paused": false,
+   "feeCollector": "0x2b839174fe62466067c22e2a4c8054071F9D8D68",
+   "nextDepositId": "148",
+   "limitedMinter": "0x46167cB034feC6ceC46CaeD4f61281f5Aa0Eb0e6",
+   "tokens": {
+    "wARS": {
+     "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "30000000000000000000000000",
+     "dailyMaxMint": "30000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wBRL": {
+     "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "29000000000000000000000",
+     "dailyMaxMint": "29000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wMXN": {
+     "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "100000000000000000000000",
+     "dailyMaxMint": "100000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCOP": {
+     "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "21000000000000000000000000",
+     "dailyMaxMint": "21000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCLP": {
+     "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "4750000000000000000000000",
+     "dailyMaxMint": "4750000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wPEN": {
+     "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "18500000000000000000000",
+     "dailyMaxMint": "18500000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    }
+   }
+  },
+  "base": {
+   "chainId": 8453,
+   "hasCode": true,
+   "block": "53468243",
+   "paused": false,
+   "feeCollector": "0x2b839174fe62466067c22e2a4c8054071F9D8D68",
+   "nextDepositId": "222",
+   "limitedMinter": "0x46167cB034feC6ceC46CaeD4f61281f5Aa0Eb0e6",
+   "tokens": {
+    "wARS": {
+     "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1500000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "30000000000000000000000000",
+     "dailyMaxMint": "30000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wBRL": {
+     "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "8000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "2909897014196772969842",
+     "dailyMaxMint": "29000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "26090102985803227030158"
+    },
+    "wMXN": {
+     "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "27000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "100000000000000000000000",
+     "dailyMaxMint": "100000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCOP": {
+     "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5700000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "21000000000000000000000000",
+     "dailyMaxMint": "21000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCLP": {
+     "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1300000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "4750000000000000000000000",
+     "dailyMaxMint": "4750000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wPEN": {
+     "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "18500000000000000000000",
+     "dailyMaxMint": "18500000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    }
+   }
+  },
+  "polygon": {
+   "chainId": 137,
+   "hasCode": true,
+   "block": "96680259",
+   "paused": false,
+   "feeCollector": "0x2b839174fe62466067c22e2a4c8054071F9D8D68",
+   "nextDepositId": "66",
+   "limitedMinter": "0x46167cB034feC6ceC46CaeD4f61281f5Aa0Eb0e6",
+   "tokens": {
+    "wARS": {
+     "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1500000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "30000000000000000000000000",
+     "dailyMaxMint": "30000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wBRL": {
+     "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "8000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "29000000000000000000000",
+     "dailyMaxMint": "29000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wMXN": {
+     "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "27000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "100000000000000000000000",
+     "dailyMaxMint": "100000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCOP": {
+     "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5700000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "21000000000000000000000000",
+     "dailyMaxMint": "21000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCLP": {
+     "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1300000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "4750000000000000000000000",
+     "dailyMaxMint": "4750000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wPEN": {
+     "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "bsc": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "18500000000000000000000",
+     "dailyMaxMint": "18500000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    }
+   }
+  },
+  "bsc": {
+   "chainId": 56,
+   "hasCode": true,
+   "block": "131470551",
+   "paused": false,
+   "feeCollector": "0x2b839174fe62466067c22e2a4c8054071F9D8D68",
+   "nextDepositId": "43",
+   "limitedMinter": "0x46167cB034feC6ceC46CaeD4f61281f5Aa0Eb0e6",
+   "tokens": {
+    "wARS": {
+     "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1500000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "15000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "30000000000000000000000000",
+     "dailyMaxMint": "30000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wBRL": {
+     "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "8000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "80000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "29000000000000000000000",
+     "dailyMaxMint": "29000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wMXN": {
+     "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "27000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "270000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "100000000000000000000000",
+     "dailyMaxMint": "100000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCOP": {
+     "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5700000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "57000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "21000000000000000000000000",
+     "dailyMaxMint": "21000000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wCLP": {
+     "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "1300000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "13000000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "4750000000000000000000000",
+     "dailyMaxMint": "4750000000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    },
+    "wPEN": {
+     "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+     "routes": {
+      "celo": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "ethereum": {
+       "enabled": true,
+       "fixedFee": "5000000000000000000"
+      },
+      "base": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "polygon": {
+       "enabled": true,
+       "fixedFee": "50000000000000000"
+      },
+      "arbitrum": {
+       "enabled": false,
+       "fixedFee": "0"
+      },
+      "optimism": {
+       "enabled": false,
+       "fixedFee": "0"
+      }
+     },
+     "tokenHasCode": true,
+     "remainingMintCapacity": "18500000000000000000000",
+     "dailyMaxMint": "18500000000000000000000",
+     "mintConfigured": true,
+     "mintedToday": "0"
+    }
+   }
+  },
+  "arbitrum": {
+   "chainId": 42161,
+   "hasCode": false
+  },
+  "optimism": {
+   "chainId": 10,
+   "hasCode": false
+  }
+ }
+}

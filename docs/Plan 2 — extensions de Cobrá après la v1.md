@@ -193,3 +193,18 @@ Ces points viennent de la page d'inscription, de Ripio et du groupe Telegram : i
 - [Ramps by Ripio, llms.txt](https://ramp.ripio.com/llms.txt)
 - [Ripio, documentation de l'API Ramp](https://docs.ripio.com/ramps-api/overview/introduction)
 - [Ripio Bridge, développeurs](https://bridge.ripio.com/bridge/developers)
+
+## 9. Mise à jour après le plan 3 (passe 1, 3 nov. 2026)
+
+Mesures : `docs/research/plan3/fees-report.md` et `coverage-matrix.json`. Une seule passe : à confirmer à une autre heure avant de figer.
+
+| Extension | Avant | Après le plan 3 | Raison mesurée |
+| --- | --- | --- | --- |
+| E9 Bridge des wFIAT | bonus | **priorité haute** | Contrat `0x465e…5D47` vérifié et non pausé ; routes ouvertes pour les 6 wFIAT vers Base, Polygon, BSC, Ethereum ; frais fixes ≈ 0,01 $ hors Ethereum ; plafonds journaliers larges pour wARS (30 M) |
+| E4 Textile RFQ | essai | en attente | Clé d'API non obtenue (T5) |
+| E5 Autres pays | priorité moyenne | **gelé** | Aucun pool wMXN, wCOP, wCLP, wPEN ; Mento n'offre que COPm et BRLm, qui ne sont pas des wFIAT |
+| E2 Page de preuves | fait | ajouter la couverture | Afficher le tableau de couverture et les frais mesurés |
+| Nouveau : règlement en USD₮ au choix du commerçant | — | priorité haute, petit | USDC/USD₮ est la seule autre route profonde ; répond au retour terrain (section 9 du plan 3) |
+| Nouveau : routeur compatible Uniswap V4 | — | après le hackathon | Les pools V4 wARS/USDC (≈ 143 k$) et wBRL/USDC (≈ 559 k$) sont plus profonds, mais CobraRouter est immuable et V3 seulement |
+
+Message de démo : l'Argentine en tête (USD₮/USDC → wARS, 0,08 à 0,36 %), le Brésil avec son avertissement de prix (≈ 3,3 %), les autres pays « bientôt ».

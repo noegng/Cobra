@@ -1,0 +1,1210 @@
+{
+  "chainId": 42220,
+  "passes": [
+    {
+      "pass": 1,
+      "startedAt": "2026-11-03T17:05:19.338Z",
+      "block": "81824760",
+      "tokenCheck": [
+        {
+          "name": "USDC",
+          "address": "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+          "symbol": "USDC",
+          "decimals": 6
+        },
+        {
+          "name": "USDT",
+          "address": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+          "symbol": "USD₮",
+          "decimals": 6
+        },
+        {
+          "name": "USAT",
+          "address": "0xD2ab3C9A02DBBAB236BfEC45D1d755DF4267F771",
+          "symbol": "USAT",
+          "decimals": 6
+        },
+        {
+          "name": "wARS",
+          "address": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+          "symbol": "wARS",
+          "decimals": 18
+        },
+        {
+          "name": "wBRL",
+          "address": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+          "symbol": "wBRL",
+          "decimals": 18
+        },
+        {
+          "name": "wMXN",
+          "address": "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+          "symbol": "wMXN",
+          "decimals": 18
+        },
+        {
+          "name": "wCOP",
+          "address": "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+          "symbol": "wCOP",
+          "decimals": 18
+        },
+        {
+          "name": "wCLP",
+          "address": "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+          "symbol": "wCLP",
+          "decimals": 18
+        },
+        {
+          "name": "wPEN",
+          "address": "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
+          "symbol": "wPEN",
+          "decimals": 18
+        }
+      ],
+      "fx": {
+        "wMXN": {
+          "perUsd": 18.614044,
+          "source": "open.er-api.com (mid-market)"
+        },
+        "wCOP": {
+          "perUsd": 3197.305165,
+          "source": "open.er-api.com (mid-market)"
+        },
+        "wCLP": {
+          "perUsd": 993.985301,
+          "source": "open.er-api.com (mid-market)"
+        },
+        "wPEN": {
+          "perUsd": 3.46461,
+          "source": "open.er-api.com (mid-market)"
+        },
+        "wARS": {
+          "perUsd": 1657.24,
+          "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+          "note": "ARS crypto rate, not official"
+        },
+        "wBRL": {
+          "perUsd": 5.4982,
+          "source": "economia.awesomeapi.com.br USD-BRL mid"
+        }
+      },
+      "t1": [
+        {
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "token0": "0x0DC4F92879B7670e5f4e4e6e3c801D229129D90D",
+          "token1": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+          "liquidity": "68837904671668158740",
+          "sqrtPriceX96": "1946732130380262281458",
+          "tick": -350452,
+          "balanceWfiat": "128938091152948204426548170",
+          "balanceStable": "28485082603",
+          "stableBalanceUsd": 28485.082603,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "refWfiatPerUsd": 1657.24,
+          "spotVsRefPct": -0.054932269983820614
+        },
+        {
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "token0": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+          "token1": "0xD76f5Faf6888e24D9F04Bf92a0c8B921FE4390e0",
+          "liquidity": "912959230885651704",
+          "sqrtPriceX96": "182735310683581576086050229060917444",
+          "tick": 293038,
+          "balanceWfiat": "147084384055436707040433",
+          "balanceStable": "23221237",
+          "stableBalanceUsd": 23.221237,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "refWfiatPerUsd": 5.4982,
+          "spotVsRefPct": -3.2468193391468336
+        }
+      ],
+      "t1CrossCheck": [
+        {
+          "wfiat": "wARS",
+          "dex": "uniswap_v3_celo",
+          "pool": "0x5d8ef8b839be522b9e3d60a51edb5837cd0b2391",
+          "name": "wars / USD₮ 0.01%",
+          "reserveInUsd": "106046.2401",
+          "volume24hUsd": "115588.68287228",
+          "fee": null,
+          "inFactoryScan": true
+        },
+        {
+          "wfiat": "wARS",
+          "dex": "uniswap-v4-celo",
+          "pool": "0x59f80a50a2181e7adad4476c0caa338bb6eb53a5e35db98e64b41f090a54239c",
+          "name": "wars / USDC 0.3%",
+          "reserveInUsd": "142679.773",
+          "volume24hUsd": "994.3146835",
+          "fee": null,
+          "inFactoryScan": false
+        },
+        {
+          "wfiat": "wBRL",
+          "dex": "uniswap-v4-celo",
+          "pool": "0x984606c207b6a4d56e20bd27bc963ff370b3aaa3af7070c62a189ac0d2aa5265",
+          "name": "USDC / wbrl 0.3%",
+          "reserveInUsd": "559178.65",
+          "volume24hUsd": "1376.5714470291",
+          "fee": null,
+          "inFactoryScan": false
+        },
+        {
+          "wfiat": "wBRL",
+          "dex": "uniswap_v3_celo",
+          "pool": "0x01c3cf91cdf7b34181c7ec8566c0236951fea40f",
+          "name": "wbrl / USD₮ 0.01%",
+          "reserveInUsd": "23.7253",
+          "volume24hUsd": "0.0",
+          "fee": null,
+          "inFactoryScan": true
+        },
+        {
+          "wfiat": "wMXN",
+          "note": "no pools returned"
+        },
+        {
+          "wfiat": "wCOP",
+          "note": "no pools returned"
+        },
+        {
+          "wfiat": "wCLP",
+          "note": "no pools returned"
+        },
+        {
+          "wfiat": "wPEN",
+          "note": "no pools returned"
+        }
+      ],
+      "t2": [
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "5000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:10.581Z",
+          "reverted": false,
+          "amountIn": "5000000",
+          "amountOut": "8280795561202591462515",
+          "gasEstimate": "94453",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.1591122405184,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.0102955477120803,
+          "priceImpactPct": 0.0002955477120802994,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "8281648202000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:10.763Z",
+          "reverted": false,
+          "amountIn": "8281648202000000000000",
+          "amountOut": "4999485",
+          "gasEstimate": "92609",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.5002599267725,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.010301058055461887,
+          "priceImpactPct": 0.0003010580554618867,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "8281648202000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:10.950Z",
+          "reverted": false,
+          "amountIn": "5000516",
+          "amountOut": "8281648202000000000000",
+          "gasEstimate": "95039",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.1587248195985,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.010318938039122205,
+          "priceImpactPct": 0.000318938039122205,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "50000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.135Z",
+          "reverted": false,
+          "amountIn": "50000000",
+          "amountOut": "82805752817174919582882",
+          "gasEstimate": "104096",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.1150563434985,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.012955398501679483,
+          "priceImpactPct": 0.0029553985016794824,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "82816482022000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.309Z",
+          "reverted": false,
+          "amountIn": "82816482022000000000000",
+          "amountOut": "49993522",
+          "gasEstimate": "92609",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.5442623146255,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.01295767825824079,
+          "priceImpactPct": 0.00295767825824079,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "82816482022000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.479Z",
+          "reverted": false,
+          "amountIn": "50006480",
+          "amountOut": "82816482022000000000000",
+          "gasEstimate": "104682",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.1150079349713,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.012958321140144058,
+          "priceImpactPct": 0.0029583211401440577,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "500000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.647Z",
+          "reverted": false,
+          "amountIn": "500000000",
+          "amountOut": "827837313126305698022370",
+          "gasEstimate": "104126",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1655.6746262526115,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.039546125379430475,
+          "priceImpactPct": 0.029546125379430473,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "828164820224000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.811Z",
+          "reverted": false,
+          "amountIn": "828164820224000000000000",
+          "amountOut": "499802269",
+          "gasEstimate": "101280",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1656.9849150164623,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.039561845150859476,
+          "priceImpactPct": 0.029561845150859474,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "828164820224000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:11.992Z",
+          "reverted": false,
+          "amountIn": "500197868",
+          "amountOut": "828164820224000000000000",
+          "gasEstimate": "104712",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1655.6744304715828,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.03955794555241532,
+          "priceImpactPct": 0.029557945552415317,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "5000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:12.168Z",
+          "reverted": false,
+          "amountIn": "5000000000",
+          "amountOut": "8256415876656692349870884",
+          "gasEstimate": "104108",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1651.2831753313385,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.3046775831539117,
+          "priceImpactPct": 0.2946775831539117,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "8281648202245000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:12.326Z",
+          "reverted": false,
+          "amountIn": "8281648202245000000000000",
+          "amountOut": "4984766120",
+          "gasEstimate": "110034",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1661.391528283979,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.30560872132232575,
+          "priceImpactPct": 0.29560872132232574,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+          "wfiat": "wARS",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 1656.3296404489201,
+          "referenceRate": {
+            "wfiatPerUsd": 1657.24,
+            "source": "dolarapi.com /v1/dolares/cripto (crypto/USDT rate)",
+            "note": "ARS crypto rate, not official"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+                "amount": "8281648202245000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:12.492Z",
+          "reverted": false,
+          "amountIn": "5015325740",
+          "amountOut": "8281648202245000000000000",
+          "gasEstimate": "104694",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 1651.2682588479288,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.3055781577162131,
+          "priceImpactPct": 0.2955781577162131,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "5000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:12.675Z",
+          "reverted": false,
+          "amountIn": "5000000",
+          "amountOut": "26595421142223426994",
+          "gasEstimate": "96667",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.3190842284446855,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.011262900583475233,
+          "priceImpactPct": 0.0012629005834752325,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "26598417000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:12.911Z",
+          "reverted": false,
+          "amountIn": "26598417000000000000",
+          "amountOut": "73",
+          "gasEstimate": "17222015",
+          "ticksCrossed": 1,
+          "effectiveWfiatPerUsd": 364361.8767123288,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 6849215.095409177,
+          "priceImpactPct": 6849215.0854091775,
+          "exceedsPoolBalance": false,
+          "unusable": true
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 5,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "26598417000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:13.071Z",
+          "reverted": false,
+          "amountIn": "5000565",
+          "amountOut": "26598417000000000000",
+          "gasEstimate": "95865",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.319082343695163,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.011298330314690741,
+          "priceImpactPct": 0.0012983303146907408,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "50000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:13.234Z",
+          "reverted": false,
+          "amountIn": "50000000",
+          "amountOut": "265923983199593340489",
+          "gasEstimate": "104316",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.318479663991867,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.02262757042820196,
+          "priceImpactPct": 0.01262757042820196,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "265984169000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:13.488Z",
+          "reverted": false,
+          "amountIn": "265984169000000000000",
+          "amountOut": "73",
+          "gasEstimate": "17222015",
+          "ticksCrossed": 1,
+          "effectiveWfiatPerUsd": 3643618.7534246575,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 68493050.69658339,
+          "priceImpactPct": 68493050.68658338,
+          "exceedsPoolBalance": false,
+          "unusable": true
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 50,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "265984169000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:13.666Z",
+          "reverted": false,
+          "amountIn": "50011319",
+          "amountOut": "265984169000000000000",
+          "gasEstimate": "103514",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.318479382637359,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.022632859361537694,
+          "priceImpactPct": 0.012632859361537694,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "500000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:13.825Z",
+          "reverted": false,
+          "amountIn": "500000000",
+          "amountOut": "2656220784738318832092",
+          "gasEstimate": "105340",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.312441569476638,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.13613234289185927,
+          "priceImpactPct": 0.12613234289185926,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "2659841690000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:14.068Z",
+          "reverted": false,
+          "amountIn": "2659841690000000000000",
+          "amountOut": "73",
+          "gasEstimate": "17222015",
+          "ticksCrossed": 1,
+          "effectiveWfiatPerUsd": 36436187.53424657,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 684931406.9658338,
+          "priceImpactPct": 684931406.9558338,
+          "exceedsPoolBalance": false,
+          "unusable": true
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 500,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "2659841690000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:14.231Z",
+          "reverted": false,
+          "amountIn": "500682453",
+          "amountOut": "2659841690000000000000",
+          "gasEstimate": "104538",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.312432409130183,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 0.1363045401036378,
+          "priceImpactPct": 0.12630454010363779,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_in",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "5000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824810",
+          "timestamp": "2026-11-03T17:06:14.404Z",
+          "reverted": false,
+          "amountIn": "5000000000",
+          "amountOut": "26264031083692468076795",
+          "gasEstimate": "113058",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.2528062167384935,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 1.2571643383766928,
+          "priceImpactPct": 1.2471643383766928,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "sell_exact_in",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactInputSingle",
+            "args": [
+              {
+                "tokenIn": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "tokenOut": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "amount": "26598416895000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824814",
+          "timestamp": "2026-11-03T17:06:14.649Z",
+          "reverted": false,
+          "amountIn": "26598416895000000000000",
+          "amountOut": "73",
+          "gasEstimate": "17222015",
+          "ticksCrossed": 1,
+          "effectiveWfiatPerUsd": 364361875.27397263,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 6849314968.370798,
+          "priceImpactPct": 6849314968.360798,
+          "exceedsPoolBalance": false,
+          "unusable": true
+        },
+        {
+          "pass": 1,
+          "source": "uniswap-v3",
+          "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+          "wfiat": "wBRL",
+          "stable": "USDT",
+          "fee": 100,
+          "feePct": 0.01,
+          "direction": "buy_exact_out",
+          "sizeUsd": 5000,
+          "spotWfiatPerUsd": 5.319683379095029,
+          "referenceRate": {
+            "wfiatPerUsd": 5.4982,
+            "source": "economia.awesomeapi.com.br USD-BRL mid"
+          },
+          "call": {
+            "to": "0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8",
+            "function": "quoteExactOutputSingle",
+            "args": [
+              {
+                "tokenIn": "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
+                "tokenOut": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+                "amount": "26598416895000000000000",
+                "fee": 100,
+                "sqrtPriceLimitX96": "0"
+              }
+            ]
+          },
+          "blockNumber": "81824814",
+          "timestamp": "2026-11-03T17:06:14.815Z",
+          "reverted": false,
+          "amountIn": "5064472912",
+          "amountOut": "26598416895000000000000",
+          "gasEstimate": "111968",
+          "ticksCrossed": 0,
+          "effectiveWfiatPerUsd": 5.251961528311557,
+          "feePctOfQuote": 0.01,
+          "totalCostPct": 1.2730428854018094,
+          "priceImpactPct": 1.2630428854018094,
+          "exceedsPoolBalance": false,
+          "unusable": false
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-11-03T17:06:14.939Z"
+}

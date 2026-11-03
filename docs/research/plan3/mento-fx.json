@@ -1,0 +1,923 @@
+{
+  "generatedAt": "2026-11-03T17:06:48.306Z",
+  "chainId": 42220,
+  "block": {
+    "number": 81824824,
+    "timestamp": "2026-11-03T17:06:22.000Z"
+  },
+  "t4": {
+    "source": {
+      "broker": "0x777A8255cA72412f0d706dc03C9D1987306B4CaD",
+      "biPoolManager": "0x22d9db95E6Ae61c104A7B6F6C78D7993B94ec901",
+      "docs": "https://docs.mento.org",
+      "github": "https://github.com/mento-protocol/mento-core"
+    },
+    "verified": {
+      "providers": [
+        "0x22d9db95E6Ae61c104A7B6F6C78D7993B94ec901"
+      ],
+      "bipoolBrokerMatches": true,
+      "sortedOracles": "0xefB84935239dAcdecF7c5bA76d8dE40b077B7b33",
+      "exchangeCount": 10
+    },
+    "exchanges": [
+      {
+        "exchangeId": "0x3562f9d29eba092b857480a82b03375839c752346b9ebe93a57ab82410328187",
+        "pair": "USDm/GHSm",
+        "localToken": "0xfAeA5F3404bbA20D3cc2f8C4B0A888F55a3c7313",
+        "localSymbol": "GHSm",
+        "spreadPct": 1,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "116435011449054675785546269",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0xfAeA5F3404bbA20D3cc2f8C4B0A888F55a3c7313",
+        "lastBucketUpdate": 1793319925,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x44D99a013a0DAdbB4C06F9Cc9397BFd3AC12b017",
+          "medianRate": "85779470000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.08577947000000001
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "57706115460960530532",
+            "localPerUsd": 11.541223092192107,
+            "roundTripUsdmBack": "4900499999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "577061154609605305325",
+            "localPerUsd": 11.541223092192105,
+            "roundTripUsdmBack": "49004999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "5770611546096053053253",
+            "localPerUsd": 11.541223092192105,
+            "roundTripUsdmBack": "490049999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "57706115460960530532538",
+            "localPerUsd": 11.541223092192105,
+            "roundTripUsdmBack": "4900499999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x3562f9d29eba092b857480a85d5edf4ebd9f33d331bb423287c1d0bca883a9ad",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "25832",
+            "flags": 4
+          },
+          "GHSm": {
+            "limitId": "0x3562f9d29eba092b857480a8d1e9686c3d7cf039575c465715d230d14a0ef294",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "303650",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0xc9664df358594c5eaf2f410ab371e2deb8b532ca26162d2bc36d99b8d174567b",
+        "pair": "USDm/XOFm",
+        "localToken": "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08",
+        "localSymbol": "XOFm",
+        "spreadPct": 2,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "5854700000000001414963896000",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08",
+        "lastBucketUpdate": 1791172991,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x43620310c2FEADbFEcFd71b5A93E6e28946d64a5",
+          "medianRate": "1705989729941826000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.0017059897299418262
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "2872232999999999579447",
+            "localPerUsd": 574.4466,
+            "roundTripUsdmBack": "4801999999999999999",
+            "roundTripLossPct": 3.959999999999997
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "28722329999999995794476",
+            "localPerUsd": 574.4465999999999,
+            "roundTripUsdmBack": "48019999999999999999",
+            "roundTripLossPct": 3.959999999999997
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "287223299999999957944764",
+            "localPerUsd": 574.4465999999999,
+            "roundTripUsdmBack": "480199999999999999999",
+            "roundTripLossPct": 3.959999999999997
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "2872232999999999579447644",
+            "localPerUsd": 574.4465999999999,
+            "roundTripUsdmBack": "4801999999999999999999",
+            "roundTripLossPct": 3.960000000000008
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0xc9664df358594c5eaf2f410ac52c0ac83ced532d7c33d18ae1d6f12069c57e51",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "10089",
+            "flags": 4
+          },
+          "XOFm": {
+            "limitId": "0xc9664df358594c5eaf2f410ac088df12f17eb8e9b8361f4dfdf9ec658f86cc73",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "5903258",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x4206e101b13bf29e40b2bfed4cf167271c41677720f2ee786ac1bf5efac101cb",
+        "pair": "USDm/ZARm",
+        "localToken": "0x4c35853A3B4e647fD266f4de678dCc8fEC410BF6",
+        "localSymbol": "ZARm",
+        "spreadPct": 0.3,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "167024014545787378763531241",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x4c35853A3B4e647fD266f4de678dCc8fEC410BF6",
+        "lastBucketUpdate": 1793369537,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x17ef04Af0c52465694a841552fc2415169b1114c",
+          "medianRate": "60148920000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.06014892
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "82877631053059639308",
+            "localPerUsd": 16.57552621061193,
+            "roundTripUsdmBack": "4970044999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "828776310530596393085",
+            "localPerUsd": 16.57552621061193,
+            "roundTripUsdmBack": "49700449999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "8287763105305963930856",
+            "localPerUsd": 16.575526210611926,
+            "roundTripUsdmBack": "497004499999999999999",
+            "roundTripLossPct": 0.599100000000008
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "82877631053059639308569",
+            "localPerUsd": 16.575526210611926,
+            "roundTripUsdmBack": "4970044999999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x4206e101b13bf29e40b2bfed3aac8f31981906907ad712d9487ad7c6427029e1",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "10000",
+            "flags": 4
+          },
+          "ZARm": {
+            "limitId": "0x4206e101b13bf29e40b2bfed00c4e21d270f0308f2941aa60d4c73d116800a3d",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "165362",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0xd580d237231109e6a96d67d82450611c610a805a26660c90281bdc0cd04a95c7",
+        "pair": "USDm/AUDm",
+        "localToken": "0x7175504C455076F15c04A2F90a8e352281F492F9",
+        "localSymbol": "AUDm",
+        "spreadPct": 0.15,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "14251104460595696166452900",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x7175504C455076F15c04A2F90a8e352281F492F9",
+        "lastBucketUpdate": 1793052677,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x646bD504C3864Ea5b8A6B6D25743721f61864A07",
+          "medianRate": "696830000000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.69683
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "7164588206592712713",
+            "localPerUsd": 1.4329176413185425,
+            "roundTripUsdmBack": "4985011249999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "71645882065927127132",
+            "localPerUsd": 1.4329176413185425,
+            "roundTripUsdmBack": "49850112499999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "716458820659271271328",
+            "localPerUsd": 1.4329176413185425,
+            "roundTripUsdmBack": "498501124999999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "7164588206592712713287",
+            "localPerUsd": 1.4329176413185425,
+            "roundTripUsdmBack": "4985011249999999999999",
+            "roundTripLossPct": 0.299774999999991
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0xd580d237231109e6a96d67d8520d890ae552e1bd7c43f0310aa0b49468fbbded",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "10000",
+            "flags": 4
+          },
+          "AUDm": {
+            "limitId": "0xd580d237231109e6a96d67d855253150245af6ab7a62ae692295e92e51be073e",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "14339",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x517ccc3bcab9f35e2e24143a0c1809068efc649f740846cfb6a1c5703735c1ee",
+        "pair": "USDm/CADm",
+        "localToken": "0xff4Ab19391af240c311c54200a492233052B6325",
+        "localSymbol": "CADm",
+        "spreadPct": 0.15,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "14052000016244112018778193",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0xff4Ab19391af240c311c54200a492233052B6325",
+        "lastBucketUpdate": 1793128884,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x20869cF54Ead821C45DFb2aB0C23d2e10Fbb65A4",
+          "medianRate": "714382660000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.71438266
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "6988551485838136104",
+            "localPerUsd": 1.3977102971676272,
+            "roundTripUsdmBack": "4985011249999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "69885514858381361048",
+            "localPerUsd": 1.3977102971676272,
+            "roundTripUsdmBack": "49850112499999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "698855148583813610481",
+            "localPerUsd": 1.3977102971676272,
+            "roundTripUsdmBack": "498501124999999999999",
+            "roundTripLossPct": 0.2997750000000021
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "6988551485838136104815",
+            "localPerUsd": 1.3977102971676272,
+            "roundTripUsdmBack": "4985011249999999999999",
+            "roundTripLossPct": 0.299774999999991
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x517ccc3bcab9f35e2e24143a7a45e1100aa405782e2dba6e941aade88f84e9c4",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "10000",
+            "flags": 4
+          },
+          "CADm": {
+            "limitId": "0x517ccc3bcab9f35e2e24143af352b8951f534093451412efbce8e743321ea2cb",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "14275",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x7952984d7278ca3417febf52815c321984ac3147ced2c02bb6a02b0bcab08413",
+        "pair": "USDm/PHPm",
+        "localToken": "0x105d4A9306D2E55a71d2Eb95B81553AE1dC20d7B",
+        "localSymbol": "PHPm",
+        "spreadPct": 0.3,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "632040137076864929230465851",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x105d4A9306D2E55a71d2Eb95B81553AE1dC20d7B",
+        "lastBucketUpdate": 1793636887,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0xab921d6ab1057601A9ae19879b111fC381a2a8E9",
+          "medianRate": "15735260000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.01573526
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "316804425220809824559",
+            "localPerUsd": 63.36088504416197,
+            "roundTripUsdmBack": "4970044999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "3168044252208098245596",
+            "localPerUsd": 63.36088504416197,
+            "roundTripUsdmBack": "49700449999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "31680442522080982455961",
+            "localPerUsd": 63.36088504416197,
+            "roundTripUsdmBack": "497004499999999999999",
+            "roundTripLossPct": 0.599100000000008
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "316804425220809824559619",
+            "localPerUsd": 63.36088504416196,
+            "roundTripUsdmBack": "4970044999999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x7952984d7278ca3417febf52f701da0f00f450a094f73c8a941b43937201ac39",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "28324",
+            "flags": 4
+          },
+          "PHPm": {
+            "limitId": "0x7952984d7278ca3417febf529101788a827ed41dbf002bbe0eb578a5d7728968",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "1778622",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0xd11d52b973ddbb983cc2087aabcafd915fc3140cf9996aacc61db9710d1bde05",
+        "pair": "USDm/BRLm",
+        "localToken": "0xe8537a3d056DA446677B9E9d6c5dB704EaAb4787",
+        "localSymbol": "BRLm",
+        "spreadPct": 0.3,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "55066500784339703921742572",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0xe8537a3d056DA446677B9E9d6c5dB704EaAb4787",
+        "lastBucketUpdate": 1793707329,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x9dB83bE97C82912cB342407dd7b880983052B9c1",
+          "medianRate": "181884320000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.18188432
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "27407530236801061245",
+            "localPerUsd": 5.481506047360212,
+            "roundTripUsdmBack": "4970044999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "274075302368010612459",
+            "localPerUsd": 5.481506047360212,
+            "roundTripUsdmBack": "49700449999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "2740753023680106124596",
+            "localPerUsd": 5.481506047360212,
+            "roundTripUsdmBack": "497004499999999999999",
+            "roundTripLossPct": 0.599100000000008
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "27407530236801061245961",
+            "localPerUsd": 5.481506047360212,
+            "roundTripUsdmBack": "4970044999999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0xd11d52b973ddbb983cc2087add971587db9b75eba3bc960de4a6d1e9b5aaf62f",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "224479",
+            "flags": 4
+          },
+          "BRLm": {
+            "limitId": "0xd11d52b973ddbb983cc2087a439987ac5aaeb04a9ee2f431aa400e75e7b09982",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "1119363",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x67a5122dab72931be57196e0abba81690461f327bc60fb98ca7eef0ac58906cc",
+        "pair": "USDm/NGNm",
+        "localToken": "0xE2702Bd97ee33c88c8f6f92DA3B733608aa76F71",
+        "localSymbol": "NGNm",
+        "spreadPct": 1,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "13510227242022210813585884514",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0xE2702Bd97ee33c88c8f6f92DA3B733608aa76F71",
+        "lastBucketUpdate": 1793002385,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0xC13D42556f1baeab4a8600C735afcd5344048d3C",
+          "medianRate": "743710000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.0007437100000000001
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "6655820144948972045555",
+            "localPerUsd": 1331.1640289897946,
+            "roundTripUsdmBack": "4900499999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "66558201449489720455553",
+            "localPerUsd": 1331.1640289897944,
+            "roundTripUsdmBack": "49004999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "665582014494897204555539",
+            "localPerUsd": 1331.1640289897944,
+            "roundTripUsdmBack": "490049999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "6655820144948972045555391",
+            "localPerUsd": 1331.1640289897946,
+            "roundTripUsdmBack": "4900499999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x67a5122dab72931be57196e0dde7697f803992c0e6450739e8c587927d382ee6",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "56144",
+            "flags": 4
+          },
+          "NGNm": {
+            "limitId": "0x67a5122dab72931be57196e049caaab07a82cfaf749602b569c9dc6a4f2e69bd",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "74663705",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x89de88b8eb790de26f4649f543cb6893d93635c728ac857f0926e842fb0d298b",
+        "pair": "USDm/KESm",
+        "localToken": "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0",
+        "localSymbol": "KESm",
+        "spreadPct": 1,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "1299799999999999969428704000",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0",
+        "lastBucketUpdate": 1793345427,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0xbAcEE37d31b9f022Ef5d232B9fD53F05a531c169",
+          "medianRate": "7696748123917644000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.007696748123917644
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "643128750000000066435",
+            "localPerUsd": 128.62575,
+            "roundTripUsdmBack": "4900499999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "6431287500000000664351",
+            "localPerUsd": 128.62575,
+            "roundTripUsdmBack": "49004999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "64312875000000006643519",
+            "localPerUsd": 128.62575,
+            "roundTripUsdmBack": "490049999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "643128750000000066435199",
+            "localPerUsd": 128.62575,
+            "roundTripUsdmBack": "4900499999999999999999",
+            "roundTripLossPct": 1.9900000000000029
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x89de88b8eb790de26f4649f5359680855d6e5420728979de2b9d80da43bc01a1",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "74602",
+            "flags": 4
+          },
+          "KESm": {
+            "limitId": "0x89de88b8eb790de26f4649f506a15597f53b88fa9d91d1f6e0ab13417e5e995b",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "9676998",
+            "flags": 4
+          }
+        }
+      },
+      {
+        "exchangeId": "0x1c9378bd0973ff313a599d3effc654ba759f8ccca655ab6d6ce5bd39a212943b",
+        "pair": "USDm/COPm",
+        "localToken": "0x8A567e2aE79CA692Bd748aB832081C45de4041eA",
+        "localSymbol": "COPm",
+        "spreadPct": 0.3,
+        "pricingModule": "0xDebED1F6f6ce9F6e73AA25F95acBFFE2397550Fb",
+        "bucket0": "10000000000000000000000000",
+        "bucket1": "32541490400260331923202082655",
+        "asset0": "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+        "asset1": "0x8A567e2aE79CA692Bd748aB832081C45de4041eA",
+        "lastBucketUpdate": 1793723838,
+        "referenceRateResetFrequency": 360,
+        "oracle": {
+          "feed": "0x0196D1F4FdA21fA442e53EaF18Bf31282F6139F1",
+          "medianRate": "307520000000000000000",
+          "denominator": "1000000000000000000000000",
+          "asNumber": 0.00030752
+        },
+        "quotes": [
+          {
+            "usd": 5,
+            "usdmIn": "5000000000000000000",
+            "localOut": "16210327783558792924037",
+            "localPerUsd": 3242.0655567117583,
+            "roundTripUsdmBack": "4970044999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 50,
+            "usdmIn": "50000000000000000000",
+            "localOut": "162103277835587929240374",
+            "localPerUsd": 3242.0655567117587,
+            "roundTripUsdmBack": "49700449999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          },
+          {
+            "usd": 500,
+            "usdmIn": "500000000000000000000",
+            "localOut": "1621032778355879292403746",
+            "localPerUsd": 3242.0655567117583,
+            "roundTripUsdmBack": "497004499999999999999",
+            "roundTripLossPct": 0.599100000000008
+          },
+          {
+            "usd": 5000,
+            "usdmIn": "5000000000000000000000",
+            "localOut": "16210327783558792924037460",
+            "localPerUsd": 3242.0655567117587,
+            "roundTripUsdmBack": "4970044999999999999999",
+            "roundTripLossPct": 0.5990999999999969
+          }
+        ],
+        "tradingLimits": {
+          "USDm": {
+            "limitId": "0x1c9378bd0973ff313a599d3e899bbcacf1c7ed2bfc7057cc4e5ed5a11aa3bc11",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "28457",
+            "flags": 4
+          },
+          "COPm": {
+            "limitId": "0x1c9378bd0973ff313a599d3e75902a9092032a5e1b2121d55eeda17c7c52d5d1",
+            "timestep0": 0,
+            "limit0": "0",
+            "timestep1": "0",
+            "limit1": "0",
+            "limitGlobal": "91177148",
+            "flags": 4
+          }
+        }
+      }
+    ],
+    "readAt": {
+      "block": {
+        "number": 81824824,
+        "timestamp": "2026-11-03T17:06:22.000Z"
+      }
+    }
+  },
+  "t7Refs": {
+    "ARS": {
+      "official": {
+        "value": 1545,
+        "source": "https://dolarapi.com/v1/dolares/oficial",
+        "at": "2026-11-03T17:06:36.980Z"
+      },
+      "MEP": {
+        "value": 1569.9,
+        "source": "https://dolarapi.com/v1/dolares/bolsa",
+        "at": "2026-11-03T17:06:37.099Z"
+      },
+      "cripto": {
+        "value": 1657.24,
+        "source": "https://dolarapi.com/v1/dolares/cripto",
+        "at": "2026-11-03T17:06:37.199Z"
+      },
+      "blue": {
+        "value": 1555,
+        "source": "https://dolarapi.com/v1/dolares/blue",
+        "at": "2026-11-03T17:06:37.263Z"
+      },
+      "criptoya_usdt_median": {
+        "value": 1653.975,
+        "source": "https://criptoya.com/api/usdt/ars/1",
+        "at": "2026-11-03T17:06:37.334Z"
+      },
+      "open.er-api": {
+        "value": 1544.6507,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      }
+    },
+    "BRL": {
+      "open.er-api": {
+        "value": 5.43751,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      },
+      "awesomeapi": {
+        "value": 5.4978,
+        "source": "https://economia.awesomeapi.com.br/json/last/USD-BRL,USD-MXN,USD-COP,USD-CLP,USD-PEN",
+        "at": "2026-11-03T17:06:37.391Z"
+      },
+      "mento_oracle": {
+        "value": 5.498000047502721,
+        "source": "SortedOracles 0xefB84935239dAcdecF7c5bA76d8dE40b077B7b33 medianRate(0x9dB83bE97C82912cB342407dd7b880983052B9c1)",
+        "at": "2026-11-03T17:06:22.000Z"
+      }
+    },
+    "MXN": {
+      "open.er-api": {
+        "value": 18.614044,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      },
+      "awesomeapi": {
+        "value": 18.78931,
+        "source": "https://economia.awesomeapi.com.br/json/last/USD-BRL,USD-MXN,USD-COP,USD-CLP,USD-PEN",
+        "at": "2026-11-03T17:06:37.391Z"
+      }
+    },
+    "COP": {
+      "open.er-api": {
+        "value": 3197.305165,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      },
+      "awesomeapi": {
+        "value": 3253.41,
+        "source": "https://economia.awesomeapi.com.br/json/last/USD-BRL,USD-MXN,USD-COP,USD-CLP,USD-PEN",
+        "at": "2026-11-03T17:06:37.391Z"
+      },
+      "mento_oracle": {
+        "value": 3251.821019771072,
+        "source": "SortedOracles 0xefB84935239dAcdecF7c5bA76d8dE40b077B7b33 medianRate(0x0196D1F4FdA21fA442e53EaF18Bf31282F6139F1)",
+        "at": "2026-11-03T17:06:22.000Z"
+      }
+    },
+    "CLP": {
+      "open.er-api": {
+        "value": 993.985301,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      },
+      "awesomeapi": {
+        "value": 994,
+        "source": "https://economia.awesomeapi.com.br/json/last/USD-BRL,USD-MXN,USD-COP,USD-CLP,USD-PEN",
+        "at": "2026-11-03T17:06:37.391Z"
+      }
+    },
+    "PEN": {
+      "open.er-api": {
+        "value": 3.46461,
+        "source": "https://open.er-api.com/v6/latest/USD",
+        "at": "2026-11-03T17:06:36.926Z"
+      },
+      "awesomeapi": {
+        "value": 3.4664995000000003,
+        "source": "https://economia.awesomeapi.com.br/json/last/USD-BRL,USD-MXN,USD-COP,USD-CLP,USD-PEN",
+        "at": "2026-11-03T17:06:37.391Z"
+      }
+    }
+  },
+  "t7": [
+    {
+      "pair": "wARS/USDT",
+      "fee": 100,
+      "pool": "0x5D8ef8B839be522b9E3d60a51EDB5837CD0b2391",
+      "liquidity": "68837904671668158740",
+      "sqrtPriceX96": "1946732130380262281458",
+      "wfiatPerUsd": 1656.3296404489201,
+      "devVsRefPct": {
+        "official": 7.205801970803893,
+        "MEP": 5.505423303963308,
+        "cripto": -0.054932269983820614,
+        "blue": 6.516375591570434,
+        "criptoya_usdt_median": 0.1423625175060117,
+        "open.er-api": 7.2300449835629665
+      },
+      "flag2": true,
+      "flag5": true,
+      "block": {
+        "number": 81824824,
+        "timestamp": "2026-11-03T17:06:22.000Z"
+      }
+    },
+    {
+      "pair": "wBRL/USDT",
+      "fee": 100,
+      "pool": "0x01c3cf91cdf7B34181C7eC8566c0236951FEA40F",
+      "liquidity": "912959230885651704",
+      "sqrtPriceX96": "182735310683581576086050229060917444",
+      "wfiatPerUsd": 5.319683379095029,
+      "devVsRefPct": {
+        "open.er-api": -2.1669223763261303,
+        "awesomeapi": -3.2397799284253903,
+        "mento_oracle": -3.2433005977998586
+      },
+      "flag2": true,
+      "flag5": false,
+      "block": {
+        "number": 81824824,
+        "timestamp": "2026-11-03T17:06:22.000Z"
+      }
+    }
+  ],
+  "t6": {
+    "status": "not done: no public source found",
+    "note": "See C-T4-T7-T6.md. Two web searches and cruce.xyz probe found no quote API or contracts."
+  }
+}

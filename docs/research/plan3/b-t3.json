@@ -1,0 +1,1559 @@
+{
+ "block": "81824727",
+ "timestamp": 1793725485,
+ "unitsPerUsd": {
+  "USDC": 1,
+  "USDT": 1,
+  "USAT": 1,
+  "wARS": 1656.329640518169,
+  "wBRL": 5.319683379095029
+ },
+ "unreachable": [
+  "wMXN->wARS",
+  "wCOP->wARS",
+  "wCLP->wARS",
+  "wPEN->wARS",
+  "wMXN->wBRL",
+  "wCOP->wBRL",
+  "wCLP->wBRL",
+  "wPEN->wBRL",
+  "USDC->wMXN",
+  "USDT->wMXN",
+  "USAT->wMXN",
+  "wARS->wMXN",
+  "wBRL->wMXN",
+  "wCOP->wMXN",
+  "wCLP->wMXN",
+  "wPEN->wMXN",
+  "USDC->wCOP",
+  "USDT->wCOP",
+  "USAT->wCOP",
+  "wARS->wCOP",
+  "wBRL->wCOP",
+  "wMXN->wCOP",
+  "wCLP->wCOP",
+  "wPEN->wCOP",
+  "USDC->wCLP",
+  "USDT->wCLP",
+  "USAT->wCLP",
+  "wARS->wCLP",
+  "wBRL->wCLP",
+  "wMXN->wCLP",
+  "wCOP->wCLP",
+  "wPEN->wCLP",
+  "USDC->wPEN",
+  "USDT->wPEN",
+  "USAT->wPEN",
+  "wARS->wPEN",
+  "wBRL->wPEN",
+  "wMXN->wPEN",
+  "wCOP->wPEN",
+  "wCLP->wPEN"
+ ],
+ "results": [
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 1657490704179023,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": true,
+    "amount": "4997514",
+    "gasEstimate": "191319",
+    "costPct": 0.02033959041279898,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0003405904128062076
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "8285769489700293265716",
+    "gasEstimate": "190161",
+    "costPct": 0.020320249043637162,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.00032124904364438933
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 1657490704179023,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": true,
+    "amount": "49976496",
+    "gasEstimate": "239432",
+    "costPct": 0.02305231882905323,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0030533188290604585
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "82855429830798306918916",
+    "gasEstimate": "238532",
+    "costPct": 0.02305337593105916,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0030543759310663887
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 1657490704179023,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": true,
+    "amount": "499903360",
+    "gasEstimate": "239488",
+    "costPct": 0.050731287858996055,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.030732287859003282
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "828324870170692614805986",
+    "gasEstimate": "238588",
+    "costPct": 0.050737167666625727,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.030738167666632954
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 1657490704179023,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": true,
+    "amount": "5012922160",
+    "gasEstimate": "286425",
+    "costPct": 0.3276459039447954,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.30764690394480265
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "8260365539013958673015595",
+    "gasEstimate": "286041",
+    "costPct": 0.3268553098109028,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.30685630981091006
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 1656418188053783.5,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 1656418188053783.5,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 1656418188053783.5,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 1656418188053783.5,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(3000)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 1655265305075613,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "3404372741520590741945",
+    "gasEstimate": "204024",
+    "costPct": 58.86613788035535,
+    "feePct": 0.30997000000000385,
+    "impactPct": 58.556167880355346
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(3000)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 1655265305075613,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "5415427200925880594936",
+    "gasEstimate": "218880",
+    "costPct": 93.45672601930299,
+    "feePct": 0.30997000000000385,
+    "impactPct": 93.14675601930298
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(3000)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 1655265305075613,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "5755410692604628304424",
+    "gasEstimate": "241102",
+    "costPct": 99.30459356878241,
+    "feePct": 0.30997000000000385,
+    "impactPct": 98.9946235687824
+   }
+  },
+  {
+   "pair": "USDC->wARS",
+   "path": "USDC-(3000)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 1655265305075613,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "5791768634685646445763",
+    "gasEstimate": "263355",
+    "costPct": 99.9300200563991,
+    "feePct": 0.30997000000000385,
+    "impactPct": 99.6200500563991
+   }
+  },
+  {
+   "pair": "USDT->wARS",
+   "path": "USDT-(100)->wARS",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 5,
+   "spotRate": 1656329640518169,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": true,
+    "amount": "5000516",
+    "gasEstimate": "95040",
+    "costPct": 0.010318930145902794,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.0003189301459038951
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "8280795561202591462515",
+    "gasEstimate": "94454",
+    "costPct": 0.010295551892525179,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.0002955518925262801
+   }
+  },
+  {
+   "pair": "USDT->wARS",
+   "path": "USDT-(100)->wARS",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 50,
+   "spotRate": 1656329640518169,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": true,
+    "amount": "50006480",
+    "gasEstimate": "104683",
+    "costPct": 0.012958320491107678,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.002958320491108779
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "82805752817174919582882",
+    "gasEstimate": "104097",
+    "costPct": 0.012955402682002237,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.0029554026820033386
+   }
+  },
+  {
+   "pair": "USDT->wARS",
+   "path": "USDT-(100)->wARS",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 500,
+   "spotRate": 1656329640518169,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": true,
+    "amount": "500197868",
+    "gasEstimate": "104713",
+    "costPct": 0.03955794550707381,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.029557945507074912
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "827837313126305698022370",
+    "gasEstimate": "104127",
+    "costPct": 0.039546129558643006,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.029546129558644108
+   }
+  },
+  {
+   "pair": "USDT->wARS",
+   "path": "USDT-(100)->wARS",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 5000,
+   "spotRate": 1656329640518169,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": true,
+    "amount": "5015325740",
+    "gasEstimate": "104695",
+    "costPct": 0.3055781577191552,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.2955781577191563
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "8256415876656692349870884",
+    "gasEstimate": "104109",
+    "costPct": 0.3046775873220331,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.2946775873220342
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5,
+   "spotRate": 1656040427240045.2,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": true,
+    "amount": "5001892",
+    "gasEstimate": "191392",
+    "costPct": 0.020368144162752344,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0003691441627595715
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "8278519777728222408573",
+    "gasEstimate": "190234",
+    "costPct": 0.020317843022799043,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.00031884302280626997
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 50,
+   "spotRate": 1656040427240045.2,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": true,
+    "amount": "50020320",
+    "gasEstimate": "201035",
+    "costPct": 0.023166441457489473,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0031674414574967003
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "82782843819700684692466",
+    "gasEstimate": "199877",
+    "costPct": 0.023160717559944644,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.003161717559951871
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 500,
+   "spotRate": 1656040427240045.2,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": true,
+    "amount": "500345544",
+    "gasEstimate": "209726",
+    "costPct": 0.05160899006634301,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.031609990066350235
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "827593061110009241253929",
+    "gasEstimate": "208568",
+    "costPct": 0.051587208015846375,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0315882080158536
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5000,
+   "spotRate": 1656040427240045.2,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": true,
+    "amount": "5017737655",
+    "gasEstimate": "208806",
+    "costPct": 0.33609664314743215,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.3160976431474394
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "8252464885861138416054402",
+    "gasEstimate": "207648",
+    "costPct": 0.3349827683290951,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.31498376832910235
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5,
+   "spotRate": 1661060295185774,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 50,
+   "spotRate": 1661060295185774,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 500,
+   "spotRate": 1661060295185774,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wARS",
+   "path": "USAT-(500)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5000,
+   "spotRate": 1661060295185774,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "wBRL->wARS",
+   "path": "wBRL-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "sizeUsd": 5,
+   "spotRate": 311.35868856915687,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648203000000000000)",
+    "amountOut": "8281648203000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 26598417000000000000)",
+    "amountIn": "26598417000000000000",
+    "ok": true,
+    "amount": "119255734106185623",
+    "gasEstimate": "17311367",
+    "costPct": 99.9985600000058,
+    "feePct": 0.019998999999992773,
+    "impactPct": 99.9785610000058
+   }
+  },
+  {
+   "pair": "wBRL->wARS",
+   "path": "wBRL-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "sizeUsd": 50,
+   "spotRate": 311.35868856915687,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 82816482026000000000000)",
+    "amountOut": "82816482026000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 265984169000000000000)",
+    "amountIn": "265984169000000000000",
+    "ok": true,
+    "amount": "119255734106185623",
+    "gasEstimate": "17311367",
+    "costPct": 99.99985600000004,
+    "feePct": 0.019998999999992773,
+    "impactPct": 99.97985700000004
+   }
+  },
+  {
+   "pair": "wBRL->wARS",
+   "path": "wBRL-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "sizeUsd": 500,
+   "spotRate": 311.35868856915687,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 828164820259000000000000)",
+    "amountOut": "828164820259000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 2659841690000000000000)",
+    "amountIn": "2659841690000000000000",
+    "ok": true,
+    "amount": "119255734106185623",
+    "gasEstimate": "17311367",
+    "costPct": 99.9999856,
+    "feePct": 0.019998999999992773,
+    "impactPct": 99.9799866
+   }
+  },
+  {
+   "pair": "wBRL->wARS",
+   "path": "wBRL-(100)->USDT-(100)->wARS",
+   "hops": 2,
+   "encodedPath": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "encodedPathReversed": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "sizeUsd": 5000,
+   "spotRate": 311.35868856915687,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 8281648202591000000000000)",
+    "amountOut": "8281648202591000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 26598416895000000000000)",
+    "amountIn": "26598416895000000000000",
+    "ok": true,
+    "amount": "119255734106185623",
+    "gasEstimate": "17311367",
+    "costPct": 99.99999856000001,
+    "feePct": 0.019998999999992773,
+    "impactPct": 99.97999956000001
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 5323412401934.217,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": true,
+    "amount": "4997563",
+    "gasEstimate": "192145",
+    "costPct": 0.021319480921799805,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0013204809218070324
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "26611395747754884235",
+    "gasEstimate": "192375",
+    "costPct": 0.02128808173547103,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.001289081735478259
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 5323412401934.217,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": true,
+    "amount": "49981333",
+    "gasEstimate": "238264",
+    "costPct": 0.03272768405921944,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.01272868405922667
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "266083501472549674948",
+    "gasEstimate": "238752",
+    "costPct": 0.03273036826135778,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.012731368261365006
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 5323412401934.217,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": true,
+    "amount": "500387665",
+    "gasEstimate": "239314",
+    "costPct": 0.1474681290411728,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.12746912904118002
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "2657783660746383933715",
+    "gasEstimate": "239802",
+    "costPct": 0.14736939108076497,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.1273703910807722
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 5323412401934.217,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": true,
+    "amount": "5062051797",
+    "gasEstimate": "293699",
+    "costPct": 1.295013837143677,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.2750148371436842
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "26276475044149762644912",
+    "gasEstimate": "294991",
+    "costPct": 1.2795813655074872,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.2595823655074945
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 5319967769859.974,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 5319967769859.974,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 5319967769859.974,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c0001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 5319967769859.974,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(3000)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5,
+   "spotRate": 5316265021163.707,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "10933882130674851933",
+    "gasEstimate": "205936",
+    "costPct": 58.86630148366279,
+    "feePct": 0.30997000000000385,
+    "impactPct": 58.55633148366278
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(3000)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 50,
+   "spotRate": 5316265021163.707,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "17392779251192500014",
+    "gasEstimate": "220792",
+    "costPct": 93.45676741774423,
+    "feePct": 0.30997000000000385,
+    "impactPct": 93.14679741774422
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(3000)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 500,
+   "spotRate": 5316265021163.707,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "18484700135546242850",
+    "gasEstimate": "243316",
+    "costPct": 99.30459824474664,
+    "feePct": 0.30997000000000385,
+    "impactPct": 98.99462824474664
+   }
+  },
+  {
+   "pair": "USDC->wBRL",
+   "path": "USDC-(3000)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xceba9300f2b948710d2653dd7b07f33a8b32118c000bb848065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000bb8ceba9300f2b948710d2653dd7b07f33a8b32118c",
+   "sizeUsd": 5000,
+   "spotRate": 5316265021163.707,
+   "feeFrac": 0.0030997000000000385,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "18601470448772033300",
+    "gasEstimate": "265569",
+    "costPct": 99.93002052992196,
+    "feePct": 0.30997000000000385,
+    "impactPct": 99.62005052992195
+   }
+  },
+  {
+   "pair": "USDT->wBRL",
+   "path": "USDT-(100)->wBRL",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 5,
+   "spotRate": 5319683379095.028,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": true,
+    "amount": "5000565",
+    "gasEstimate": "95866",
+    "costPct": 0.011298330314701843,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.0012983303147029446
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "26595421142223426994",
+    "gasEstimate": "96668",
+    "costPct": 0.01126290058346413,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.0012629005834652318
+   }
+  },
+  {
+   "pair": "USDT->wBRL",
+   "path": "USDT-(100)->wBRL",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 50,
+   "spotRate": 5319683379095.028,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": true,
+    "amount": "50011319",
+    "gasEstimate": "103515",
+    "costPct": 0.022632859361537694,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.012632859361538795
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "265923983199593340489",
+    "gasEstimate": "104317",
+    "costPct": 0.02262757042820196,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.012627570428203061
+   }
+  },
+  {
+   "pair": "USDT->wBRL",
+   "path": "USDT-(100)->wBRL",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 500,
+   "spotRate": 5319683379095.028,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": true,
+    "amount": "500682453",
+    "gasEstimate": "104539",
+    "costPct": 0.1363045401036267,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.1263045401036278
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "2656220784738318832092",
+    "gasEstimate": "105341",
+    "costPct": 0.13613234289185927,
+    "feePct": 0.009999999999998899,
+    "impactPct": 0.12613234289186037
+   }
+  },
+  {
+   "pair": "USDT->wBRL",
+   "path": "USDT-(100)->wBRL",
+   "hops": 1,
+   "encodedPath": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+   "sizeUsd": 5000,
+   "spotRate": 5319683379095.028,
+   "feeFrac": 0.00009999999999998899,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": true,
+    "amount": "5064472912",
+    "gasEstimate": "111969",
+    "costPct": 1.2730428854018094,
+    "feePct": 0.009999999999998899,
+    "impactPct": 1.2630428854018105
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "26264031083692468076795",
+    "gasEstimate": "113059",
+    "costPct": 1.2571643383766928,
+    "feePct": 0.009999999999998899,
+    "impactPct": 1.247164338376694
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5,
+   "spotRate": 5318754504171.214,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": true,
+    "amount": "5001941",
+    "gasEstimate": "192218",
+    "costPct": 0.021347176393382572,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0013481763933897994
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": true,
+    "amount": "26588112081869471732",
+    "gasEstimate": "192448",
+    "costPct": 0.02128482892811423,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0012858289281214574
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 50,
+   "spotRate": 5318754504171.214,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": true,
+    "amount": "50025159",
+    "gasEstimate": "199867",
+    "costPct": 0.03283731631433806,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.012838316314345288
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": true,
+    "amount": "265850419920410886394",
+    "gasEstimate": "200097",
+    "costPct": 0.03282922273676325,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.01283022273677048
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 500,
+   "spotRate": 5318754504171.214,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": true,
+    "amount": "500830283",
+    "gasEstimate": "209552",
+    "costPct": 0.14834610090376232,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.12834710090376955
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": true,
+    "amount": "2655437828268609664447",
+    "gasEstimate": "209782",
+    "costPct": 0.14813332008114521,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.12813432008115244
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f77100006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5000,
+   "spotRate": 5318754504171.214,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": true,
+    "amount": "5066918700",
+    "gasEstimate": "216080",
+    "costPct": 1.3034646265357996,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.2834656265358069
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": true,
+    "amount": "26251582829188262536469",
+    "gasEstimate": "216588",
+    "costPct": 1.286728655738656,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.2667296557386631
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5,
+   "spotRate": 5334876963990.137,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000)",
+    "amountIn": "5000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 50,
+   "spotRate": 5334876963990.137,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 50000000)",
+    "amountIn": "50000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 500,
+   "spotRate": 5334876963990.137,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 500000000)",
+    "amountIn": "500000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "USAT->wBRL",
+   "path": "USAT-(500)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0xd2ab3c9a02dbbab236bfec45d1d755df4267f7710001f448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0001f4d2ab3c9a02dbbab236bfec45d1d755df4267f771",
+   "sizeUsd": 5000,
+   "spotRate": 5334876963990.137,
+   "feeFrac": 0.0005999499999999047,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactOutput\" reverted with the following reason:"
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 5000000000)",
+    "amountIn": "5000000000",
+    "ok": false,
+    "error": "The contract function \"quoteExactInput\" reverted with the following reason:"
+   }
+  },
+  {
+   "pair": "wARS->wBRL",
+   "path": "wARS-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "sizeUsd": 5,
+   "spotRate": 0.003211729868838675,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598417000000000000)",
+    "amountOut": "26598417000000000000",
+    "ok": true,
+    "amount": "8283436858972935156538",
+    "gasEstimate": "188278",
+    "costPct": 0.02159277444639951,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0015937744464067372
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 8281648203000000000000)",
+    "amountIn": "8281648203000000000000",
+    "ok": true,
+    "amount": "26592681574483893986",
+    "gasEstimate": "189278",
+    "costPct": 0.02156264535442265,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.0015636453544298767
+   }
+  },
+  {
+   "pair": "wARS->wBRL",
+   "path": "wARS-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "sizeUsd": 50,
+   "spotRate": 0.003211729868838675,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 265984169000000000000)",
+    "amountOut": "265984169000000000000",
+    "ok": true,
+    "amount": "82845963914005705292289",
+    "gasEstimate": "195927",
+    "costPct": 0.03558637333174186,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.015587373331749088
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 82816482026000000000000)",
+    "amountIn": "82816482026000000000000",
+    "ok": true,
+    "amount": "265889530993571686973",
+    "gasEstimate": "196927",
+    "costPct": 0.03558029857401168,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.01558129857401891
+   }
+  },
+  {
+   "pair": "wARS->wBRL",
+   "path": "wARS-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "sizeUsd": 500,
+   "spotRate": 0.003211729868838675,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 2659841690000000000000)",
+    "amountOut": "2659841690000000000000",
+    "ok": true,
+    "amount": "829623703061217167613667",
+    "gasEstimate": "205622",
+    "costPct": 0.17584871983096217,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.1558497198309694
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 828164820259000000000000)",
+    "amountIn": "828164820259000000000000",
+    "ok": true,
+    "amount": "2655171670798714554976",
+    "gasEstimate": "206622",
+    "costPct": 0.17557506399273892,
+    "feePct": 0.019998999999992773,
+    "impactPct": 0.15557606399274615
+   }
+  },
+  {
+   "pair": "wARS->wBRL",
+   "path": "wARS-(100)->USDT-(100)->wBRL",
+   "hops": 2,
+   "encodedPath": "0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d00006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e000064d76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
+   "encodedPathReversed": "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e000006448065fbbe25f71c9282ddf5e1cd6d6a887483d5e0000640dc4f92879b7670e5f4e4e6e3c801d229129d90d",
+   "sizeUsd": 5000,
+   "spotRate": 0.003211729868838675,
+   "feeFrac": 0.00019998999999992773,
+   "exactOutput": {
+    "call": "quoteExactOutput(reversedPath, 26598416895000000000000)",
+    "amountOut": "26598416895000000000000",
+    "ok": true,
+    "amount": "8414470084476013751447224",
+    "gasEstimate": "221510",
+    "costPct": 1.578493722119867,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.5584947221198742
+   },
+   "exactInput": {
+    "call": "quoteExactInput(path, 8281648202591000000000000)",
+    "amountIn": "8281648202591000000000000",
+    "ok": true,
+    "amount": "26185005547375253074717",
+    "gasEstimate": "222042",
+    "costPct": 1.5542705031091786,
+    "feePct": 0.019998999999992773,
+    "impactPct": 1.5342715031091858
+   }
+  }
+ ]
+}
