@@ -109,10 +109,10 @@ Agents never broadcast. Mainnet transactions are sent by the human.
 
 | Item | Value |
 | --- | --- |
-| CobraRouter | TBD |
-| Router deploy tx | TBD |
-| Deploy block | TBD |
-| Relayer / agent wallet | TBD |
+| CobraRouter | [`0xfe38683105fa36ee664acefe7e714ba93492e458`](https://celoscan.io/address/0xfe38683105fa36ee664acefe7e714ba93492e458) |
+| Router deploy tx | [`0x06edbc66…6cd892148`](https://celoscan.io/tx/0x06edbc66bfd5312620541da2327387eb8b198a0f0c6a40a80c799ca6cd892148) (ERC-8021 tag `celo_502e1bea2794`) |
+| Deploy block | 81818614 |
+| Relayer / agent wallet | [`0x9E828B877EFCdb79B507fF6234d841A8265Cccd5`](https://celoscan.io/address/0x9E828B877EFCdb79B507fF6234d841A8265Cccd5) |
 | ERC-8004 agent id and registration tx | TBD |
 | Proof payment: wARS | TBD |
 | Proof payment: wBRL | TBD |
