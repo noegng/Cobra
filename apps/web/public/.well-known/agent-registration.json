@@ -1,15 +1,22 @@
 {
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
-  "name": "Cobrá",
-  "description": "LatAm merchant checkout agent on Celo. A Telegram assistant creates payment requests in local currency (ARS, BRL); the payer signs once with no gas and Cobrá's relayer settles the exact wFIAT amount to the merchant through an immutable router over Uniswap V3. PLACEHOLDER: replace the domain, image and agentId after on-chain registration.",
-  "image": "https://cobra.example/icon.svg",
+  "name": "Cobrá Relayer",
+  "description": "Cobrá is a LatAm merchant checkout on Celo. Merchants create invoices in local currency from Telegram; payers sign once (EIP-3009 or Permit2, bound to the full payment intent) and this agent relays CobraRouter.pay(), paying the gas, so the merchant receives the exact wFIAT amount. It can only submit the exact signed intent (it cannot change merchant, amount, token, path or split), enforces per-payment and per-day USD caps, and tags every tx with ERC-8021.",
+  "image": "https://cobra-beige.vercel.app/icon.svg",
   "services": [
-    { "name": "web", "endpoint": "https://cobra.example/" }
+    {
+      "name": "web",
+      "endpoint": "https://cobra-beige.vercel.app/"
+    },
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:42220:0x9E828B877EFCdb79B507fF6234d841A8265Cccd5"
+    }
   ],
   "x402Support": false,
   "active": true,
-  "registrations": [
-    { "agentId": 0, "agentRegistry": "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" }
-  ],
-  "supportedTrust": ["reputation"]
+  "registrations": [],
+  "supportedTrust": [
+    "reputation"
+  ]
 }
