@@ -61,6 +61,8 @@ describe("repo helpers", () => {
     const db = await createTestDb();
     expect(await isKillSwitchOn(db, {})).toBe(false);
     expect(await isKillSwitchOn(db, { KILL_SWITCH: "true" })).toBe(true);
+    for (const on of ["1", "TRUE", "yes", "on", "ture"]) expect(await isKillSwitchOn(db, { KILL_SWITCH: on })).toBe(true);
+    for (const off of ["false", "FALSE", "0", "off", "no", ""]) expect(await isKillSwitchOn(db, { KILL_SWITCH: off })).toBe(false);
     await setFlag(db, "kill_switch", { enabled: true });
     expect(await isKillSwitchOn(db, {})).toBe(true);
   });

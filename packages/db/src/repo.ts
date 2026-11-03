@@ -51,9 +51,15 @@ export async function setFlag(db: Db, key: string, value: unknown): Promise<void
     .onConflictDoUpdate({ target: flags.key, set: { value, updatedAt: new Date() } });
 }
 
-/** Kill switch: env KILL_SWITCH=true OR flags.kill_switch.enabled. Checked before every send. */
+/** Values that mean "kill switch OFF". Anything else non-empty (1, TRUE, yes, on, typos) means ON: fail closed (WS7-5). */
+const KILL_SWITCH_OFF = new Set(["", "false", "0", "off", "no"]);
+export function killSwitchEnvOn(value: string | undefined): boolean {
+  return value !== undefined && !KILL_SWITCH_OFF.has(value.trim().toLowerCase());
+}
+
+/** Kill switch: env KILL_SWITCH (fail-closed parsing) OR flags.kill_switch.enabled. Checked before every send. */
 export async function isKillSwitchOn(db: Db, env: Record<string, string | undefined> = process.env): Promise<boolean> {
-  if (env.KILL_SWITCH === "true") return true;
+  if (killSwitchEnvOn(env.KILL_SWITCH)) return true;
   return (await getFlag<{ enabled: boolean }>(db, FLAG_KEYS.killSwitch, { enabled: false })).enabled;
 }
 
