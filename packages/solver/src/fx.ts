@@ -5,6 +5,8 @@
  * the on-chain wARS/USDT pool tracks it (~1650 ARS/USD on 2026-11-02), NOT the official rate (~1535-1565).
  * Using the official rate would make the solver's price guard reject every wARS payment (~7.5% gap).
  * BRL uses the market rate (AwesomeAPI, fallback br.dolarapi.com, then open.er-api.com).
+ * MXN, COP, CLP, PEN use market rates (open.er-api.com, fallback fawazahmed0 currency-api on jsDelivr). They have no
+ * Celo pool, so they only feed the USD caps for same-token (direct wFIAT) payments, never a swap price guard.
  *
  * Each currency is resolved independently: a failing source falls through to the next; if every source fails
  * the currency is omitted (the solver then answers `price_guard` for invoices in that currency) unless a
@@ -27,16 +29,22 @@ export interface FxOptions {
   cacheTtlMs?: number;
   /** Serve a cached value up to this age when every source fails, ms. Default 600_000. */
   staleTtlMs?: number;
-  /** Currencies to resolve. Default ["ARS", "BRL"]. */
+  /** Currencies to resolve. Default: all six LatAm currencies. */
   currencies?: readonly FxCurrency[];
 }
 
-export type FxCurrency = "ARS" | "BRL";
+export type FxCurrency = "ARS" | "BRL" | "MXN" | "COP" | "CLP" | "PEN";
+
+export const FX_CURRENCIES: readonly FxCurrency[] = ["ARS", "BRL", "MXN", "COP", "CLP", "PEN"];
 
 /** Local currency units per USD accepted as sane. */
 export const FX_BOUNDS: Record<FxCurrency, [number, number]> = {
   ARS: [300, 20_000],
   BRL: [2, 15],
+  MXN: [8, 40],
+  COP: [1_500, 8_000],
+  CLP: [400, 2_000],
+  PEN: [2, 8],
 };
 
 interface Source {
@@ -56,6 +64,18 @@ const obj = (v: unknown): Record<string, unknown> => {
   return v as Record<string, unknown>;
 };
 const mid = (a: unknown, b: unknown) => (num(a) + num(b)) / 2;
+
+/** Key-less market-rate sources for currencies without a dedicated local API. */
+function marketSources(cur: "MXN" | "COP" | "CLP" | "PEN"): Source[] {
+  return [
+    { name: "open-er-api", url: "https://open.er-api.com/v6/latest/USD", parse: (b) => num(obj(obj(b).rates)[cur]) },
+    {
+      name: "currency-api",
+      url: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json",
+      parse: (b) => num(obj(obj(b).usd)[cur.toLowerCase()]),
+    },
+  ];
+}
 
 export const FX_SOURCES: Record<FxCurrency, Source[]> = {
   ARS: [
@@ -106,6 +126,10 @@ export const FX_SOURCES: Record<FxCurrency, Source[]> = {
       parse: (b) => num(obj(obj(b).rates).BRL),
     },
   ],
+  MXN: marketSources("MXN"),
+  COP: marketSources("COP"),
+  CLP: marketSources("CLP"),
+  PEN: marketSources("PEN"),
 };
 
 export interface ReferenceRateSource {
@@ -120,7 +144,7 @@ export function createReferenceRateSource(opts: FxOptions = {}): ReferenceRateSo
   const timeoutMs = opts.timeoutMs ?? 3000;
   const ttl = opts.cacheTtlMs ?? 60_000;
   const staleTtl = opts.staleTtlMs ?? 600_000;
-  const currencies = opts.currencies ?? (["ARS", "BRL"] as const);
+  const currencies = opts.currencies ?? FX_CURRENCIES;
   const cache = new Map<FxCurrency, { usdPerUnit: number; at: number }>();
   let inflight: Promise<ReferenceRates> | null = null;
 
@@ -172,7 +196,7 @@ export function createReferenceRateSource(opts: FxOptions = {}): ReferenceRateSo
 
 const defaultSource = createReferenceRateSource();
 
-/** USD value of one unit of ARS / BRL (and USD = 1), cached 60 s. Never throws; missing currencies are omitted. */
+/** USD value of one unit of each LatAm currency (and USD = 1), cached 60 s. Never throws; missing currencies are omitted. */
 export function fetchReferenceRates(): Promise<ReferenceRates> {
   return defaultSource();
 }

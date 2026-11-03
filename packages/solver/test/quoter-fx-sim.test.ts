@@ -113,7 +113,7 @@ describe("fetchReferenceRates (createReferenceRateSource)", () => {
   it("caches 60 s, then refetches", async () => {
     let t = 0;
     const { f, urls } = fakeFetch(good);
-    const src = createReferenceRateSource({ fetch: f, now: () => t });
+    const src = createReferenceRateSource({ fetch: f, now: () => t, currencies: ["ARS", "BRL"] });
     await src();
     t = 59_000;
     await src();
@@ -121,6 +121,19 @@ describe("fetchReferenceRates (createReferenceRateSource)", () => {
     t = 61_000;
     await src();
     expect(urls).toHaveLength(4);
+  });
+
+  it("resolves MXN, COP, CLP, PEN from market sources (same-token payments need them for the USD cap)", async () => {
+    const { f } = fakeFetch((url) => {
+      if (url.includes("open.er-api.com")) return { rates: { MXN: 18.6, COP: 3200, CLP: 99_999, PEN: 3.46 } }; // CLP insane
+      if (url.includes("currency-api")) return { usd: { clp: 980 } };
+      throw new Error("unexpected " + url);
+    });
+    const r = await createReferenceRateSource({ fetch: f, currencies: ["MXN", "COP", "CLP", "PEN"] })();
+    expect(r.MXN).toBeCloseTo(1 / 18.6, 9);
+    expect(r.COP).toBeCloseTo(1 / 3200, 12);
+    expect(r.CLP).toBeCloseTo(1 / 980, 12); // out-of-bounds value rejected, fallback used
+    expect(r.PEN).toBeCloseTo(1 / 3.46, 9);
   });
 
   it("falls back to the next source on error / out-of-bounds values", async () => {
