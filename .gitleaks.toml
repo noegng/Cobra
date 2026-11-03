@@ -1,0 +1,12 @@
+# Gitleaks config (read automatically by gitleaks-action at the repo root).
+# Keep every default rule; only allow values that are exactly a public EVM address (0x + 40 hex), which the
+# generic-api-key rule flags in research/data files ("token0": "0x…"). Private keys (0x + 64 hex) stay detected.
+title = "cobra gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public EVM contract/wallet addresses are not secrets"
+regexTarget = "secret"
+regexes = ['''^0x[0-9a-fA-F]{40}$''']
