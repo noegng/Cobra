@@ -3,7 +3,7 @@
  * every handler takes a standard Request + injected deps and returns a Response, so tests run them
  * against PGlite with a fake solver / fake RPC. The Next.js route files are one-line adapters.
  */
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { getAddress, isAddress, parseSignature, type Address, type Hex } from "viem";
 import {
   PullKind,
@@ -55,6 +55,37 @@ function limited(deps: ApiDeps, bucket: string, req: Request): Response | null {
   return wait > 0 ? apiError(429, "rate_limited", { retryAfter: wait }) : null;
 }
 
+/** Rate limit on an explicit key (payer address, invoice id) rather than the client IP. */
+function limitedBy(deps: ApiDeps, bucket: string, key: string): Response | null {
+  const wait = deps.rateLimiter.hit(bucket, key.toLowerCase(), deps.now());
+  return wait > 0 ? apiError(429, "rate_limited", { retryAfter: wait }) : null;
+}
+
+/** WS7-2: a payer whose submissions keep reverting is refused for a while (it burns relayer gas and caps). */
+export const REVERT_BAN_THRESHOLD = 3;
+export const REVERT_BAN_WINDOW_MS = 30 * 60_000;
+
+export async function payerBanned(deps: ApiDeps, payer: Address): Promise<Response | null> {
+  const nowMs = deps.now();
+  const rows = await deps.db
+    .select({ at: submissions.updatedAt })
+    .from(submissions)
+    .where(
+      and(
+        sql`lower(${submissions.payer}) = ${payer.toLowerCase()}`,
+        eq(submissions.status, "failed"),
+        or(sql`${submissions.error} like 'tx_reverted%'`, sql`${submissions.error} like 'simulation_reverted%'`),
+        gt(submissions.updatedAt, new Date(nowMs - REVERT_BAN_WINDOW_MS)),
+      ),
+    )
+    .orderBy(desc(submissions.updatedAt))
+    .limit(REVERT_BAN_THRESHOLD);
+  if (rows.length < REVERT_BAN_THRESHOLD) return null;
+  // the ban lifts when the oldest of the last N reverts leaves the window
+  const retryAfter = Math.max(1, Math.ceil((rows[rows.length - 1]!.at.getTime() + REVERT_BAN_WINDOW_MS - nowMs) / 1000));
+  return apiError(429, "payer_blocked", { retryAfter });
+}
+
 function isUniqueViolation(err: unknown): boolean {
   for (let e: unknown = err, depth = 0; e && depth < 5; depth++) {
     const o = e as { code?: unknown; message?: unknown; cause?: unknown };
@@ -104,8 +135,12 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   const payerRaw = body?.payer;
   if (typeof payerRaw !== "string" || !isAddress(payerRaw, { strict: false })) return apiError(400, "invalid_payer");
   const payer = getAddress(payerRaw);
+  const rlKeyed = limitedBy(deps, "quotePayer", payer) ?? limitedBy(deps, "quoteInvoice", id);
+  if (rlKeyed) return rlKeyed;
   if (!deps.router) return apiError(503, "not_configured");
   if (await isKillSwitchOn(deps.db, deps.env)) return apiError(503, "paused");
+  const banned = await payerBanned(deps, payer);
+  if (banned) return banned;
 
   const loaded = await loadInvoice(deps.db, id);
   if (!loaded) return apiError(404, "not_found");
@@ -236,6 +271,8 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   const signatures = body?.signatures;
   if (typeof quoteId !== "string" || !UUID_RE.test(quoteId)) return apiError(400, "invalid_quote_id");
   if (!Array.isArray(signatures) || signatures.length < 1 || signatures.length > 3) return apiError(400, "invalid_signatures");
+  const rlInvoice = limitedBy(deps, "submitInvoice", id);
+  if (rlInvoice) return rlInvoice;
   if (!deps.router) return apiError(503, "not_configured");
   if (await isKillSwitchOn(deps.db, deps.env)) return apiError(503, "paused");
 
@@ -253,6 +290,10 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   if (signatures.length !== plan.legs.length) return apiError(400, "invalid_signatures");
   const payer = getAddress(quote.payer);
   if (payer === getAddress(row.merchantAddress)) return apiError(400, "self_payment");
+  const rlPayer = limitedBy(deps, "submitPayer", payer);
+  if (rlPayer) return rlPayer;
+  const banned = await payerBanned(deps, payer);
+  if (banned) return banned;
   const inv = onchainInvoiceFromRow(row);
   const signing = buildLegSigning({ router: deps.router, chainId: deps.chainId, permit2: deps.permit2, invoice: inv, payer, legs: plan.legs });
   if (signing.some((s) => s.kind === "ALLOWANCE")) return apiError(400, "allowance_requires_self_submit");

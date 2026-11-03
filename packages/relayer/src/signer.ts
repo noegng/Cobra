@@ -46,7 +46,7 @@ import { privateKeyToAccount, toAccount } from "viem/accounts";
 import { celo } from "viem/chains";
 import { and, count, eq, gte, inArray, isNotNull, like, ne } from "drizzle-orm";
 import { toDataSuffix, toRoleDataSuffix, withAttribution } from "@celo/attribution-tags";
-import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type OnchainInvoice } from "@cobra/shared";
+import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type Leg, type OnchainInvoice } from "@cobra/shared";
 import { DEFAULT_CAPS, flags, getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
 import { resolveRates, scaledToUsd, usdToScaled, usdValueScaled, type RatesSource } from "./rates";
 
@@ -60,6 +60,7 @@ export type RefusalCode =
   | "cap_per_merchant_day"
   | "cap_per_payer_day"
   | "self_payment"
+  | "zero_amount"
   | "unknown_token"
   | "missing_rate"
   | "blocked_method"
@@ -67,6 +68,9 @@ export type RefusalCode =
   | "grant_target"
   | "grant_already_given"
   | "grant_daily_cap";
+
+/** flags key prefix of the USD value frozen at signing time (WS7-6). */
+export const SIGNED_USD_PREFIX = "signed_usd:";
 
 export class SignerRefusedError extends Error {
   constructor(
@@ -166,12 +170,12 @@ function defaultTokenMeta(token: Address): TokenMeta | undefined {
   return t ? { decimals: t.decimals, currency: t.currency } : undefined;
 }
 
-function decodePay(data: Hex): { inv: OnchainInvoice; payer: Address } {
+function decodePay(data: Hex): { inv: OnchainInvoice; payer: Address; legs: readonly Leg[] } {
   if (data.slice(0, 10).toLowerCase() !== PAY_SELECTOR) throw new SignerRefusedError("wrong_selector");
   try {
     const { functionName, args } = decodeFunctionData({ abi: cobraRouterAbi, data });
     if (functionName !== "pay") throw new Error(functionName);
-    return { inv: args[0] as OnchainInvoice, payer: args[1] as Address };
+    return { inv: args[0] as OnchainInvoice, payer: args[1] as Address, legs: args[2] as readonly Leg[] };
   } catch {
     throw new SignerRefusedError("wrong_selector", "calldata is not a valid pay()");
   }
@@ -276,14 +280,23 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
         ),
       );
     const rates = await resolveRates(opts.rates);
+    const stored = new Map<string, bigint>();
+    for (const f of await opts.db.select().from(flags).where(and(like(flags.key, `${SIGNED_USD_PREFIX}%`), gte(flags.updatedAt, since)))) {
+      const v = f.value as { usdScaled?: unknown } | null;
+      if (v && typeof v.usdScaled === "string" && /^\d+$/.test(v.usdScaled)) stored.set(f.key.slice(SIGNED_USD_PREFIX.length), BigInt(v.usdScaled));
+    }
     const seen = new Set<string>();
     const totals = { all: 0n, merchant: 0n, payer: 0n };
     for (const r of rows) {
       if (seen.has(r.id)) continue;
       seen.add(r.id);
-      const meta = tokenMeta(getAddress(r.tokenOut));
-      if (!meta) throw new SignerRefusedError("unknown_token", r.tokenOut);
-      const usd = usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      let usd = stored.get(r.id.toLowerCase());
+      if (usd === undefined) {
+        // legacy rows (signed before WS7-6) or a failed flag write: recompute at today's rate
+        const meta = tokenMeta(getAddress(r.tokenOut));
+        if (!meta) throw new SignerRefusedError("unknown_token", r.tokenOut);
+        usd = usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      }
       totals.all += usd;
       if (sameAddress(r.merchantAddress, merchant)) totals.merchant += usd;
       if (sameAddress(r.payer, payer)) totals.payer += usd;
@@ -292,9 +305,19 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
   }
 
   async function check(req: Pick<SendRequest, "to" | "data" | "value">): Promise<{ usd: number }> {
+    const r = await checkScaled(req);
+    return { usd: scaledToUsd(r.usd) };
+  }
+
+  async function checkScaled(
+    req: Pick<SendRequest, "to" | "data" | "value">,
+  ): Promise<{ usd: bigint; invoiceId: string; currency: Currency; amountOut: bigint }> {
     if (!req.to || !isAddressEqual(req.to, router)) throw new SignerRefusedError("wrong_target");
     if (req.value !== undefined && req.value !== 0n) throw new SignerRefusedError("value_not_zero");
-    const { inv, payer } = decodePay(req.data);
+    const { inv, payer, legs } = decodePay(req.data);
+    // WS7-7: a zero amount (invoice or any leg) is never a real payment; refuse before any other guard.
+    if (inv.amountOut === 0n) throw new SignerRefusedError("zero_amount", "invoice amountOut is 0");
+    if (legs.length === 0 || legs.some((l) => l.amountIn === 0n)) throw new SignerRefusedError("zero_amount", "leg amountIn is 0");
     if (await isKillSwitchOn(opts.db, env)) throw new SignerRefusedError("kill_switch");
     // Self-dealing: the merchant paying its own invoice moves no value but would burn the shared relay budget.
     if (isAddressEqual(payer, inv.merchant)) throw new SignerRefusedError("self_payment");
@@ -329,14 +352,28 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     if (day.all + usd > usdToScaled(caps.perDayUsd)) {
       throw new SignerRefusedError("cap_per_day", `${scaledToUsd(day.all + usd)} USD > ${caps.perDayUsd}`);
     }
-    return { usd: scaledToUsd(usd) };
+    return { usd, invoiceId: inv.id, currency: meta.currency, amountOut: inv.amountOut };
+  }
+
+  /** WS7-6: USD value of a relayed invoice, frozen at signing time in the flags table (no schema change). */
+  async function recordSignedUsd(c: { usd: bigint; invoiceId: string; currency: Currency; amountOut: bigint }) {
+    const key = `${SIGNED_USD_PREFIX}${c.invoiceId.toLowerCase()}`;
+    const value = { usdScaled: c.usd.toString(), currency: c.currency, amountOut: c.amountOut.toString(), at: now().toISOString() };
+    await opts.db
+      .insert(flags)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: flags.key, set: { value, updatedAt: now() } });
   }
 
   const lock = mutex();
   async function send(req: SendRequest): Promise<Hash> {
     return lock(async () => {
-      await check(req);
-      onSignedHook = req.onSigned;
+      const checked = await checkScaled(req);
+      // WS7-6: after the caller persisted the hash, also record the USD value used for the rolling caps.
+      onSignedHook = async (tx) => {
+        await req.onSigned?.(tx);
+        await recordSignedUsd(checked).catch(() => undefined); // best effort: dayTotals falls back to recomputing
+      };
       try {
         return await inner.sendTransaction({
           account: hookedAccount,

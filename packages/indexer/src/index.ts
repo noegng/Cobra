@@ -17,6 +17,9 @@ export interface IndexerOptions {
   confirmations?: number; // default 5 (~5 s on Celo L2, see DEFAULT_CONFIRMATIONS)
   maxBlockRange?: number; // default 2000
   pollIntervalMs?: number; // default 2000
+  reorgWindow?: number; // blocks of recent payments re-verified (default 600, 0 = off)
+  reorgCheckIntervalMs?: number; // default 10 000
+  reorgMinSuspectGapMs?: number; // min spacing of consecutive "missing" observations (default 30 000)
   notifier?: Notifier;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
 }
@@ -38,6 +41,9 @@ export function startIndexer(opts: IndexerOptions): Stoppable {
     confirmations: opts.confirmations ?? DEFAULT_CONFIRMATIONS,
     maxBlockRange: opts.maxBlockRange ?? DEFAULT_MAX_BLOCK_RANGE,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
+    ...(opts.reorgWindow !== undefined && { reorgWindow: opts.reorgWindow }),
+    ...(opts.reorgCheckIntervalMs !== undefined && { reorgCheckIntervalMs: opts.reorgCheckIntervalMs }),
+    ...(opts.reorgMinSuspectGapMs !== undefined && { reorgMinSuspectGapMs: opts.reorgMinSuspectGapMs }),
     notifier: opts.notifier,
     log: opts.log ?? (() => {}),
   });

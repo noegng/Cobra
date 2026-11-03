@@ -14,6 +14,7 @@ import type { Db } from "@cobra/db";
 import { cobraRouterAbi, type Notifier } from "@cobra/shared";
 import { drainOutbox } from "./outbox";
 import { applyBatch, loadCursor, type PaidLog } from "./reconcile";
+import { verifyRecentPayments } from "./reorg";
 import { errorMessage, isRangeError } from "./rpc-errors";
 
 /**
@@ -23,6 +24,9 @@ import { errorMessage, isRangeError } from "./rpc-errors";
 export const DEFAULT_CONFIRMATIONS = 5;
 export const DEFAULT_MAX_BLOCK_RANGE = 2000;
 export const DEFAULT_POLL_INTERVAL_MS = 2000;
+/** WS7-4: payments younger than this many blocks (~10 min on Celo L2) are re-verified against the chain. 0 disables. */
+export const DEFAULT_REORG_WINDOW = 600;
+export const DEFAULT_REORG_CHECK_INTERVAL_MS = 10_000;
 const MAX_BACKOFF_MS = 60_000;
 const GROW_AFTER_SUCCESSES = 10;
 
@@ -36,6 +40,9 @@ export interface LoopOptions {
   confirmations: number;
   maxBlockRange: number;
   pollIntervalMs: number;
+  reorgWindow?: number;
+  reorgCheckIntervalMs?: number;
+  reorgMinSuspectGapMs?: number;
   notifier?: Notifier;
   log: (msg: string, extra?: Record<string, unknown>) => void;
 }
@@ -60,6 +67,10 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
       };
     });
 
+  const reorgWindow = o.reorgWindow ?? DEFAULT_REORG_WINDOW;
+  const reorgEveryMs = o.reorgCheckIntervalMs ?? DEFAULT_REORG_CHECK_INTERVAL_MS;
+  let lastReorgCheck = 0;
+
   const drain = async () => {
     if (!o.notifier) return;
     try {
@@ -81,6 +92,15 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
         await drain();
 
         const head = await o.publicClient.getBlockNumber({ cacheTime: 0 });
+        if (reorgWindow > 0 && Date.now() - lastReorgCheck >= reorgEveryMs) {
+          lastReorgCheck = Date.now();
+          const r = await verifyRecentPayments({ db: o.db, publicClient: o.publicClient, router: o.router, head, window: reorgWindow, confirmations: o.confirmations, ...(o.reorgMinSuspectGapMs !== undefined && { minSuspectGapMs: o.reorgMinSuspectGapMs }), log: o.log });
+          if (r.reverted > 0) {
+            cursor = null; // the cursor was rewound in the DB: re-read it and re-scan
+            await drain();
+            continue;
+          }
+        }
         const safe = head - BigInt(o.confirmations);
         if (cursor > safe) {
           await sleep(o.pollIntervalMs);

@@ -5,7 +5,7 @@ import { fromDataSuffix, toDataSuffix } from "@celo/attribution-tags";
 import { createWalletClient, http, type Address, type Hash } from "viem";
 import { foundry } from "viem/chains";
 import { cobraRouterAbi, hashInvoice } from "@cobra/shared";
-import { invoices, setFlag, submissions, type Db } from "@cobra/db";
+import { flags, invoices, setFlag, submissions, type Db } from "@cobra/db";
 import { createTestDb } from "@cobra/db/testing";
 import { createRelayerSigner, startRelayer } from "../src/index";
 import { claimNext, createRelayer, type RelayerConfig } from "../src/relayer";
@@ -97,6 +97,9 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     expect(row.txHash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(row.txNonce).toBe(0);
     expect((await inv(seed.invoiceId)).status).toBe("submitted");
+    // WS7-6: the USD value used for the caps is frozen at signing time
+    const [f] = await db.select().from(flags).where(eq(flags.key, `signed_usd:${seed.invoiceId.toLowerCase()}`));
+    expect((f?.value as { usdScaled?: string } | undefined)?.usdScaled).toMatch(/^[1-9]\d*$/);
 
     const receipt = await a.publicClient.getTransactionReceipt({ hash: row.txHash as Hash });
     expect(receipt.status).toBe("success");
@@ -146,7 +149,10 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     });
     await tick(relayer(envSigner));
     const row = await sub(seed.submissionId);
-    expect(row.status).toBe("failed");
+    // WS7-3: never broadcast -> not lost: back to pending (retry), attempt given back
+    expect(row.status).toBe("pending");
+    expect(row.txHash).toBeNull();
+    expect(row.attempts).toBe(0);
     expect(row.error).toMatch(/kill_switch/);
     expect((await inv(seed.invoiceId)).status).toBe("open");
     expect(await nonceOf(s.address)).toBe(0);

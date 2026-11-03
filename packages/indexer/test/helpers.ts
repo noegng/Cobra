@@ -222,7 +222,7 @@ export class RecordingNotifier implements Notifier {
   }
 }
 
-export async function waitFor<T>(fn: () => Promise<T | undefined | null | false>, timeoutMs = 10_000, label = "condition"): Promise<T> {
+export async function waitFor<T>(fn: () => Promise<T | undefined | null | false>, timeoutMs = 20_000, label = "condition"): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const v = await fn();

@@ -1,10 +1,11 @@
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { encodeFunctionData, parseAbi, type Address, type Hex } from "viem";
 import { foundry } from "viem/chains";
 import { cobraRouterAbi, PullKind } from "@cobra/shared";
-import { invoices, setFlag, submissions, type Db } from "@cobra/db";
+import { flags, invoices, setFlag, submissions, type Db } from "@cobra/db";
 import { createTestDb } from "@cobra/db/testing";
-import { createRelayerSigner, PAY_SELECTOR, SignerRefusedError, type RelayerSigner } from "../src/signer";
+import { createRelayerSigner, PAY_SELECTOR, SIGNED_USD_PREFIX, SignerRefusedError, type RelayerSigner } from "../src/signer";
 import { buildRegistrationFile, registerCalldata, REGISTRATION_TYPE } from "../src/agent";
 import { usdValueScaled, USD_SCALE } from "../src/rates";
 import { ANVIL_KEYS, ATTRIBUTION_CODE, MERCHANT, RATES, seedMerchant, WARS } from "./helpers";
@@ -102,6 +103,26 @@ describe("signer guards", () => {
     await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
   });
 
+  it("WS7-7: zero amountOut or any zero amountIn leg is refused", async () => {
+    expect(await code(s.check({ to: ROUTER, data: payData(0n) }))).toBe("zero_amount");
+    const zeroLeg = (amountIn: bigint) =>
+      encodeFunctionData({
+        abi: cobraRouterAbi,
+        functionName: "pay",
+        args: [
+          { id: `0x${"11".repeat(32)}`, merchant: OTHER, tokenOut: WARS, amountOut: 1000n, deadline: 2_000_000_000n },
+          PAYER,
+          [
+            { token: WARS, amountIn: 5n, kind: PullKind.PERMIT2, pullData: "0x", path: "0x" },
+            { token: WARS, amountIn, kind: PullKind.PERMIT2, pullData: "0x", path: "0x" },
+          ],
+        ],
+      });
+    expect(await code(s.check({ to: ROUTER, data: zeroLeg(0n) }))).toBe("zero_amount");
+    expect(await code(s.send({ to: ROUTER, data: zeroLeg(0n) }))).toBe("zero_amount");
+    expect(await code(s.check({ to: ROUTER, data: zeroLeg(1n) }))).toBe("ok");
+  });
+
   it("WS7-1: self-payment (payer == invoice.merchant) is refused", async () => {
     expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, OTHER) }))).toBe("self_payment");
     expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, PAYER, PAYER) }))).toBe("self_payment");
@@ -132,6 +153,30 @@ describe("signer guards", () => {
       expect(await code(s.check({ to: ROUTER, data: payData(200n * 1650n * 10n ** 18n - 10n ** 18n, undefined, MERCHANT, fresh, nextId) }))).toBe("ok");
     } finally {
       await db.delete(submissions);
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
+    }
+  });
+
+  it("WS7-6: rolling caps sum the USD value frozen at signing time, not today's rate", async () => {
+    const m = await seedMerchant(db);
+    const id = `0x${"44".repeat(32)}` as Hex;
+    await db.insert(invoices).values({
+      id, merchantId: m.id, amountLocal: "4500", currency: "ARS", tokenOut: WARS,
+      amountOut: (4500n * 10n ** 18n).toString(), merchantAddress: MERCHANT, expiresAt: new Date(Date.now() + 600_000),
+    });
+    await db.insert(submissions).values({ invoiceId: id, payer: PAYER, legs: [], status: "sent", txHash: `0x${"cd".repeat(32)}` });
+    const fresh: Address = "0x000000000000000000000000000000000000f00d";
+    const nextId = `0x${"55".repeat(32)}` as Hex;
+    try {
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000, perMerchantDayUsd: 50, perPayerDayUsd: 2000 });
+      // no stored value: recomputed at the current rate (~2.7 USD) -> fits
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, MERCHANT, fresh, nextId) }))).toBe("ok");
+      // stored at signing time as 100 USD (rate was very different) -> the stored value wins
+      await setFlag(db, `${SIGNED_USD_PREFIX}${id}`, { usdScaled: (100n * USD_SCALE).toString(), currency: "ARS" });
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, MERCHANT, fresh, nextId) }))).toBe("cap_per_merchant_day");
+    } finally {
+      await db.delete(submissions);
+      await db.delete(flags).where(eq(flags.key, `${SIGNED_USD_PREFIX}${id}`));
       await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
     }
   });

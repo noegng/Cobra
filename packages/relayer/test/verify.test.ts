@@ -60,6 +60,13 @@ describe.skipIf(!hasAnvil)("verifyLegs: ERC-1271 aware signature checks", () => 
     );
   }
 
+  it("WS7-7: zero amountOut or zero amountIn is rejected before any signature work", async () => {
+    const ctx = { publicClient: a.publicClient, router: ROUTER, chainId: foundry.id, permit2: PERMIT2, nowSec: NOW };
+    const leg: Leg = { token: TOKEN, amountIn: 0n, kind: PullKind.PERMIT2, path: "0x", pullData: "0x" };
+    expect(await verifyLegs(ctx, inv, owner.address, [leg])).toEqual({ ok: false, reason: "leg0:zero_amount_in" });
+    expect(await verifyLegs(ctx, { ...inv, amountOut: 0n }, owner.address, [{ ...leg, amountIn: 1n }])).toEqual({ ok: false, reason: "zero_amount_out" });
+  });
+
   it("EOA signature accepted", async () => {
     expect(await check(owner.address, owner)).toEqual({ ok: true });
   });
