@@ -83,7 +83,14 @@ worker/indexer: Paid log (N confirmations) → payments row, invoice paid, submi
 - Amounts: base-unit integer strings on-chain side, decimal strings for local fiat. Never JS `number` for money.
 - `invoices.amountOut` and `merchantAddress` are frozen at creation; the on-chain `Invoice` is rebuilt from the row:
   `{ id, merchant: merchantAddress, tokenOut, amountOut, deadline: floor(expiresAt/1000) }`.
-- Status machine: `packages/shared/src/invoice-state.ts`.
+- Status machine: `packages/shared/src/invoice-state.ts`. Transitions: `open -> submitted | expired | cancelled | paid`,
+  `submitted -> paid | open`, `expired -> paid`. The last one exists because the router accepts payment up to the
+  deadline (inclusive): a matching `Paid` event on a row the expiry job already moved to `expired` is an on-time
+  payment and must be recorded as `paid`. `paid` and `cancelled` are terminal.
+- Deployment: the router is deployed with `scripts/agent/deploy-router.ts` (dry run by default, `--execute` is human
+  only) so the creation transaction carries the ERC-8021 suffix. `forge script --broadcast` cannot add it. The tag is
+  `HACKATHON_ATTRIBUTION_CODE` (`celo_502e1bea2794`, `packages/shared/src/chain.ts`); the relayer appends the same tag
+  to every `pay` call and the web page to ALLOWANCE transactions.
 
 ## 5. Indexer matching rule
 
