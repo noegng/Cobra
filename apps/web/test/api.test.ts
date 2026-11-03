@@ -313,7 +313,14 @@ describe("quote rejections", () => {
     const { res, body } = await quote(fx);
     expect(res.status).toBe(422);
     expect(body.error).toBe("insufficient_balance");
-    expect(body.rampUrl).toBe("https://ramp.ripio.com/");
+    // Prefilled: country, Celo, token, invoice amount (rounded up to cents) and the payer's own wallet.
+    const ramp = new URL(body.rampUrl!);
+    expect(`${ramp.origin}${ramp.pathname}`).toBe("https://ramp.ripio.com/");
+    expect(ramp.searchParams.get("country")).toBe("AR");
+    expect(ramp.searchParams.get("chain")).toBe("42220");
+    expect(ramp.searchParams.get("token")).toBe("WARS");
+    expect(Number(ramp.searchParams.get("amount"))).toBeGreaterThan(0);
+    expect(ramp.searchParams.get("address")?.toLowerCase()).toBe(payer.address.toLowerCase());
     expect(body.directTransfer).toEqual({
       address: MERCHANT_PAYOUT,
       token: WARS.address,
@@ -398,5 +405,19 @@ describe("POST /api/m/:slug/invoice (static QR)", () => {
     const fx = await setup({ settlement: USDC.address, slug: "usd-shop" });
     const res = await handleCreateStaticInvoice(req("POST", { amountLocal: "10" }), "usd-shop", fx.deps);
     expect(res.status).toBe(422);
+  });
+});
+
+describe("Ripio on-ramp link", () => {
+  it("prefills AR/BR/MX/CO on Celo, none for wCLP/wPEN, amount rounded up to cents", async () => {
+    const { buildRipioOnrampUrl, rampAmount } = await import("../lib/ramp");
+    expect(rampAmount(10n ** 18n * 1500n, 18)).toBe("1500");
+    expect(rampAmount(10n ** 18n * 15n + 1n, 18)).toBe("15.01");
+    const mx = new URL(buildRipioOnrampUrl({ symbol: "wMXN", amount: 10n ** 18n * 200n, decimals: 18 })!);
+    expect([mx.searchParams.get("country"), mx.searchParams.get("chain"), mx.searchParams.get("token"), mx.searchParams.get("amount")]).toEqual(["MX", "42220", "WMXN", "200"]);
+    expect(mx.searchParams.has("address")).toBe(false);
+    expect(new URL(buildRipioOnrampUrl({ symbol: "wCOP", amount: 1n, decimals: 18 })!).searchParams.get("country")).toBe("CO");
+    expect(buildRipioOnrampUrl({ symbol: "wCLP", amount: 1n, decimals: 18 })).toBeNull();
+    expect(buildRipioOnrampUrl({ symbol: "wPEN", amount: 1n, decimals: 18 })).toBeNull();
   });
 });

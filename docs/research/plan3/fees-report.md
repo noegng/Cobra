@@ -6,12 +6,12 @@
 
 | Décision du plan 3 | Résultat de la passe 1 |
 | --- | --- |
-| Niveau par pays | **Argentine : Partiel**, Complet dès que T8 et T12 sont faits et qu'une 2e passe confirme. **Brésil : Partiel proposé** (achat de wBRL seulement, ≈ 3,3 % au-dessus du marché, plafond 500 $). **Mexique, Colombie, Chili, Pérou : hors périmètre** aujourd'hui. |
+| Niveau par pays | **Argentine : Partiel**, Complet dès que T8 et T12 sont faits et qu'une 2e passe confirme. **Brésil : Partiel proposé** (achat de wBRL seulement, ≈ 3,3 % au-dessus du marché, plafond 500 $). **Mexique, Colombie : Partiel « paiement direct »** (même wFIAT ou achat en pesos via Ripio, T9). **Chili, Pérou : paiement direct seulement** (ni pool ni rampe). |
 | Plafond par paiement | wARS : 5 000 $ (plus grande taille testée, 0,31 %) ; wBRL : 500 $ (au-delà, l'écart dépasse la garde de 350 pb) ; le plafond de l'application (200 $ par défaut) s'applique avant. Autres : 0. |
 | Sources de prix | Uniswap V3 au palier 0,01 % uniquement. Mento : utile seulement pour BRLm/COPm, qui ne sont pas des wFIAT. Textile : non testé (clé). Cruce : introuvable. |
 | E4 Textile | En attente de la clé (T5). |
 | E9 Bridge Ripio | **Go technique** : contrat `0x465e…5D47` vérifié, non pausé, routes ouvertes pour les 6 wFIAT entre Celo, Base, Polygon, BSC et Ethereum, frais fixes minimes hors Ethereum. |
-| E5 Autres pays | **Pas avant la deadline** : aucun pool wMXN, wCOP, wCLP, wPEN. |
+| E5 Autres pays | **MX et CO possibles sans conversion** : aucun pool, mais paiement direct dans la même wFIAT et rampe Ripio sur Celo (T9). CL et PE : pas de rampe. |
 
 ## 2. Liquidité observée
 
@@ -66,3 +66,7 @@ Pour wBRL, presque tout le coût vient de l'**écart de prix du pool** (3,26 % c
 - Passes 2 et 3 : `pnpm exec tsx scripts/research/plan3/pools-t1-t2.ts --pass 2` (nuit), puis `--pass 3` (matin).
 - Humain : T5 (clé Textile), T8 et T12 (premier paiement réel en USD₮ → wARS), T9 (rampes Ripio AR, CO, BR).
 - Non couverts : pools Uniswap V4, plafond restant des limites Mento (`tradingLimitsState`), rôles du contrat de mint du bridge.
+
+## 7. Mise à jour T9 (rampes Ripio, test manuel du 3 nov.)
+
+`ramp.ripio.com` avec `country`, `chain=42220`, `token`, `amount` : **Argentine, Brésil, Mexique et Colombie** proposent Celo, et chaque wFIAT est sélectionnable. Chili et Pérou ne sont pas proposés. Test arrêté avant le paiement : KYC, frais et limites non vérifiés. La page de paiement et la commande de retrait du bot utilisent maintenant ces liens préremplis.

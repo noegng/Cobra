@@ -130,11 +130,13 @@ report: `docs/research/plan3/fees-report.md`.
 | Argentina | wARS | USD₮ → wARS (Uniswap V3, 0.01%) | 0.19 / 0.08 / 0.09 / 0.36 % | Supported |
 | Argentina | wARS | USDC → USD₮ → wARS | 0.23 / 0.09 / 0.10 / 0.38 % | Supported |
 | Brazil | wBRL | USD₮ → wBRL | 3.40 / 3.30 / 3.40 % / refused above 500 USD | Limited (price ~3.3% above market) |
-| Mexico, Colombia, Chile, Peru | wMXN, wCOP, wCLP, wPEN | none | no pool | Coming soon |
+| Mexico, Colombia | wMXN, wCOP | pay in the same wFIAT, or buy it in pesos via Ripio's ramp (Celo) | no swap: network fee only | Direct payment |
+| Chile, Peru | wCLP, wPEN | pay in the same wFIAT only (no Ripio ramp, no pool) | no swap: network fee only | Limited |
 
 Total cost = relayer gas (about 0.007 USD per payment, paid by Cobrá) + pool fee + price impact + deviation from the
 reference rate (dólar cripto for ARS, AwesomeAPI for BRL). On-ramp and off-ramp costs are not included. wARS follows the
-crypto dollar rate, not the official ARS rate. Liquidity can move: payments are capped and the solver refuses quotes
+crypto dollar rate, not the official ARS rate. Ripio's public ramp (checked 2026-11-03) offers Celo for Argentina, Brazil, Mexico and Colombia; the pay page
+links to it prefilled with the country, token, invoice amount and the payer's wallet. Liquidity can move: payments are capped and the solver refuses quotes
 beyond its price guard.
 
 ## Known limitations
@@ -142,7 +144,9 @@ beyond its price guard.
 - **wBRL pool is one-sided**: the wBRL/USDT pool holds about 23 USDT against 147k wBRL and is priced 2.2 to 3.3% off
   market (3.26% vs AwesomeAPI on 2026-11-03), so Brazilian payments cost about 3.3 to 3.4% up to 500 USD and selling
   wBRL is impossible. The solver's price guard is 350 bps for BRL, which leaves only 0.1 to 0.2 point of margin.
-- **MX, CO, CL, PE**: wMXN, wCOP, wCLP and wPEN have no liquid pool; the payer must hold the wFIAT and pay directly.
+- **MX, CO, CL, PE**: wMXN, wCOP, wCLP and wPEN have no pool on Celo, so there is no conversion: the payer pays in the
+  same wFIAT. In Mexico and Colombia they can buy it in pesos through Ripio's ramp; Chile and Peru have no ramp. A full
+  ramp purchase (KYC, fees, limits) has not been tested end to end.
 - **ALLOWANCE mode is not credited to the agent**: the payer sends the transaction, so the relayer does not appear as the
   submitter. It is also not tested on-chain.
 - **Tokens sent to the router by mistake are stuck**: there is no sweep function by design.

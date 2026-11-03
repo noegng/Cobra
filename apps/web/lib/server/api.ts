@@ -145,7 +145,10 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
       logEvent("quote.transient_failure", { invoiceId: id, reason: result.reason });
       return json({ error: "temporarily_unavailable", retryable: true } satisfies QuoteError, 503);
     }
-    const rampUrl = result.reason === "insufficient_balance" ? buildRipioOnrampUrl() : null;
+    const rampUrl =
+      result.reason === "insufficient_balance"
+        ? buildRipioOnrampUrl({ symbol: directTransfer.symbol, amount: inv.amountOut, decimals: directTransfer.decimals, payer })
+        : null;
     const out: QuoteError = { error: result.reason, fallback: result.fallback, rampUrl, directTransfer };
     logEvent("quote.no_plan", { invoiceId: id, reason: result.reason });
     return json(out, 422);

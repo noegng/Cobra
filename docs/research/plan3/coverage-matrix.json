@@ -77,7 +77,8 @@
         "dailyMintCap": "30000000",
         "feeCeloToBasePolygonBsc": "15",
         "feeCeloToEthereum": "1500"
-      }
+      },
+      "rampRipio": "Celo available (T9)"
     },
     {
       "country": "BR",
@@ -120,50 +121,57 @@
         "500": 3.4,
         "5000": 4.53
       },
-      "solverGuardBps": 350
+      "solverGuardBps": 350,
+      "rampRipio": "Celo available (T9)"
     },
     {
       "country": "MX",
       "token": "wMXN",
-      "level": "out_of_scope",
-      "reason": "No Uniswap V3 pool, no Mento MXN stable.",
-      "perPaymentCapUsd": 0,
+      "level": "partial",
+      "reason": "No swap liquidity on Celo, but the payer can pay in the same wFIAT (router leg with no swap) or buy it in local currency through Ripio's public ramp, which offers Celo for this country (T9).",
+      "perPaymentCapUsd": null,
       "bridgeRipio": {
         "dailyMintCap": "100000"
-      }
+      },
+      "mode": "direct_wfiat_or_ripio_onramp",
+      "capNote": "No swap, so no slippage cap; the app's USD caps apply."
     },
     {
       "country": "CO",
       "token": "wCOP",
-      "level": "out_of_scope",
-      "reason": "No Uniswap V3 pool for wCOP.",
-      "perPaymentCapUsd": 0,
+      "level": "partial",
+      "reason": "No swap liquidity on Celo, but the payer can pay in the same wFIAT (router leg with no swap) or buy it in local currency through Ripio's public ramp, which offers Celo for this country (T9).",
+      "perPaymentCapUsd": null,
       "leads": [
         "Mento COPm (USDm pair, 0.3 % spread, global net-flow cap about 28k USDm) is the only on-chain COP route; settlement would be COPm, and CobraRouter cannot route through Mento"
       ],
       "bridgeRipio": {
         "dailyMintCap": "21000000"
-      }
+      },
+      "mode": "direct_wfiat_or_ripio_onramp",
+      "capNote": "No swap, so no slippage cap; the app's USD caps apply."
     },
     {
       "country": "CL",
       "token": "wCLP",
       "level": "out_of_scope",
-      "reason": "No Uniswap V3 pool, no Mento CLP stable.",
+      "reason": "No Uniswap V3 pool, no Mento CLP stable. Ripio's public ramp does not offer this country (T9); a payer can still pay if they already hold the token (tiny supply on Celo).",
       "perPaymentCapUsd": 0,
       "bridgeRipio": {
         "dailyMintCap": "4750000"
-      }
+      },
+      "mode": "direct_wfiat_only"
     },
     {
       "country": "PE",
       "token": "wPEN",
       "level": "out_of_scope",
-      "reason": "No Uniswap V3 pool, no Mento PEN stable.",
+      "reason": "No Uniswap V3 pool, no Mento PEN stable. Ripio's public ramp does not offer this country (T9); a payer can still pay if they already hold the token (tiny supply on Celo).",
       "perPaymentCapUsd": 0,
       "bridgeRipio": {
         "dailyMintCap": "18500"
-      }
+      },
+      "mode": "direct_wfiat_only"
     }
   ],
   "gas": {
@@ -182,9 +190,24 @@
     "T5 Textile RFQ (API key, human)",
     "T6 Cruce (no public source found)",
     "T8 pull modes on mainnet (human)",
-    "T9 Ripio ramps (human)",
     "T12 real payments (human)",
     "passes 2 and 3",
-    "Uniswap V4 pools"
-  ]
+    "Uniswap V4 pools",
+    "T9 end to end (KYC, fees, limits)"
+  ],
+  "t9RipioRamp": {
+    "checkedAt": "2026-11-03",
+    "by": "human, ramp.ripio.com with country/chain/token/amount params, stopped before payment (KYC not reached)",
+    "countries": {
+      "AR": "Celo available, any wFIAT selectable",
+      "BR": "Celo available, any wFIAT selectable",
+      "MX": "Celo available, any wFIAT selectable",
+      "CO": "Celo available, any wFIAT selectable",
+      "CL": "not offered",
+      "PE": "not offered"
+    },
+    "notVerified": [
+      "completing an on-ramp or off-ramp end to end (KYC, fees, limits)"
+    ]
+  }
 }

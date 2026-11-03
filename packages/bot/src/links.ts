@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import type { Language } from "@cobra/shared";
+import { CELO_CHAIN_ID, COUNTRIES, type Language } from "@cobra/shared";
 
 const base = (publicBaseUrl: string) => publicBaseUrl.replace(/\/+$/, "");
 
@@ -17,12 +17,17 @@ export async function qrPng(url: string): Promise<Buffer> {
 }
 
 /**
- * Ripio public off-ramp (https://ramp.ripio.com/llms.txt; AR/CO/MX/BR). No partner account needed. URL query
- * params are undocumented, so this is the bare page; the bot adds copy-paste instructions next to it.
+ * Ripio public off-ramp (no partner account). Query params `country`, `chain`, `token` prefill the form (hackathon
+ * docs; `/offramp` redirects here keeping them). Ramp countries with Celo: AR, BR, MX, CO (manual check, Plan 3 T9).
+ * The bot still adds copy-paste instructions next to the link.
  */
 export const RIPIO_OFFRAMP_URL = "https://ramp.ripio.com/off-ramp";
+const RAMP_COUNTRIES = ["AR", "BR", "MX", "CO"];
 
-/** Single builder for the merchant-side cash-out link. */
-export function buildRipioOfframpLink(): string {
-  return RIPIO_OFFRAMP_URL;
+/** Single builder for the merchant-side cash-out link; bare page when the token has no Ripio ramp country. */
+export function buildRipioOfframpLink(tokenSymbol?: string): string {
+  const c = tokenSymbol ? COUNTRIES.find((x) => x.wfiatSymbol.toLowerCase() === tokenSymbol.toLowerCase()) : undefined;
+  if (!c || !RAMP_COUNTRIES.includes(c.country)) return RIPIO_OFFRAMP_URL;
+  const q = new URLSearchParams({ country: c.country, chain: String(CELO_CHAIN_ID), token: c.wfiatSymbol.toUpperCase() });
+  return `${RIPIO_OFFRAMP_URL}?${q.toString()}`;
 }

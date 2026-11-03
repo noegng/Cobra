@@ -145,7 +145,7 @@ describe("agent tools (PGlite)", () => {
   it("withdraw_link: public Ripio off-ramp link with steps (token, Celo, payout address)", async () => {
     const { call } = await setup(db, 1n);
     const r = await call("withdraw_link", {});
-    expect(r.url).toBe("https://ramp.ripio.com/off-ramp");
+    expect(r.url).toMatch(/^https:\/\/ramp\.ripio\.com\/off-ramp(\?country=[A-Z]{2}&chain=42220&token=W[A-Z]{3})?$/);
     expect(r.message).toContain("wARS");
     expect(r.message).toContain("Celo");
     expect(r.message).toContain(ADDR_A);

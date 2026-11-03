@@ -190,7 +190,7 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
       execute: async () => {
         const merchant = m();
         const token = tokenByAddress(merchant.settlementToken)?.symbol ?? "wFIAT";
-        const url = buildRipioOfframpLink();
+        const url = buildRipioOfframpLink(token);
         return { url, message: t(lang(), "withdraw_link", { token, url, address: merchant.payoutAddress }) };
       },
     }),

@@ -381,7 +381,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     if (!merchant) return;
     const lang = merchantLang(merchant);
     const token = tokenSymbol(merchant);
-    const url = buildRipioOfframpLink();
+    const url = buildRipioOfframpLink(token);
     await ctx.reply(t(lang, "withdraw_link", { token, url, address: merchant.payoutAddress }));
   });
 
