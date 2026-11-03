@@ -282,4 +282,33 @@ contract CobraRouterForkTest is SigUtils {
         vm.prank(relayer);
         router.pay(inv, payer, l2);
     }
+
+    // ───────────────────────────── E3: merchant treasury conversion = pay() with merchant == payer ─────────────────────────────
+
+    function test_fork_merchantConversion_wARS_to_USDT_selfPay() public onlyFork {
+        uint256 merchantPk = uint256(keccak256("cobra-fork-merchant-treasury")); // fresh key, no 7702 delegation
+        address m = vm.addr(merchantPk);
+        assertEq(m.code.length, 0, "merchant plain EOA");
+        payer = m; // _fund() funds `payer`
+        merchant = m;
+        _fund(WARS, 10_000e18);
+        bytes memory path = _path(WARS, FEE, USDT);
+        uint256 amountIn = 5_000e18;
+        uint256 quoted = _quote(path, amountIn);
+        uint256 amountOut = quoted * 99 / 100; // min-out ~1% below the quote
+        ICobraRouter.Invoice memory inv = _invoice(amountOut, USDT);
+        ICobraRouter.Leg[] memory legs = _legs1(_leg(WARS, amountIn, ICobraRouter.PullKind.PERMIT2, path));
+        _sign(router, merchantPk, inv, legs);
+
+        vm.prank(relayer); // relayer submits, merchant signed once
+        router.pay(inv, m, legs);
+
+        // merchant == payer: exact amountOut is paid to the merchant, then the surplus is refunded to the same address,
+        // so the net USDT balance equals the full swap output (= quote) and is at least the signed min-out.
+        assertEq(IERC20Fork(USDT).balanceOf(m), quoted, "amountOut + refunded surplus");
+        assertGe(IERC20Fork(USDT).balanceOf(m), amountOut, "at least min-out");
+        assertEq(IERC20Fork(WARS).balanceOf(m), 10_000e18 - amountIn, "wARS spent");
+        assertTrue(router.isPaid(router.hashInvoice(inv)));
+        _assertRouterEmpty();
+    }
 }
