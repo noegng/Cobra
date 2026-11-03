@@ -29,7 +29,7 @@ const es = {
   static_qr_caption: "Tu QR de cobro fijo: {url}",
   proof_hint: "Opcional: prueba que la billetera es tuya firmando un mensaje en {url}",
   help:
-    "Comandos:\n/cobrar 4500 café — crea un cobro con QR y link\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
+    "Comandos:\n/cobrar 4500 café — crea un cobro con QR y link (vence en 10 min)\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV (también llega solo a las 21:00)\n/panel — enlace privado a tu panel web\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
   not_onboarded: "Primero configuremos tu cuenta: /start",
   invoice_caption: "Cobro {ref}: {amount}{desc}\nVence en {minutes} min.\nLink de pago: {url}",
   wa_text: "{name} te envía un cobro de {amount}{desc}. Paga aquí: {url}",
@@ -109,7 +109,7 @@ const pt: Strings = {
   static_qr_caption: "Seu QR de cobrança fixo: {url}",
   proof_hint: "Opcional: prove que a carteira é sua assinando uma mensagem em {url}",
   help:
-    "Comandos:\n/cobrar 30 corte — cria uma cobrança com QR e link\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
+    "Comandos:\n/cobrar 30 corte — cria uma cobrança com QR e link (vence em 10 min)\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV (também chega sozinho às 21:00)\n/painel — link privado para seu painel web\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
   not_onboarded: "Primeiro vamos configurar sua conta: /start",
   invoice_caption: "Cobrança {ref}: {amount}{desc}\nVence em {minutes} min.\nLink de pagamento: {url}",
   wa_text: "{name} te enviou uma cobrança de {amount}{desc}. Pague aqui: {url}",
@@ -186,7 +186,7 @@ const en: Strings = {
   static_qr_caption: "Your fixed checkout QR: {url}",
   proof_hint: "Optional: prove the wallet is yours by signing a message at {url}",
   help:
-    "Commands:\n/charge 4500 coffee — create a payment request with QR and link\n/invoices — your latest requests\n/close — today's summary + CSV\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
+    "Commands:\n/charge 4500 coffee — create a payment request with QR and link (expires in 10 min)\n/invoices — your latest requests\n/close — today's summary + CSV (also sent automatically at 21:00)\n/dashboard — private link to your web dashboard\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
   not_onboarded: "Let's set up your account first: /start",
   invoice_caption: "Request {ref}: {amount}{desc}\nExpires in {minutes} min.\nPayment link: {url}",
   wa_text: "{name} sent you a payment request for {amount}{desc}. Pay here: {url}",
