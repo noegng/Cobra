@@ -42,8 +42,8 @@ export function StaticAmountForm({ slug, currency, lang }: { slug: string; curre
 
   return (
     <form className="stack" onSubmit={submit} noValidate>
-      <label htmlFor="amount">{t.enter_amount}</label>
-      <div className="row">
+      <label htmlFor="amount" className="sr-only">{t.enter_amount}</label>
+      <div className="hero amount-row">
         <input
           id="amount"
           className="amount-input"
@@ -59,7 +59,7 @@ export function StaticAmountForm({ slug, currency, lang }: { slug: string; curre
         />
         <span className="ccy">{currency}</span>
       </div>
-      {error && <p id="amount-err" className="error small" role="alert">{error}</p>}
+      {error && <p id="amount-err" className="note err-text" role="alert">{error}</p>}
       <button type="submit" className="btn primary" disabled={busy || value === ""}>
         {t.continue}
       </button>

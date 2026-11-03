@@ -16,7 +16,6 @@ export function ProofView({ stats, lang, agentAddress, routerAddress }: { stats:
   const amt = (a: string, v: string) => formatUnits(v, tokenByAddress(a)?.decimals ?? 18, locale);
   return (
     <>
-      <p className="small">{t.proof_intro}</p>
       <section className="tiles" aria-label={t.proof_title}>
         <div className="card tile"><div className="small">{t.proof_payments}</div><div className="v" data-testid="count">{stats.paymentCount}</div></div>
         <div className="card tile"><div className="small">{t.proof_payers}</div><div className="v" data-testid="payers">{stats.distinctPayers}</div></div>

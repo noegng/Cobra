@@ -1,49 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+/**
+ * Pay page: one amount, one button. Every step that does not need the payer's decision happens on its own:
+ * the quote is computed on connect and refreshed before it expires, the approval is followed on-chain, the gas
+ * grant is awaited, and the invoice status is polled until it is paid.
+ */
+import { useCallback, useEffect, useState } from "react";
 import { erc20Abi, maxUint256, type Address, type Hex } from "viem";
 import { celo } from "viem/chains";
-import {
-  useConnect,
-  useConnection,
-  useConnectors,
-  useDisconnect,
-  usePublicClient,
-  useSignTypedData,
-  useSwitchChain,
-  useWalletClient,
-} from "wagmi";
-import { CELO, HACKATHON_ATTRIBUTION_CODE, explorerAddress, explorerTx, type Language } from "@cobra/shared";
+import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useSignTypedData, useSwitchChain, useWalletClient } from "wagmi";
+import { HACKATHON_ATTRIBUTION_CODE, explorerAddress, explorerTx, type Language } from "@cobra/shared";
 import { allowanceLegs, allowancePlan, approveCalldata, attributionSuffix, feeCurrencyFor, invoiceFromWire } from "../lib/allowance";
 import { formatDecimal, formatUnits } from "../lib/amount";
 import { DICTS, localeFor, tr, type Dict } from "../lib/i18n";
 import { hydrateTypedData, type PublicInvoice, type QuoteError, type QuoteOk, type StatusResponse } from "../lib/wire";
 import { LangSwitch } from "./lang-switch";
 
-type Phase = "idle" | "quoting" | "quoted" | "signing" | "submitting" | "waiting" | "self_paying" | "paid";
-
 const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
 /** Native balance that covers one ERC-20 approval even at a 2x base fee (~55k gas × ~400 gwei). */
 const GAS_FOR_APPROVAL_WEI = 25_000_000_000_000_000n; // 0.025 CELO
+/** How long to wait for the agent's gas grant before telling the payer CELO is missing. */
+const GAS_WAIT_MS = 90_000;
 const TERMINAL = new Set(["paid", "expired", "cancelled"]);
 
-function short(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
+type Busy = null | "quoting" | "approving" | "signing" | "submitting" | "sending";
 
-function useNow(intervalMs: number) {
+const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+function useNow(ms: number) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    const id = setInterval(() => setNow(Date.now()), ms);
     return () => clearInterval(id);
-  }, [intervalMs]);
+  }, [ms]);
   return now;
 }
 
 function errorKey(code: string | undefined): keyof Dict {
   switch (code) {
-    case "quote_expired":
-      return "quote_expired";
     case "invoice_expired":
       return "expired";
     case "invoice_not_open":
@@ -66,27 +60,23 @@ function errorKey(code: string | undefined): keyof Dict {
   }
 }
 
-function isUserRejection(e: unknown): boolean {
-  const s = String((e as { name?: string; shortMessage?: string; message?: string })?.name ?? "") + String((e as { message?: string })?.message ?? "");
-  return /UserRejected|rejected|denied|cancel/i.test(s);
-}
+const isRejection = (e: unknown) => /UserRejected|rejected|denied|cancel/i.test(`${(e as Error)?.name ?? ""}${(e as Error)?.message ?? ""}`);
 
-export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang: Language; host: string }) {
+export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Language }) {
   const t = DICTS[lang];
   const locale = localeFor(lang, invoice.currency);
   const now = useNow(1000);
-  const deadline = Date.parse(invoice.expiresAt);
-  const remainingS = Math.max(0, Math.floor((deadline - now) / 1000));
+  const remainingS = Math.max(0, Math.floor((Date.parse(invoice.expiresAt) - now) / 1000));
 
   const [status, setStatus] = useState(invoice.status);
-  const [phase, setPhase] = useState<Phase>(invoice.status === "paid" ? "paid" : "idle");
+  const [txHash, setTxHash] = useState<Hex | null>(null);
   const [quote, setQuote] = useState<QuoteOk | null>(null);
   const [quoteErr, setQuoteErr] = useState<QuoteError | null>(null);
-  const [error, setError] = useState<keyof Dict | null>(null);
-  const [step, setStep] = useState(0);
-  const [txHash, setTxHash] = useState<Hex | null>(null);
-  const [showFull, setShowFull] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState<Busy>(null);
+  const [notice, setNotice] = useState<keyof Dict | null>(null);
+  const [approving, setApproving] = useState<Address | null>(null);
+  const [gasWaitSince, setGasWaitSince] = useState<number | null>(null);
+  const [nativeBal, setNativeBal] = useState<bigint | null>(null);
 
   const { address, isConnected, chainId } = useConnection();
   const connectors = useConnectors();
@@ -97,39 +87,10 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
 
-  // Gas for the one-time Permit2 approval of a wFIAT (no EIP-3009). A payer with no CELO gets a small grant from the
-  // agent (worker, after this quote): poll the native balance until it can pay the approval, give up after 90 s.
-  const [nativeBal, setNativeBal] = useState<bigint | null>(null);
-  const [gasWaitSince, setGasWaitSince] = useState<number | null>(null);
-  const needsApproval = (quote?.needsPermit2Approval.length ?? 0) > 0;
-  useEffect(() => {
-    if (!needsApproval || !address || !publicClient) {
-      setNativeBal(null);
-      setGasWaitSince(null);
-      return;
-    }
-    let stop = false;
-    const poll = async () => {
-      try {
-        const b = await publicClient.getBalance({ address });
-        if (!stop) setNativeBal(b);
-      } catch {
-        /* keep the last value */
-      }
-    };
-    void poll();
-    setGasWaitSince((v) => v ?? Date.now());
-    const id = setInterval(poll, 3000);
-    return () => {
-      stop = true;
-      clearInterval(id);
-    };
-  }, [needsApproval, address, publicClient]);
-  const lowGas = nativeBal !== null && nativeBal < GAS_FOR_APPROVAL_WEI;
-  const gasGaveUp = lowGas && gasWaitSince !== null && now - gasWaitSince > 90_000;
-
-  const expired = remainingS <= 0 && status !== "paid";
-  const closed = TERMINAL.has(status) || expired;
+  const paid = status === "paid";
+  const closed = TERMINAL.has(status) || remainingS <= 0;
+  const inFlight = status === "submitted";
+  const onCelo = isConnected && chainId === celo.id;
 
   // MiniPay injects window.ethereum and expects the dapp to connect without a button.
   useEffect(() => {
@@ -139,41 +100,26 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectors, isConnected]);
 
-  // Status polling: once on load, then while a payment is in flight.
+  // Status: polled until the invoice is final (paid from another device, relayed, expired…).
   const pollStatus = useCallback(async () => {
-    const res = await fetch(`/api/invoices/${invoice.id}/status`, { cache: "no-store" });
-    if (!res.ok) return null;
+    const res = await fetch(`/api/invoices/${invoice.id}/status`, { cache: "no-store" }).catch(() => null);
+    if (!res?.ok) return;
     const s = (await res.json()) as StatusResponse;
     setStatus(s.status);
     if (s.txHash) setTxHash(s.txHash);
-    if (s.status === "paid") setPhase("paid");
-    return s;
+    if (s.status === "open" && s.submission?.status === "failed") setNotice("generic_error");
   }, [invoice.id]);
-
   useEffect(() => {
+    if (TERMINAL.has(status)) return;
     void pollStatus();
-  }, [pollStatus]);
-
-  useEffect(() => {
-    if (phase !== "waiting") return;
-    const id = setInterval(async () => {
-      const s = await pollStatus();
-      if (s?.submission?.status === "failed" && s.status === "open") {
-        setPhase("idle");
-        setQuote(null);
-        setError("generic_error");
-      }
-    }, 2500);
+    const id = setInterval(pollStatus, 3000);
     return () => clearInterval(id);
-  }, [phase, pollStatus]);
+  }, [status, pollStatus]);
 
-  const wrongChain = isConnected && chainId !== celo.id;
-
-  async function getQuote() {
+  const getQuote = useCallback(async () => {
     if (!address) return;
-    setError(null);
+    setBusy("quoting");
     setQuoteErr(null);
-    setPhase("quoting");
     try {
       const res = await fetch(`/api/invoices/${invoice.id}/quote`, {
         method: "POST",
@@ -181,329 +127,236 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
         body: JSON.stringify({ payer: address }),
       });
       const body = (await res.json()) as QuoteOk & QuoteError;
-      if (res.ok) {
-        setQuote(body);
-        setPhase("quoted");
-      } else {
+      if (res.ok) setQuote(body);
+      else {
+        setQuote(null);
         setQuoteErr(body);
-        setError(errorKey(body.error));
-        setPhase("idle");
       }
     } catch {
-      setError("generic_error");
-      setPhase("idle");
+      setQuoteErr({ error: "generic_error" } as QuoteError);
+    } finally {
+      setBusy(null);
     }
-  }
+  }, [address, invoice.id]);
 
-  async function signAndSubmit() {
-    if (!quote || !address) return;
-    if (Date.parse(quote.quoteExpiresAt) <= Date.now()) {
-      setError("quote_expired");
-      setQuote(null);
-      setPhase("idle");
+  // Quote on connect, and again just before it expires.
+  useEffect(() => {
+    if (onCelo && !closed && !inFlight && !quote && !quoteErr && !busy) void getQuote();
+  }, [onCelo, closed, inFlight, quote, quoteErr, busy, getQuote]);
+  useEffect(() => {
+    if (!quote) return;
+    const ms = Date.parse(quote.quoteExpiresAt) - Date.now() - 2000;
+    const id = setTimeout(() => setQuote(null), Math.max(0, ms));
+    return () => clearTimeout(id);
+  }, [quote]);
+  useEffect(() => {
+    setQuote(null);
+    setQuoteErr(null);
+  }, [address]);
+
+  // One-time Permit2 approval of a wFIAT: wait for gas (the agent sends some to payers without CELO), then follow
+  // the allowance on-chain and re-quote as soon as it is there, without depending on the wallet's receipt.
+  const approvalToken = quote?.needsPermit2Approval[0] ?? null;
+  useEffect(() => {
+    if (!approvalToken || !address || !publicClient) {
+      setNativeBal(null);
+      setGasWaitSince(null);
       return;
     }
-    setError(null);
-    setPhase("signing");
-    const signatures: Hex[] = [];
-    try {
-      for (const [i, entry] of quote.toSign.entries()) {
-        setStep(i + 1);
-        if (!entry.typedData) throw new Error("allowance leg");
-        const td = hydrateTypedData(entry.typedData);
-        signatures.push(await signTypedData.mutateAsync({ account: address, ...td } as Parameters<typeof signTypedData.mutateAsync>[0]));
+    setGasWaitSince((v) => v ?? Date.now());
+    let stop = false;
+    const tick = async () => {
+      try {
+        const bal = await publicClient.getBalance({ address });
+        if (!stop) setNativeBal(bal);
+        if (approving) {
+          const a = await publicClient.readContract({ address: approving, abi: erc20Abi, functionName: "allowance", args: [address, quote!.permit2] });
+          const need = BigInt(quote!.toSign.find((e) => e.token === approving)?.amountIn ?? "0");
+          if (!stop && a >= need) {
+            setApproving(null);
+            setQuote(null); // re-quote: the leg is now a gasless signature
+          }
+        }
+      } catch {
+        /* next tick */
       }
-    } catch (e) {
-      setError(isUserRejection(e) ? "rejected" : "generic_error");
-      setPhase("quoted");
-      return;
-    }
-    setPhase("submitting");
-    try {
-      const res = await fetch(`/api/invoices/${invoice.id}/submit`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ quoteId: quote.quoteId, signatures }),
-      });
-      if (res.ok || res.status === 409) {
-        setPhase("waiting");
-        return;
-      }
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(errorKey(body.error));
-      setQuote(null);
-      setPhase("idle");
-    } catch {
-      setError("generic_error");
-      setPhase("quoted");
-    }
-  }
+    };
+    void tick();
+    const id = setInterval(tick, 2000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [approvalToken, approving, address, publicClient, quote]);
+  const lowGas = nativeBal !== null && nativeBal < GAS_FOR_APPROVAL_WEI;
+  const gasMissing = lowGas && gasWaitSince !== null && now - gasWaitSince > GAS_WAIT_MS;
 
-  /** ALLOWANCE mode: approve(router) + pay() sent by the payer, ERC-8021 tagged, gas via fee-currency adapter. */
-  async function selfPay() {
-    if (!quote || !address || !walletClient || !publicClient) return;
-    setError(null);
-    setPhase("self_paying");
-    try {
-      const inv = invoiceFromWire(quote.invoice);
-      const legs = allowanceLegs(quote.plan.legs);
-      const current: Record<string, bigint> = {};
-      for (const l of legs) {
-        current[l.token] = await publicClient.readContract({ address: l.token, abi: erc20Abi, functionName: "allowance", args: [address, quote.router] });
-      }
-      const txs = allowancePlan({ invoice: inv, payer: address, router: quote.router, legs, currentAllowances: current, attributionCode: ATTRIBUTION_CODE });
-      const feeCurrency = feeCurrencyFor(legs.map((l) => l.token));
-      let last: Hex | null = null;
-      for (const tx of txs) {
-        last = await walletClient.sendTransaction({ account: address, chain: celo, to: tx.to, data: tx.data, ...(feeCurrency ? { feeCurrency } : {}) });
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: last });
-        if (receipt.status !== "success") throw new Error("tx reverted");
-      }
-      setTxHash(last);
-      setPhase("waiting");
-    } catch (e) {
-      setError(isUserRejection(e) ? "rejected" : "generic_error");
-      setPhase("quoted");
-    }
-  }
-
-  async function approvePermit2(token: Address) {
-    if (!quote || !address || !walletClient || !publicClient) return;
-    setError(null);
+  async function approve(token: Address) {
+    if (!quote || !address || !walletClient) return;
+    setNotice(null);
+    setBusy("approving");
     try {
       const feeCurrency = feeCurrencyFor([token]);
-      const hash = await walletClient.sendTransaction({
+      await walletClient.sendTransaction({
         account: address,
         chain: celo,
         to: token,
         data: approveCalldata(quote.permit2, maxUint256, attributionSuffix(ATTRIBUTION_CODE)),
         ...(feeCurrency ? { feeCurrency } : {}),
       });
-      await publicClient.waitForTransactionReceipt({ hash });
-      await getQuote();
+      setApproving(token);
     } catch (e) {
-      setError(isUserRejection(e) ? "rejected" : "generic_error");
+      setNotice(isRejection(e) ? "rejected" : "generic_error");
+    } finally {
+      setBusy(null);
     }
   }
 
-  const planView = useMemo(() => {
-    if (!quote) return null;
-    const { costBps, savingsBps } = quote.plan;
-    const pct = (bps: number) => `${(bps / 100).toLocaleString(locale, { maximumFractionDigits: 2 })} %`;
-    return {
-      legs: quote.toSign.map((e) => {
-        const amount = BigInt(e.amountIn);
-        // costBps is fractional (e.g. 8.67): scale to hundredths of a bp before BigInt (BigInt(8.67) throws).
-        const c = Math.round(costBps * 100);
-        const fee = c > 0 ? (amount * BigInt(c)) / BigInt(1_000_000 + c) : 0n;
-        return {
-          key: e.index,
-          label: `${formatUnits(amount, e.decimals, locale, 2)} ${e.symbol}`,
-          fee: `${formatUnits(fee, e.decimals, locale, 2)} ${e.symbol}`,
-        };
-      }),
-      cost: pct(costBps),
-      savings: savingsBps > 0 ? pct(savingsBps) : null,
-      hasAllowanceLeg: quote.toSign.some((e) => e.kind === "ALLOWANCE"),
-    };
-  }, [quote, locale]);
+  async function pay() {
+    if (!quote || !address) return;
+    setNotice(null);
+    if (quote.toSign.some((e) => e.kind === "ALLOWANCE")) return selfPay(quote);
+    const signatures: Hex[] = [];
+    setBusy("signing");
+    try {
+      for (const entry of quote.toSign) {
+        if (!entry.typedData) throw new Error("allowance leg");
+        const td = hydrateTypedData(entry.typedData);
+        signatures.push(await signTypedData.mutateAsync({ account: address, ...td } as Parameters<typeof signTypedData.mutateAsync>[0]));
+      }
+      setBusy("submitting");
+      const res = await fetch(`/api/invoices/${invoice.id}/submit`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ quoteId: quote.quoteId, signatures }),
+      });
+      if (res.ok || res.status === 409) {
+        setStatus("submitted");
+      } else {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setNotice(errorKey(body.error));
+        setQuote(null);
+      }
+    } catch (e) {
+      setNotice(isRejection(e) ? "rejected" : "generic_error");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** ALLOWANCE legs (rare fallback): approve(router) + pay() sent by the payer, ERC-8021 tagged. */
+  async function selfPay(q: QuoteOk) {
+    if (!address || !walletClient || !publicClient) return;
+    setBusy("sending");
+    try {
+      const legs = allowanceLegs(q.plan.legs);
+      const current: Record<string, bigint> = {};
+      for (const l of legs) {
+        current[l.token] = await publicClient.readContract({ address: l.token, abi: erc20Abi, functionName: "allowance", args: [address, q.router] });
+      }
+      const txs = allowancePlan({ invoice: invoiceFromWire(q.invoice), payer: address, router: q.router, legs, currentAllowances: current, attributionCode: ATTRIBUTION_CODE });
+      const feeCurrency = feeCurrencyFor(legs.map((l) => l.token));
+      for (const tx of txs) {
+        const hash = await walletClient.sendTransaction({ account: address, chain: celo, to: tx.to, data: tx.data, ...(feeCurrency ? { feeCurrency } : {}) });
+        const r = await publicClient.waitForTransactionReceipt({ hash });
+        if (r.status !== "success") throw new Error("reverted");
+        setTxHash(hash);
+      }
+      setStatus("submitted");
+    } catch (e) {
+      setNotice(isRejection(e) ? "rejected" : "generic_error");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const amountIn = quote?.toSign.map((e) => `${formatUnits(BigInt(e.amountIn), e.decimals, locale, 2)} ${e.symbol}`).join(" + ");
+  const symbolOf = (token: Address) => quote?.toSign.find((e) => e.token === token)?.symbol ?? "";
+  const fiatLabel = invoice.currency === "BRL" ? DICTS.pt.pay_fiat : lang === "en" ? t.pay_fiat : DICTS.es.pay_fiat;
+
+  // The single action of the screen, derived from the state.
+  function renderAction() {
+    const wait = (label: string) => (
+      <button type="button" className="btn primary" disabled>
+        <span className="spin" aria-hidden /> {label}
+      </button>
+    );
+    if (!isConnected) {
+      return (
+        <div className="stack">
+          {connectors.map((c, i) => (
+            <button key={c.uid} type="button" className={`btn ${i === 0 ? "primary" : ""}`} disabled={connect.isPending} onClick={() => connect.mutate({ connector: c, chainId: celo.id })}>
+              {i === 0 ? t.connect : c.type === "walletConnect" ? t.connect_wc : c.name}
+            </button>
+          ))}
+          {connectors.length === 0 && <p className="note">{t.no_wallet}</p>}
+        </div>
+      );
+    }
+    if (!onCelo) return <button type="button" className="btn primary" onClick={() => switchChain.mutate({ chainId: celo.id })}>{t.switch_network}</button>;
+    if (inFlight || busy === "submitting") return wait(t.paying);
+    if (busy === "signing" || busy === "approving" || busy === "sending") return wait(t.confirm_wallet);
+    if (quoteErr) {
+      return (
+        <div className="stack">
+          {quoteErr.rampUrl ? (
+            <a className="btn primary" href={quoteErr.rampUrl} target="_blank" rel="noopener noreferrer">{fiatLabel}</a>
+          ) : null}
+          <button type="button" className={`btn ${quoteErr.rampUrl ? "" : "primary"}`} onClick={getQuote}>{t.retry}</button>
+          <p className="note">{t[errorKey(quoteErr.error)]}</p>
+        </div>
+      );
+    }
+    if (!quote) return wait("");
+    if (approvalToken) {
+      if (approving) return wait(tr(t, "approve", { token: symbolOf(approvalToken) }));
+      if (lowGas && !gasMissing) return wait(t.preparing);
+      return (
+        <div className="stack">
+          <button type="button" className="btn primary" onClick={() => approve(approvalToken)}>{tr(t, "approve", { token: symbolOf(approvalToken) })}</button>
+          {gasMissing && <p className="note">{t.gas_missing}</p>}
+        </div>
+      );
+    }
+    return <button type="button" className="btn primary" onClick={pay}>{tr(t, "pay_with", { amount: amountIn ?? "" })}</button>;
+  }
+
+  if (paid) {
+    return (
+      <main className="wrap center">
+        <div className="check" aria-hidden>✓</div>
+        <h1 className="title">{t.paid}</h1>
+        <p className="amount">{formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span></p>
+        <p className="sub">{invoice.merchantName}</p>
+        {txHash && <a className="sub" href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer">Celoscan ↗</a>}
+      </main>
+    );
+  }
 
   const mm = String(Math.floor(remainingS / 60)).padStart(2, "0");
   const ss = String(remainingS % 60).padStart(2, "0");
-  const busy = phase === "quoting" || phase === "signing" || phase === "submitting" || phase === "self_paying";
-
   return (
     <main className="wrap">
-      <div className="topbar">
-        <span className="brand">Cobrá</span>
-        <LangSwitch lang={lang} />
-      </div>
+      <header className="top">
+        <span className="sub">{invoice.merchantName}</span>
+        {!closed && <span className={`sub tabular ${remainingS < 60 ? "warn" : ""}`}>{mm}:{ss}</span>}
+      </header>
 
-      {/* Phishing-resistant header: who gets paid, how much, to which address, on which domain. */}
-      <section className="card header" aria-labelledby="merchant">
-        <p className="muted small">{t.merchant}</p>
-        <h1 id="merchant" className="merchant">{invoice.merchantName}</h1>
-        <p className="amount" aria-label={t.amount}>
-          {formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span>
-        </p>
-        {invoice.reference && <p className="muted small">{t.reference} {invoice.reference}{invoice.description ? ` · ${invoice.description}` : ""}</p>}
-        <p className="small">
-          {t.pays_to}{" "}
-          <button type="button" className="linkish mono" onClick={() => setShowFull((v) => !v)} aria-expanded={showFull}>
-            {showFull ? invoice.payoutAddress : short(invoice.payoutAddress)}
-          </button>{" "}
-          <a className="small" href={explorerAddress(invoice.payoutAddress)} target="_blank" rel="noopener noreferrer">↗</a>
-        </p>
-        <p className="small muted">
-          {formatUnits(invoice.amountOut, invoice.tokenOutDecimals, locale, 2)} {invoice.tokenOutSymbol} · Celo
-        </p>
-        <p className="small domain">
-          🔒 {t.domain_check} <strong>{host}</strong>
-        </p>
-        {!closed && phase !== "paid" && (
-          <p className={`countdown ${remainingS < 60 ? "warn" : ""}`} aria-live="polite">
-            {t.expires_in} {mm}:{ss}
-          </p>
-        )}
+      <section className="hero">
+        <p className="amount">{formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span></p>
+        {invoice.description && <p className="sub">{invoice.description}</p>}
+        <a className="sub mono" href={explorerAddress(invoice.payoutAddress)} target="_blank" rel="noopener noreferrer">→ {short(invoice.payoutAddress)}</a>
       </section>
 
-      {phase === "paid" || status === "paid" ? (
-        <section className="card ok" aria-live="polite">
-          <h2>✓ {t.paid}</h2>
-          <p>{t.receipt}: {formatDecimal(invoice.amountLocal, locale)} {invoice.currency} → {invoice.merchantName}</p>
-          {txHash && (
-            <p>
-              <a href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer">{t.view_explorer}</a>
-              <br />
-              <span className="mono small">{short(txHash)}</span>
-            </p>
-          )}
-        </section>
-      ) : closed ? (
-        <section className="card err" role="alert">
-          <p>{expired || status === "expired" ? t.expired : t.not_open}</p>
-        </section>
-      ) : (
-        <>
-          <section className="card">
-            {!isConnected ? (
-              <div className="stack">
-                <h2>{t.connect}</h2>
-                {connectors.length === 0 && <p className="muted">{t.no_wallet}</p>}
-                {connectors.map((c) => (
-                  <button key={c.uid} type="button" className="btn" disabled={connect.isPending} onClick={() => connect.mutate({ connector: c, chainId: celo.id })}>
-                    {c.type === "injected" ? (c.name && c.name !== "Injected" ? c.name : t.connect_injected) : c.type === "walletConnect" ? t.connect_wc : c.name}
-                  </button>
-                ))}
-                {connect.error && <p className="error small">{isUserRejection(connect.error) ? t.rejected : t.no_wallet}</p>}
-              </div>
-            ) : (
-              <div className="row">
-                <span className="small">{t.connected_as} <span className="mono">{short(address!)}</span></span>
-                <button type="button" className="linkish small" onClick={() => { disconnect(); setQuote(null); setPhase("idle"); }}>{t.disconnect}</button>
-              </div>
-            )}
-            {wrongChain && (
-              <div className="stack">
-                <p className="error small">{t.wrong_network}</p>
-                <button type="button" className="btn" onClick={() => switchChain.mutate({ chainId: celo.id })}>{t.switch_network}</button>
-              </div>
-            )}
-          </section>
+      {closed ? <p className="note center-text">{status === "expired" || remainingS <= 0 ? t.expired : t.not_open}</p> : renderAction()}
+      {notice && !closed && <p className="note err-text">{t[notice]}</p>}
 
-          {isConnected && !wrongChain && (
-            <section className="card stack" aria-live="polite">
-              {!quote && (
-                <button type="button" className="btn primary" disabled={busy} onClick={getQuote}>
-                  {phase === "quoting" ? t.quoting : t.get_quote}
-                </button>
-              )}
-
-              {quote && planView && (
-                <>
-                  <h2>{t.plan_title}</h2>
-                  <ul className="legs">
-                    {planView.legs.map((l) => (
-                      <li key={l.key}>
-                        <strong>{l.label}</strong> <span className="muted small">({t.fee} ≈ {l.fee})</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="small">{t.cost}: {planView.cost}{planView.savings && <> · <span className="good">{t.savings}: {planView.savings}</span></>}</p>
-                  {!planView.hasAllowanceLeg && !needsApproval && <p className="small muted">{t.no_gas}</p>}
-
-                  {needsApproval && lowGas && <p className="small muted">{gasGaveUp ? t.gas_missing : `⏳ ${t.gas_incoming}`}</p>}
-                  {quote.needsPermit2Approval.map((tok) => (
-                    <button key={tok} type="button" className="btn" disabled={busy || (lowGas && !gasGaveUp)} onClick={() => approvePermit2(tok)}>
-                      {tr(t, "approve_permit2", { token: quote.toSign.find((e) => e.token === tok)?.symbol ?? "" })}
-                    </button>
-                  ))}
-
-                  {!planView.hasAllowanceLeg && quote.needsPermit2Approval.length === 0 && (
-                    <button type="button" className="btn primary" disabled={busy} onClick={signAndSubmit}>
-                      {phase === "signing"
-                        ? `${t.signing} (${tr(t, "sign_step", { i: step, n: quote.toSign.length })})`
-                        : phase === "submitting"
-                          ? t.submitting
-                          : t.sign}
-                    </button>
-                  )}
-                  <details className="small" open={planView.hasAllowanceLeg}>
-                    <summary>{t.self_pay}</summary>
-                    <p className="muted">{t.self_pay_hint}</p>
-                    <button type="button" className="btn" disabled={busy || !walletClient} onClick={selfPay}>
-                      {phase === "self_paying" ? t.sending_tx : t.self_pay}
-                    </button>
-                  </details>
-                  <button type="button" className="linkish small" disabled={busy} onClick={getQuote}>{t.requote}</button>
-                </>
-              )}
-
-              {phase === "waiting" && (
-                <p className="small">
-                  ⏳ {t.waiting_tx}
-                  {txHash && (
-                    <>
-                      {" "}
-                      <a href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer">{t.view_explorer}</a>
-                    </>
-                  )}
-                </p>
-              )}
-            </section>
-          )}
-
-          {error && (
-            <section className="card err stack" role="alert">
-              <p>{t[error]}</p>
-              {quoteErr?.rampUrl && (
-                <a className="btn primary" href={quoteErr.rampUrl} target="_blank" rel="noopener noreferrer">
-                  {invoice.currency === "BRL" ? DICTS.pt.pay_fiat : lang === "en" ? t.pay_fiat : DICTS.es.pay_fiat}
-                </a>
-              )}
-              {quoteErr?.rampUrl && (
-                <div className="small">
-                  <p className="muted">{t.ramp_steps.replace("{token}", quoteErr.directTransfer?.symbol ?? "")}</p>
-                  {quoteErr.directTransfer && (
-                    <p>
-                      <strong>
-                        {formatUnits(quoteErr.directTransfer.amount, quoteErr.directTransfer.decimals, locale, 18)} {quoteErr.directTransfer.symbol}
-                      </strong>{" "}
-                      · Celo
-                    </p>
-                  )}
-                  {address && <p className="mono break">{address}</p>}
-                </div>
-              )}
-              {quoteErr?.directTransfer && (
-                <div className="small">
-                  <p className="muted">{t.direct_transfer}</p>
-                  <p>
-                    <strong>
-                      {formatUnits(quoteErr.directTransfer.amount, quoteErr.directTransfer.decimals, locale, 18)} {quoteErr.directTransfer.symbol}
-                    </strong>
-                  </p>
-                  <p className="mono break">{quoteErr.directTransfer.address}</p>
-                  <button
-                    type="button"
-                    className="linkish"
-                    onClick={async () => {
-                      await navigator.clipboard?.writeText(quoteErr.directTransfer!.address);
-                      setCopied(true);
-                    }}
-                  >
-                    {copied ? t.copied : t.copy}
-                  </button>
-                </div>
-              )}
-              {!busy && isConnected && (
-                <button type="button" className="btn" onClick={getQuote}>{t.retry}</button>
-              )}
-            </section>
-          )}
-        </>
-      )}
-      <footer className="muted small foot">Celo · {CELO.chainId}</footer>
+      <footer className="foot">
+        {isConnected && address && (
+          <button type="button" className="linkish" onClick={() => disconnect()}>{short(address)} · {t.disconnect}</button>
+        )}
+        <LangSwitch lang={lang} />
+      </footer>
     </main>
   );
 }

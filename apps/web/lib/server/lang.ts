@@ -7,8 +7,3 @@ export async function requestLanguage(fallback: Language = "es"): Promise<Langua
   const [h, c] = await Promise.all([headers(), cookies()]);
   return negotiateLanguage(h.get("accept-language"), c.get(LANG_COOKIE)?.value, fallback);
 }
-
-export async function requestHost(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-host") ?? h.get("host") ?? "";
-}
