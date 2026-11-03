@@ -84,7 +84,9 @@ export function validateWebhookInfo(info: WebhookInfo, baseUrl: string, nowSec: 
   if (info.url !== want) fail.push(`webhook url is "${info.url || "(none)"}", expected ${want}`);
   if (info.pending_update_count > 10) warn.push(`${info.pending_update_count} pending updates (webhook failing?)`);
   if (info.last_error_message && info.last_error_date && nowSec - info.last_error_date < 3600) {
-    warn.push(`last error <1h ago: ${info.last_error_message}`);
+    // Telegram keeps last_error_* after later successes: show its age and the backlog so a fixed webhook is recognisable.
+    const mins = Math.max(0, Math.round((nowSec - info.last_error_date) / 60));
+    warn.push(`last error ${mins} min ago: ${info.last_error_message} (${info.pending_update_count} pending update(s))`);
   }
   return { fail, warn };
 }
@@ -119,7 +121,11 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
     try {
       await fn();
     } catch (e) {
-      add(group, name, "FAIL", (e as Error).message.split("\n")[0] ?? String(e));
+      // Drizzle wraps driver errors ("Failed query: …"); the actionable reason is in `cause`.
+      const err = e as Error & { cause?: unknown };
+      const head = err.message?.split("\n")[0] ?? String(e);
+      const cause = err.cause instanceof Error ? err.cause.message.split("\n")[0] : undefined;
+      add(group, name, "FAIL", cause ? `${head} — cause: ${cause}` : head);
     }
   };
   const pc = deps.publicClient;

@@ -25,9 +25,10 @@ export function createTelegramWebhook(opts: { secret: string | undefined; getCal
     let cb: WebhookHandler;
     try {
       cb = await opts.getCallback();
-    } catch {
-      // e.g. bot not implemented / misconfigured. 503 makes Telegram retry later; no details leaked.
-      console.error(JSON.stringify({ event: "telegram.bot_unavailable" }));
+    } catch (e) {
+      // e.g. bot not implemented / misconfigured. 503 makes Telegram retry later; no details leaked to the client.
+      // The reason goes to server logs only (messages here never contain env values, e.g. "telegram env incomplete").
+      console.error(JSON.stringify({ event: "telegram.bot_unavailable", reason: (e as Error)?.message?.split("\n")[0] }));
       return new Response("bot unavailable", { status: 503 });
     }
     return cb(req);
