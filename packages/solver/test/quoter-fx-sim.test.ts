@@ -165,3 +165,28 @@ describe("fetchReferenceRates (createReferenceRateSource)", () => {
     expect(gone).toEqual({ USD: 1 });
   });
 });
+
+describe("QuoteFailedError.reverted (outage vs definitive no)", () => {
+  it("flags on-chain reverts by error name, not transport errors", async () => {
+    const { isContractRevert } = await import("../src/quoter");
+    const revert = Object.assign(new Error("exec"), { name: "ContractFunctionExecutionError", cause: Object.assign(new Error("r"), { name: "ContractFunctionRevertedError" }) });
+    const http = Object.assign(new Error("exec"), { name: "ContractFunctionExecutionError", cause: Object.assign(new Error("h"), { name: "HttpRequestError" }) });
+    expect(isContractRevert(revert)).toBe(true);
+    expect(isContractRevert(http)).toBe(false);
+    expect(isContractRevert(undefined)).toBe(false);
+  });
+
+  it("solver does not count reverted quotes as failed quotes", async () => {
+    const { solve, QuoteFailedError } = await import("../src/index");
+    const { RATES, REGISTRY, T, ars, invoiceArs } = await import("./helpers");
+    const quoter = (reverted: boolean) => ({
+      quoteExactInput: async () => { throw new QuoteFailedError("x", { reverted }); },
+      quoteExactOutput: async () => { throw new QuoteFailedError("x", { reverted }); },
+    });
+    const input = { invoice: invoiceArs("1000"), balances: [{ token: T.USDT, amount: ars("1") / 10n ** 12n * 10n ** 6n }], refRates: RATES };
+    const definitive = await solve(input, { quoter: quoter(true), registry: REGISTRY });
+    const outage = await solve(input, { quoter: quoter(false), registry: REGISTRY });
+    expect(definitive.ok || definitive.detail).not.toMatch(/failed quotes/);
+    expect(outage.ok ? "" : outage.detail).toMatch(/failed quotes/);
+  });
+});

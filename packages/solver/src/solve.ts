@@ -210,8 +210,10 @@ export async function solveImpl(input: SolverInput, opts: SolverOptions): Promis
               ? (await opts.quoter.quoteExactOutput(path, amount)).amountIn
               : (await opts.quoter.quoteExactInput(path, amount)).amountOut;
           return typeof v === "bigint" && v > 0n ? v : null;
-        } catch {
-          quoteErrors++;
+        } catch (e) {
+          // A QuoterV2 revert (no pool, not enough liquidity) is a definitive "no", not an outage: only transport
+          // failures count, so the API can tell "retry later" from "no route, offer Ripio / direct payment".
+          if (!(e instanceof Error && (e as { reverted?: unknown }).reverted === true)) quoteErrors++;
           return null;
         }
       });

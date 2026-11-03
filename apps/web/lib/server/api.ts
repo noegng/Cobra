@@ -145,8 +145,10 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
       logEvent("quote.transient_failure", { invoiceId: id, reason: result.reason });
       return json({ error: "temporarily_unavailable", retryable: true } satisfies QuoteError, 503);
     }
+    // Ripio on-ramp whenever buying the invoice's wFIAT in local currency solves it: no usable balance, no pool
+    // to convert (wMXN, wCOP, ...), or the pool price is outside the guard. Not for over_cap (amount too large).
     const rampUrl =
-      result.reason === "insufficient_balance"
+      result.reason === "insufficient_balance" || result.reason === "no_route" || result.reason === "price_guard"
         ? buildRipioOnrampUrl({ symbol: directTransfer.symbol, amount: inv.amountOut, decimals: directTransfer.decimals, payer })
         : null;
     const out: QuoteError = { error: result.reason, fallback: result.fallback, rampUrl, directTransfer };

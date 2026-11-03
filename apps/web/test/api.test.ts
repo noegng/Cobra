@@ -408,6 +408,17 @@ describe("POST /api/m/:slug/invoice (static QR)", () => {
   });
 });
 
+describe("Ripio on-ramp on no_route", () => {
+  it("no pool to the invoice token (definitive) → 422 with the prefilled Ripio link", async () => {
+    const fx = await setup();
+    fx.setSolver(() => ({ ok: false, reason: "no_route", fallback: "ripio", detail: "no pool path to wARS" }));
+    const { res, body } = await quote(fx);
+    expect(res.status).toBe(422);
+    expect(body.error).toBe("no_route");
+    expect(new URL(body.rampUrl!).searchParams.get("token")).toBe("WARS");
+  });
+});
+
 describe("Ripio on-ramp link", () => {
   it("prefills AR/BR/MX/CO on Celo, none for wCLP/wPEN, amount rounded up to cents", async () => {
     const { buildRipioOnrampUrl, rampAmount } = await import("../lib/ramp");

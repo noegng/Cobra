@@ -45,12 +45,30 @@ export const quoterV2Abi = [
   },
 ] as const;
 
-/** Thrown when a quote cannot be obtained (missing pool, not enough liquidity, RPC failure). */
+/**
+ * Thrown when a quote cannot be obtained (missing pool, not enough liquidity, RPC failure).
+ * `reverted` = the QuoterV2 call itself reverted (no pool / not enough liquidity): a definitive answer, not an
+ * outage. RPC/transport failures (timeouts, HTTP 429/5xx) have `reverted: false` and count as outage signals.
+ */
 export class QuoteFailedError extends Error {
   override name = "QuoteFailedError";
-  constructor(message: string, options?: { cause?: unknown }) {
+  readonly reverted: boolean;
+  constructor(message: string, options?: { cause?: unknown; reverted?: boolean }) {
     super(message, options);
+    this.reverted = options?.reverted ?? false;
   }
+}
+
+/**
+ * True when viem reports an on-chain revert (as opposed to a transport error). Walks `cause` by error NAME, not
+ * `instanceof`: the caller's viem client may come from another physical copy of viem (pnpm peer variants).
+ */
+export function isContractRevert(e: unknown): boolean {
+  const revertNames = new Set(["ContractFunctionRevertedError", "ExecutionRevertedError"]);
+  for (let x: unknown = e, depth = 0; x && typeof x === "object" && depth < 10; x = (x as { cause?: unknown }).cause, depth++) {
+    if (revertNames.has((x as { name?: string }).name ?? "")) return true;
+  }
+  return false;
 }
 
 export function createUniswapQuoterImpl(client: PublicClient, quoterV2: Address): QuoteSource {
@@ -66,7 +84,7 @@ export function createUniswapQuoterImpl(client: PublicClient, quoterV2: Address)
         });
         return { amountOut };
       } catch (cause) {
-        throw new QuoteFailedError(`quoteExactInput failed for ${path}`, { cause });
+        throw new QuoteFailedError(`quoteExactInput failed for ${path}`, { cause, reverted: isContractRevert(cause) });
       }
     },
     async quoteExactOutput(path: Hex, amountOut: bigint) {
@@ -80,7 +98,7 @@ export function createUniswapQuoterImpl(client: PublicClient, quoterV2: Address)
         });
         return { amountIn };
       } catch (cause) {
-        throw new QuoteFailedError(`quoteExactOutput failed for ${path}`, { cause });
+        throw new QuoteFailedError(`quoteExactOutput failed for ${path}`, { cause, reverted: isContractRevert(cause) });
       }
     },
   };
