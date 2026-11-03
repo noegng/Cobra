@@ -293,7 +293,9 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
     return {
       legs: quote.toSign.map((e) => {
         const amount = BigInt(e.amountIn);
-        const fee = costBps > 0 ? (amount * BigInt(costBps)) / BigInt(10_000 + costBps) : 0n;
+        // costBps is fractional (e.g. 8.67): scale to hundredths of a bp before BigInt (BigInt(8.67) throws).
+        const c = Math.round(costBps * 100);
+        const fee = c > 0 ? (amount * BigInt(c)) / BigInt(1_000_000 + c) : 0n;
         return {
           key: e.index,
           label: `${formatUnits(amount, e.decimals, locale, 2)} ${e.symbol}`,
