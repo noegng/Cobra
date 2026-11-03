@@ -2,3 +2,4 @@
 export * from "./invoices";
 export * from "./totals";
 export * from "./payments-csv";
+export * from "./proof";
