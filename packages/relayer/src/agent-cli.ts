@@ -2,7 +2,7 @@
  * ERC-8004 registration CLI logic (entry point: scripts/agent/register.ts).
  *
  * Default = DRY RUN: builds and prints the agent card JSON, the agentURI and the `register(string)` calldata.
- * `--execute` (human only): reads RELAYER_PRIVATE_KEY / RPC_URL / ATTRIBUTION_CODE from env, checks chain 42220,
+ * `--execute` (human only): reads RELAYER_PRIVATE_KEY / RPC_URL / ATTRIBUTION_CODE (default: hackathon code) from env, checks chain 42220,
  * checks the card is live at the agentURI, simulates, then sends through the narrow registration sender.
  */
 import { writeFileSync } from "node:fs";
@@ -76,8 +76,9 @@ export async function runRegisterCli(argv: readonly string[], env: Record<string
   }
 
   const rpcUrl = env.RPC_URL ?? CELO.rpcUrl;
-  const attributionCode = env.ATTRIBUTION_CODE;
-  if (!attributionCode) throw new Error("--execute needs ATTRIBUTION_CODE in env");
+  // Same default as deploy:router and the worker: the hackathon code, overridable via env.
+  const attributionCode = env.ATTRIBUTION_CODE?.trim() || HACKATHON_ATTRIBUTION_CODE;
+  if (!/^[a-z0-9_]{1,32}$/.test(attributionCode)) throw new Error("ATTRIBUTION_CODE must match [a-z0-9_]{1,32}");
   const pc = createPublicClient({ chain: celo, transport: http(rpcUrl) });
   const chainId = await pc.getChainId();
   if (chainId !== CELO_CHAIN_ID) throw new Error(`RPC chain id ${chainId} != 42220`);
