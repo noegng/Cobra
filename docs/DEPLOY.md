@@ -33,10 +33,10 @@ Vérification à tout moment : `pnpm verify:deploy --env .env.verify` (code de s
 
 ## 1. Base Postgres
 
-1. Crée une base sur Neon. Copie l'URL de connexion **avec pooling** (`...-pooler...`, `sslmode=require`) → `DATABASE_URL`.
-2. Applique les migrations :
+1. Projet Neon déjà lié (`.neon`, `neon.ts` ; projet `mute-cherry-78776891`, branche `production`). Dans la console Neon, copie l'URL **avec pooling** (`...-pooler...`, `sslmode=require`) → `DATABASE_URL` (Vercel, worker), et l'URL **directe** (sans `-pooler`) pour les migrations uniquement. Ne lance pas `neon env pull` : il écrirait ces URLs dans le `.env` racine.
+2. Applique les migrations (sur une connexion directe ; sans `DATABASE_URL_UNPOOLED`, le script retombe sur `DATABASE_URL`) :
    ```sh
-   DATABASE_URL='postgres://…' pnpm --filter @cobra/db migrate     # → "migrations applied"
+   DATABASE_URL_UNPOOLED='postgres://…' pnpm --filter @cobra/db migrate     # URL directe (sans -pooler) → "migrations applied"
    ```
 3. ✅ `verify:deploy` : `[database] migrations` PASS. (`[worker] indexer cursor` restera FAIL jusqu'à l'étape 7, c'est normal.)
 
