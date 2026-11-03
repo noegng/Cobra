@@ -62,9 +62,9 @@ const es = {
   close_body:
     "Cobrado: {paidTotal} ({paidCount} pagos)\nPendientes: {open} · Vencidos: {expired} · Cancelados: {cancelled}\nCobros creados hoy: {created}",
   close_csv_caption: "Detalle del día {date} (CSV)",
-  withdraw_manual:
-    "Para pasar tus {token} a pesos en tu banco:\n1. En la app de Ripio, busca tu dirección de depósito de {token} en la red Celo.\n2. Envía tus {token} desde tu billetera ({address}) a esa dirección.\n3. En Ripio, vende {token} y retira a tu cuenta bancaria.\nCobrá nunca mueve tus fondos.",
-  withdraw_link: "Abre este link para retirar tus {token} a tu banco con Ripio: {url}",
+  withdraw_link: "Para pasar tus {token} a pesos en tu banco:\n1. Abre {url} (Ripio, retiro a banco).\n2. Elige {token} en la red Celo.\n3. Envía tus {token} desde tu billetera ({address}) a la dirección de depósito que te muestre Ripio.\nCobrá nunca mueve tus fondos.",
+  panel_link: "Tu panel (válido 15 minutos): {url}",
+  panel_unavailable: "El panel no está disponible por ahora.",
   reminder: "Recordatorio: el cobro {ref} ({amount}) sigue pendiente y vence en {minutes} min.\nLink: {url}\nReenviar por WhatsApp: {wa}",
   paid: "¡Pago recibido! {ref}: {amount}.\nComprobante: {url}",
   payout_confirm: "¿Confirmas que quieres recibir tus pagos en esta nueva dirección?\n{address}\nRevisa cada carácter.",
@@ -141,9 +141,9 @@ const pt: Strings = {
   close_body:
     "Recebido: {paidTotal} ({paidCount} pagamentos)\nPendentes: {open} · Vencidas: {expired} · Canceladas: {cancelled}\nCobranças criadas hoje: {created}",
   close_csv_caption: "Detalhe do dia {date} (CSV)",
-  withdraw_manual:
-    "Para levar seus {token} para reais no banco:\n1. No app da Ripio, encontre seu endereço de depósito de {token} na rede Celo.\n2. Envie seus {token} da sua carteira ({address}) para esse endereço.\n3. Na Ripio, venda {token} e saque para sua conta (PIX).\nO Cobrá nunca movimenta seus fundos.",
-  withdraw_link: "Abra este link para sacar seus {token} para o banco com a Ripio: {url}",
+  withdraw_link: "Para levar seus {token} para reais no banco:\n1. Abra {url} (Ripio, saque para o banco).\n2. Escolha {token} na rede Celo.\n3. Envie seus {token} da sua carteira ({address}) para o endereço de depósito que a Ripio mostrar.\nO Cobrá nunca movimenta seus fundos.",
+  panel_link: "Seu painel (válido por 15 minutos): {url}",
+  panel_unavailable: "O painel não está disponível no momento.",
   reminder: "Lembrete: a cobrança {ref} ({amount}) ainda está pendente e vence em {minutes} min.\nLink: {url}\nReenviar pelo WhatsApp: {wa}",
   paid: "Pagamento recebido! {ref}: {amount}.\nComprovante: {url}",
   payout_confirm: "Confirma que quer receber seus pagamentos neste novo endereço?\n{address}\nConfira cada caractere.",
@@ -217,9 +217,9 @@ const en: Strings = {
   close_body:
     "Collected: {paidTotal} ({paidCount} payments)\nPending: {open} · Expired: {expired} · Cancelled: {cancelled}\nRequests created today: {created}",
   close_csv_caption: "Details for {date} (CSV)",
-  withdraw_manual:
-    "To cash out your {token} to your bank:\n1. In the Ripio app, find your {token} deposit address on the Celo network.\n2. Send your {token} from your wallet ({address}) to that address.\n3. In Ripio, sell {token} and withdraw to your bank account.\nCobrá never moves your funds.",
-  withdraw_link: "Open this link to cash out your {token} to your bank with Ripio: {url}",
+  withdraw_link: "To cash out your {token} to your bank:\n1. Open {url} (Ripio off-ramp).\n2. Choose {token} on the Celo network.\n3. Send your {token} from your wallet ({address}) to the deposit address Ripio shows you.\nCobrá never moves your funds.",
+  panel_link: "Your dashboard (valid for 15 minutes): {url}",
+  panel_unavailable: "The dashboard is not available right now.",
   reminder: "Reminder: request {ref} ({amount}) is still unpaid and expires in {minutes} min.\nLink: {url}\nResend on WhatsApp: {wa}",
   paid: "Payment received! {ref}: {amount}.\nReceipt: {url}",
   payout_confirm: "Do you confirm you want to receive payments at this new address?\n{address}\nCheck every character.",

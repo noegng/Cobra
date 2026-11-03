@@ -19,7 +19,7 @@ import {
 } from "@cobra/shared";
 import { getCaps, isKillSwitchOn, onchainInvoiceFromRow, payments, quotes, submissions, type Db } from "@cobra/db";
 import { parseLocalAmount } from "../amount";
-import { rampUrlFor } from "../ramp";
+import { buildRipioOnrampUrl } from "../ramp";
 import { toWire, type QuoteError, type QuoteOk, type StatusResponse, type ToSignEntry, type WireTypedData } from "../wire";
 import { permit2ReadyTokens, type PayerChainState } from "./balances";
 import { INVOICE_ID_RE, SLUG_RE, UUID_RE, apiError, clientIp, json, logEvent, readJsonBody } from "./http";
@@ -145,11 +145,7 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
       logEvent("quote.transient_failure", { invoiceId: id, reason: result.reason });
       return json({ error: "temporarily_unavailable", retryable: true } satisfies QuoteError, 503);
     }
-    const lang = loaded.merchant.language === "pt" ? "pt" : loaded.merchant.language === "en" ? "en" : "es";
-    const rampUrl =
-      result.reason === "insufficient_balance"
-        ? await rampUrlFor({ address: payer, amount: row.amountLocal, crypto: outToken?.symbol, lang }, deps.env)
-        : null;
+    const rampUrl = result.reason === "insufficient_balance" ? buildRipioOnrampUrl() : null;
     const out: QuoteError = { error: result.reason, fallback: result.fallback, rampUrl, directTransfer };
     logEvent("quote.no_plan", { invoiceId: id, reason: result.reason });
     return json(out, 422);

@@ -12,7 +12,8 @@ import { amountStyleFor, parseAmount } from "./amount";
 import { matchCharge } from "./fastpath";
 import { amountErrorMessage, COUNTRY_LABEL, LANGUAGE_LABEL, LANGUAGES, languageFromTelegram, t } from "./i18n";
 import { cancelInvoice, createInvoice, dailySummary, listInvoices } from "./invoices";
-import { buildRipioOfframpLink, payUrl, proofUrl, qrPng, staticPayUrl, type RipioSessionMinter } from "./links";
+import { signDashboardToken } from "@cobra/shared/dashboard-token";
+import { buildRipioOfframpLink, payUrl, proofUrl, qrPng, staticPayUrl } from "./links";
 import {
   checkPayoutAddress,
   createMerchant,
@@ -46,7 +47,6 @@ export interface BotDeps {
   /** Downloads a Telegram file (voice notes). Default: global fetch. */
   fetchFile?: (url: string) => Promise<ArrayBuffer>;
   env?: Record<string, string | undefined>;
-  ripio?: RipioSessionMinter;
   /** Max LLM calls per merchant per minute (in-memory, best effort). Default 15. */
   llmPerMinute?: number;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
@@ -66,6 +66,7 @@ export const COMMANDS = {
   invoices: ["facturas", "faturas", "invoices"],
   close: ["cierre", "fechamento", "close"],
   withdraw: ["retirar", "sacar", "withdraw"],
+  panel: ["panel", "painel", "dashboard"],
   language: ["idioma", "language"],
   help: ["ayuda", "ajuda", "help"],
 } as const;
@@ -283,7 +284,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       return;
     }
     await ctx.replyWithChatAction("typing").catch(() => {});
-    const toolCtx: ToolContext = { db, merchant, publicBaseUrl: opts.publicBaseUrl, now, env, ripio: deps.ripio };
+    const toolCtx: ToolContext = { db, merchant, publicBaseUrl: opts.publicBaseUrl, now, env };
     let result;
     try {
       result = await runAgent({ model, ctx: toolCtx, text: text.slice(0, 1000) });
@@ -380,8 +381,21 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     if (!merchant) return;
     const lang = merchantLang(merchant);
     const token = tokenSymbol(merchant);
-    const url = await buildRipioOfframpLink({ env, minter: deps.ripio, merchantId: merchant.id, country: merchant.country, language: lang });
-    await ctx.reply(url ? t(lang, "withdraw_link", { token, url }) : t(lang, "withdraw_manual", { token, address: merchant.payoutAddress }));
+    const url = buildRipioOfframpLink();
+    await ctx.reply(t(lang, "withdraw_link", { token, url, address: merchant.payoutAddress }));
+  });
+
+  bot.command(COMMANDS.panel as unknown as string[], async (ctx) => {
+    const merchant = await requireMerchant(ctx);
+    if (!merchant) return;
+    const secret = env.DASHBOARD_SECRET;
+    if (!secret) {
+      await ctx.reply(t(merchantLang(merchant), "panel_unavailable"));
+      return;
+    }
+    const token = signDashboardToken({ merchantId: merchant.id, now: now().getTime() }, secret);
+    const url = `${opts.publicBaseUrl.replace(/\/+$/, "")}/dashboard?t=${encodeURIComponent(token)}`;
+    await ctx.reply(t(merchantLang(merchant), "panel_link", { url }));
   });
 
   bot.command(COMMANDS.language as unknown as string[], async (ctx) => {

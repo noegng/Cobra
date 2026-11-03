@@ -1,3 +1,4 @@
+import { verifyDashboardToken } from "@cobra/shared/dashboard-token";
 import { beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { InputFile } from "grammy";
@@ -115,7 +116,7 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     expect(inv!.amountLocal).toBe("2000");
   });
 
-  it("/facturas, /cierre (+CSV), /retirar (manual, no RIPIO_PARTNER), /ayuda, /idioma", async () => {
+  it("/facturas, /cierre (+CSV), /retirar (public Ripio link + steps), /ayuda, /idioma", async () => {
     const m = await seedMerchant(db, { telegramUserId: 1n });
     const { bot, calls } = makeBot(db, { now: () => NOW });
     await bot.handleUpdate(textUpdate(1, "/facturas"));
@@ -133,8 +134,8 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     expect(doc.payload.caption).toBe("Detalle del día 2026-11-02 (CSV)");
 
     await bot.handleUpdate(textUpdate(1, "/retirar"));
-    expect(texts(calls).at(-1)).toMatch(/Ripio.*red Celo.*nunca mueve tus fondos/s);
-    expect(texts(calls).at(-1)).not.toMatch(/https?:\/\//);
+    expect(texts(calls).at(-1)).toMatch(/https:\/\/ramp\.ripio\.com\/off-ramp.*red Celo.*nunca mueve tus fondos/s);
+    expect(texts(calls).at(-1)).toContain(m.payoutAddress);
 
     await bot.handleUpdate(textUpdate(1, "/ayuda"));
     expect(texts(calls).at(-1)).toMatch(/\/cobrar 4500 café/);
@@ -146,11 +147,20 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     expect(texts(calls).at(-1)).toMatch(/^Suas últimas cobranças:/);
   });
 
-  it("/retirar returns the Ripio widget link only when RIPIO_PARTNER and a session minter exist", async () => {
-    await seedMerchant(db, { telegramUserId: 1n });
-    const { bot, calls } = makeBot(db, { env: { RIPIO_PARTNER: "cobra" }, ripio: { mint: async () => "tok" } });
-    await bot.handleUpdate(textUpdate(1, "/retirar"));
-    expect(texts(calls).at(-1)).toContain("https://b2b-widget-onramp.ripio.com/offramp.html?_to=tok&_la=es");
+  it("/panel replies with a short-lived signed dashboard link (needs DASHBOARD_SECRET)", async () => {
+    const m = await seedMerchant(db, { telegramUserId: 1n });
+    const secret = "s".repeat(40);
+    const { bot, calls } = makeBot(db, { env: { DASHBOARD_SECRET: secret }, now: () => NOW });
+    await bot.handleUpdate(textUpdate(1, "/panel"));
+    const url = texts(calls).at(-1)!.match(/(https?:\/\/\S+)/)![1]!;
+    const u = new URL(url);
+    expect(u.pathname).toBe("/dashboard");
+    expect(verifyDashboardToken(u.searchParams.get("t"), secret, NOW.getTime())).toMatchObject({ merchantId: m.id });
+    expect(verifyDashboardToken(u.searchParams.get("t"), secret, NOW.getTime() + 16 * 60_000)).toBeNull();
+
+    const nosecret = makeBot(db, { now: () => NOW });
+    await nosecret.bot.handleUpdate(textUpdate(1, "/panel"));
+    expect(texts(nosecret.calls).at(-1)).toMatch(/no está disponible/);
   });
 
   it("non-onboarded users, groups and other merchants' callbacks are handled safely", async () => {

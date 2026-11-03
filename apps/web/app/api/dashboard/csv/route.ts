@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { merchants } from "@cobra/db";
-import { verifyDashboardToken } from "../../../../lib/dashboard-token";
+import { verifyDashboardToken } from "@cobra/shared/dashboard-token";
 import { dashboardCsv } from "../../../../lib/server/dashboard";
 import { getDb } from "../../../../lib/server/deps";
 

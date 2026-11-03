@@ -424,6 +424,20 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
                   {invoice.currency === "BRL" ? DICTS.pt.pay_fiat : lang === "en" ? t.pay_fiat : DICTS.es.pay_fiat}
                 </a>
               )}
+              {quoteErr?.rampUrl && (
+                <div className="small">
+                  <p className="muted">{t.ramp_steps.replace("{token}", quoteErr.directTransfer?.symbol ?? "")}</p>
+                  {quoteErr.directTransfer && (
+                    <p>
+                      <strong>
+                        {formatUnits(quoteErr.directTransfer.amount, quoteErr.directTransfer.decimals, locale, 18)} {quoteErr.directTransfer.symbol}
+                      </strong>{" "}
+                      · Celo
+                    </p>
+                  )}
+                  {address && <p className="mono break">{address}</p>}
+                </div>
+              )}
               {quoteErr?.directTransfer && (
                 <div className="small">
                   <p className="muted">{t.direct_transfer}</p>

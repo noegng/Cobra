@@ -22,7 +22,7 @@ import {
   latestInvoice,
   listInvoices,
 } from "./invoices";
-import { buildRipioOfframpLink, payUrl, type RipioSessionMinter } from "./links";
+import { buildRipioOfframpLink, payUrl } from "./links";
 import { checkPayoutAddress, updateMerchant, type MerchantRow } from "./merchants";
 import { merchantLang, merchantName, money } from "./present";
 import { stateKeys, writeState, type PendingPayout } from "./state";
@@ -44,7 +44,6 @@ export interface ToolContext {
   publicBaseUrl: string;
   now: () => Date;
   env?: Record<string, string | undefined>;
-  ripio?: RipioSessionMinter;
 }
 
 /** Side effects the bot renders deterministically after the model finished (QRs, files, confirmation buttons). */
@@ -191,16 +190,8 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
       execute: async () => {
         const merchant = m();
         const token = tokenByAddress(merchant.settlementToken)?.symbol ?? "wFIAT";
-        const url = await buildRipioOfframpLink({
-          env: ctx.env ?? {},
-          minter: ctx.ripio,
-          merchantId: merchant.id,
-          country: merchant.country,
-          language: lang(),
-        });
-        return url
-          ? { url, message: t(lang(), "withdraw_link", { token, url }) }
-          : { url: null, instructions: t(lang(), "withdraw_manual", { token, address: merchant.payoutAddress }) };
+        const url = buildRipioOfframpLink();
+        return { url, message: t(lang(), "withdraw_link", { token, url, address: merchant.payoutAddress }) };
       },
     }),
 

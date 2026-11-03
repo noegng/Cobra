@@ -142,18 +142,13 @@ describe("agent tools (PGlite)", () => {
     expect(other).toMatchObject({ created: 0, paid_count: 0, csv_sent: false });
   });
 
-  it("withdraw_link: null link -> honest manual steps unless RIPIO_PARTNER and a minter are configured", async () => {
-    const { call, ctx } = await setup(db, 1n);
-    const manual = await call("withdraw_link", {});
-    expect(manual.url).toBeNull();
-    expect(manual.instructions).toContain("wARS");
-    expect(manual.instructions).toContain(ADDR_A);
-
-    ctx.env = { RIPIO_PARTNER: "cobra" };
-    expect((await call("withdraw_link", {})).url).toBeNull(); // partner set but no session minter
-    ctx.ripio = { mint: async () => "sess-123" };
-    const linked = await call("withdraw_link", {});
-    expect(linked.url).toBe("https://b2b-widget-onramp.ripio.com/offramp.html?_to=sess-123&_la=es");
+  it("withdraw_link: public Ripio off-ramp link with steps (token, Celo, payout address)", async () => {
+    const { call } = await setup(db, 1n);
+    const r = await call("withdraw_link", {});
+    expect(r.url).toBe("https://ramp.ripio.com/off-ramp");
+    expect(r.message).toContain("wARS");
+    expect(r.message).toContain("Celo");
+    expect(r.message).toContain(ADDR_A);
   });
 
   it("set_preferences: language applies, foreign settlement token refused, payout address only proposed", async () => {
