@@ -6,6 +6,8 @@ import { requestLanguage } from "../../lib/server/lang";
 import { DICTS } from "../../lib/i18n";
 import { LangSwitch } from "../../components/lang-switch";
 import { ProofView } from "../../components/proof-view";
+import { JournalView } from "../../components/journal-view";
+import { queryJournal } from "../../lib/server/journal";
 import agentCard from "../../public/.well-known/agent-registration.json";
 
 /** ERC-8004 agentId from the served agent card (single source of truth, written by `pnpm agent:register`). */
@@ -22,6 +24,7 @@ const envAddr = (name: string) => {
 export default async function Proof() {
   const lang = await requestLanguage("es");
   const stats = await proofStats(getDb());
+  const journal = await queryJournal(getDb(), { agentAddress: envAddr("AGENT_ADDRESS") });
   return (
     <main className="wrap wide">
       <div className="topbar">
@@ -29,6 +32,7 @@ export default async function Proof() {
         <LangSwitch lang={lang} />
       </div>
       <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} agentId={AGENT_ID} />
+      <JournalView journal={journal} lang={lang} />
     </main>
   );
 }
