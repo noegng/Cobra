@@ -46,7 +46,7 @@ import { privateKeyToAccount, toAccount } from "viem/accounts";
 import { celo } from "viem/chains";
 import { and, count, eq, gte, inArray, isNotNull, like, ne } from "drizzle-orm";
 import { toDataSuffix, toRoleDataSuffix, withAttribution } from "@celo/attribution-tags";
-import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type OnchainInvoice } from "@cobra/shared";
+import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type Leg, type OnchainInvoice } from "@cobra/shared";
 import { DEFAULT_CAPS, flags, getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
 import { resolveRates, scaledToUsd, usdToScaled, usdValueScaled, type RatesSource } from "./rates";
 
@@ -60,6 +60,7 @@ export type RefusalCode =
   | "cap_per_merchant_day"
   | "cap_per_payer_day"
   | "self_payment"
+  | "zero_amount"
   | "unknown_token"
   | "missing_rate"
   | "blocked_method"
@@ -166,12 +167,12 @@ function defaultTokenMeta(token: Address): TokenMeta | undefined {
   return t ? { decimals: t.decimals, currency: t.currency } : undefined;
 }
 
-function decodePay(data: Hex): { inv: OnchainInvoice; payer: Address } {
+function decodePay(data: Hex): { inv: OnchainInvoice; payer: Address; legs: readonly Leg[] } {
   if (data.slice(0, 10).toLowerCase() !== PAY_SELECTOR) throw new SignerRefusedError("wrong_selector");
   try {
     const { functionName, args } = decodeFunctionData({ abi: cobraRouterAbi, data });
     if (functionName !== "pay") throw new Error(functionName);
-    return { inv: args[0] as OnchainInvoice, payer: args[1] as Address };
+    return { inv: args[0] as OnchainInvoice, payer: args[1] as Address, legs: args[2] as readonly Leg[] };
   } catch {
     throw new SignerRefusedError("wrong_selector", "calldata is not a valid pay()");
   }
@@ -294,7 +295,10 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
   async function check(req: Pick<SendRequest, "to" | "data" | "value">): Promise<{ usd: number }> {
     if (!req.to || !isAddressEqual(req.to, router)) throw new SignerRefusedError("wrong_target");
     if (req.value !== undefined && req.value !== 0n) throw new SignerRefusedError("value_not_zero");
-    const { inv, payer } = decodePay(req.data);
+    const { inv, payer, legs } = decodePay(req.data);
+    // WS7-7: a zero amount (invoice or any leg) is never a real payment; refuse before any other guard.
+    if (inv.amountOut === 0n) throw new SignerRefusedError("zero_amount", "invoice amountOut is 0");
+    if (legs.length === 0 || legs.some((l) => l.amountIn === 0n)) throw new SignerRefusedError("zero_amount", "leg amountIn is 0");
     if (await isKillSwitchOn(opts.db, env)) throw new SignerRefusedError("kill_switch");
     // Self-dealing: the merchant paying its own invoice moves no value but would burn the shared relay budget.
     if (isAddressEqual(payer, inv.merchant)) throw new SignerRefusedError("self_payment");

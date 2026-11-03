@@ -57,10 +57,12 @@ async function tokenDomainSeparator(ctx: VerifyContext, token: Address): Promise
 
 export async function verifyLegs(ctx: VerifyContext, inv: OnchainInvoice, payer: Address, legs: readonly Leg[]): Promise<VerifyResult> {
   if (legs.length < 1 || legs.length > 3) return { ok: false, reason: "invalid_legs" };
+  if (inv.amountOut === 0n) return { ok: false, reason: "zero_amount_out" };
   const margin = ctx.marginSec ?? 30n;
   const digest = intentDigest(ctx.router, ctx.chainId, inv, payer, legs);
 
   for (const [i, leg] of legs.entries()) {
+    if (leg.amountIn === 0n) return { ok: false, reason: `leg${i}:zero_amount_in` };
     if (leg.kind === PullKind.ALLOWANCE) return { ok: false, reason: `leg${i}:allowance_not_relayable` };
 
     if (leg.kind === PullKind.EIP3009) {

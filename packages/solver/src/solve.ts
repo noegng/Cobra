@@ -310,7 +310,7 @@ export async function solveImpl(input: SolverInput, opts: SolverOptions): Promis
       const qin = await quotedIn(l.c, l.out);
       if (qin === null) return null;
       const amountIn = withMargin(l.c, qin);
-      if (amountIn > l.c.balance) return null;
+      if (amountIn <= 0n || amountIn > l.c.balance) return null; // WS7-7: never emit a zero-amount leg
       const li = usdE18(qin, l.c.info.decimals, l.c.rateE18);
       if (!guardOk(li, usdE18(l.out, outInfo.decimals, outRate))) ok = false;
       usdIn += li;

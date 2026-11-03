@@ -102,6 +102,26 @@ describe("signer guards", () => {
     await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
   });
 
+  it("WS7-7: zero amountOut or any zero amountIn leg is refused", async () => {
+    expect(await code(s.check({ to: ROUTER, data: payData(0n) }))).toBe("zero_amount");
+    const zeroLeg = (amountIn: bigint) =>
+      encodeFunctionData({
+        abi: cobraRouterAbi,
+        functionName: "pay",
+        args: [
+          { id: `0x${"11".repeat(32)}`, merchant: OTHER, tokenOut: WARS, amountOut: 1000n, deadline: 2_000_000_000n },
+          PAYER,
+          [
+            { token: WARS, amountIn: 5n, kind: PullKind.PERMIT2, pullData: "0x", path: "0x" },
+            { token: WARS, amountIn, kind: PullKind.PERMIT2, pullData: "0x", path: "0x" },
+          ],
+        ],
+      });
+    expect(await code(s.check({ to: ROUTER, data: zeroLeg(0n) }))).toBe("zero_amount");
+    expect(await code(s.send({ to: ROUTER, data: zeroLeg(0n) }))).toBe("zero_amount");
+    expect(await code(s.check({ to: ROUTER, data: zeroLeg(1n) }))).toBe("ok");
+  });
+
   it("WS7-1: self-payment (payer == invoice.merchant) is refused", async () => {
     expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, OTHER) }))).toBe("self_payment");
     expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, PAYER, PAYER) }))).toBe("self_payment");
