@@ -69,6 +69,9 @@ export type RefusalCode =
   | "grant_already_given"
   | "grant_daily_cap";
 
+/** flags key prefix of the USD value frozen at signing time (WS7-6). */
+export const SIGNED_USD_PREFIX = "signed_usd:";
+
 export class SignerRefusedError extends Error {
   constructor(
     readonly code: RefusalCode,
@@ -277,14 +280,23 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
         ),
       );
     const rates = await resolveRates(opts.rates);
+    const stored = new Map<string, bigint>();
+    for (const f of await opts.db.select().from(flags).where(and(like(flags.key, `${SIGNED_USD_PREFIX}%`), gte(flags.updatedAt, since)))) {
+      const v = f.value as { usdScaled?: unknown } | null;
+      if (v && typeof v.usdScaled === "string" && /^\d+$/.test(v.usdScaled)) stored.set(f.key.slice(SIGNED_USD_PREFIX.length), BigInt(v.usdScaled));
+    }
     const seen = new Set<string>();
     const totals = { all: 0n, merchant: 0n, payer: 0n };
     for (const r of rows) {
       if (seen.has(r.id)) continue;
       seen.add(r.id);
-      const meta = tokenMeta(getAddress(r.tokenOut));
-      if (!meta) throw new SignerRefusedError("unknown_token", r.tokenOut);
-      const usd = usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      let usd = stored.get(r.id.toLowerCase());
+      if (usd === undefined) {
+        // legacy rows (signed before WS7-6) or a failed flag write: recompute at today's rate
+        const meta = tokenMeta(getAddress(r.tokenOut));
+        if (!meta) throw new SignerRefusedError("unknown_token", r.tokenOut);
+        usd = usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      }
       totals.all += usd;
       if (sameAddress(r.merchantAddress, merchant)) totals.merchant += usd;
       if (sameAddress(r.payer, payer)) totals.payer += usd;
@@ -293,6 +305,13 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
   }
 
   async function check(req: Pick<SendRequest, "to" | "data" | "value">): Promise<{ usd: number }> {
+    const r = await checkScaled(req);
+    return { usd: scaledToUsd(r.usd) };
+  }
+
+  async function checkScaled(
+    req: Pick<SendRequest, "to" | "data" | "value">,
+  ): Promise<{ usd: bigint; invoiceId: string; currency: Currency; amountOut: bigint }> {
     if (!req.to || !isAddressEqual(req.to, router)) throw new SignerRefusedError("wrong_target");
     if (req.value !== undefined && req.value !== 0n) throw new SignerRefusedError("value_not_zero");
     const { inv, payer, legs } = decodePay(req.data);
@@ -333,14 +352,28 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     if (day.all + usd > usdToScaled(caps.perDayUsd)) {
       throw new SignerRefusedError("cap_per_day", `${scaledToUsd(day.all + usd)} USD > ${caps.perDayUsd}`);
     }
-    return { usd: scaledToUsd(usd) };
+    return { usd, invoiceId: inv.id, currency: meta.currency, amountOut: inv.amountOut };
+  }
+
+  /** WS7-6: USD value of a relayed invoice, frozen at signing time in the flags table (no schema change). */
+  async function recordSignedUsd(c: { usd: bigint; invoiceId: string; currency: Currency; amountOut: bigint }) {
+    const key = `${SIGNED_USD_PREFIX}${c.invoiceId.toLowerCase()}`;
+    const value = { usdScaled: c.usd.toString(), currency: c.currency, amountOut: c.amountOut.toString(), at: now().toISOString() };
+    await opts.db
+      .insert(flags)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: flags.key, set: { value, updatedAt: now() } });
   }
 
   const lock = mutex();
   async function send(req: SendRequest): Promise<Hash> {
     return lock(async () => {
-      await check(req);
-      onSignedHook = req.onSigned;
+      const checked = await checkScaled(req);
+      // WS7-6: after the caller persisted the hash, also record the USD value used for the rolling caps.
+      onSignedHook = async (tx) => {
+        await req.onSigned?.(tx);
+        await recordSignedUsd(checked).catch(() => undefined); // best effort: dayTotals falls back to recomputing
+      };
       try {
         return await inner.sendTransaction({
           account: hookedAccount,
