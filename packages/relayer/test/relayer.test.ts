@@ -146,7 +146,10 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     });
     await tick(relayer(envSigner));
     const row = await sub(seed.submissionId);
-    expect(row.status).toBe("failed");
+    // WS7-3: never broadcast -> not lost: back to pending (retry), attempt given back
+    expect(row.status).toBe("pending");
+    expect(row.txHash).toBeNull();
+    expect(row.attempts).toBe(0);
     expect(row.error).toMatch(/kill_switch/);
     expect((await inv(seed.invoiceId)).status).toBe("open");
     expect(await nonceOf(s.address)).toBe(0);

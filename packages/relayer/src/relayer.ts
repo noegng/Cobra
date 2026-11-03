@@ -318,6 +318,24 @@ export function createRelayer(cfg: RelayerConfig) {
     }
   }
 
+  /**
+   * WS7-3: a transient refusal before anything was signed (kill switch flipped between the tick check and the
+   * signer check) must not lose the payer's signed submission: back to `pending`, and the claim's attempt is
+   * given back so a long pause never exhausts `maxAttempts`. Only rows that never got a txHash move.
+   */
+  async function requeueNotBroadcast(row: SubmissionRow, error: string) {
+    await db
+      .update(submissions)
+      .set({
+        status: "pending",
+        attempts: sql`greatest(${submissions.attempts} - 1, 0)`,
+        error: `retry:${error}`.slice(0, 500),
+        updatedAt: now(),
+      })
+      .where(and(eq(submissions.id, row.id), eq(submissions.status, "sending"), sql`${submissions.txHash} is null`));
+    log("submission_requeued_not_broadcast", { submissionId: row.id, error });
+  }
+
   /** Returns false when the tick should stop claiming (transient trouble). */
   async function processClaimed(row: SubmissionRow): Promise<boolean> {
     const v = await validate(row);
@@ -353,8 +371,12 @@ export function createRelayer(cfg: RelayerConfig) {
       await signer!.check({ to: router, data });
     } catch (e) {
       if (e instanceof SignerRefusedError) {
+        if (e.code === "kill_switch") {
+          await requeueNotBroadcast(row, e.message);
+          return false;
+        }
         await fail(row.id, e.message);
-        return e.code !== "kill_switch";
+        return true;
       }
       await requeueOrFail(row, `check_error:${errMsg(e)}`);
       return false;
@@ -401,8 +423,12 @@ export function createRelayer(cfg: RelayerConfig) {
         // nothing was signed → nothing can be mined
         await reopen(v.invRow.id);
         if (e instanceof SignerRefusedError) {
+          if (e.code === "kill_switch") {
+            await requeueNotBroadcast(row, e.message);
+            return false;
+          }
           await fail(row.id, e.message);
-          return e.code !== "kill_switch";
+          return true;
         }
         await requeueOrFail(row, `send_error:${errMsg(e)}`);
         return false;
