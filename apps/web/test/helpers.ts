@@ -1,4 +1,4 @@
-import { getAddress, type Address, type Hex } from "viem";
+import { getAddress, verifyTypedData, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   PullKind,
@@ -108,6 +108,7 @@ export async function setup(opts: { amountLocal?: string; settlement?: Address; 
       balances: [{ token: USDC.address, amount: 5_000_000n }],
       permit2Allowances: { [USDC.address]: 0n, [WARS.address]: 10n ** 30n },
     }),
+    verifyTypedData: (args) => verifyTypedData(args as never),
     getReferenceRates: async () => ({ USD: 1, ARS: 1 / 1650 }),
     solve: async (input) => {
       solverCalls.push(input);

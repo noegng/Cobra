@@ -7,10 +7,7 @@ import {
   decodeAbiParameters,
   domainSeparator,
   hashStruct,
-  isAddressEqual,
   keccak256,
-  recoverAddress,
-  recoverTypedDataAddress,
   serializeSignature,
   type Address,
   type Hex,
@@ -98,13 +95,14 @@ export async function verifyLegs(ctx: VerifyContext, inv: OnchainInvoice, payer:
       const hash = keccak256(
         concat(["0x1901", sep, hashStruct({ data: td.message, primaryType: td.primaryType, types: td.types })]),
       );
-      let signer: Address;
+      let valid: boolean;
       try {
-        signer = await recoverAddress({ hash, signature: serializeSignature({ r, s, v: BigInt(v) }) });
+        // ERC-1271/6492 aware (smart accounts, EIP-7702 delegates); plain EOAs are still checked by ecrecover.
+        valid = await ctx.publicClient.verifyHash({ address: payer, hash, signature: serializeSignature({ r, s, v: BigInt(v) }) });
       } catch {
         return { ok: false, reason: `leg${i}:bad_signature` };
       }
-      if (!isAddressEqual(signer, payer)) return { ok: false, reason: `leg${i}:signature_not_payer` };
+      if (!valid) return { ok: false, reason: `leg${i}:signature_not_payer` };
       continue;
     }
 
@@ -131,13 +129,13 @@ export async function verifyLegs(ctx: VerifyContext, inv: OnchainInvoice, payer:
         payer,
         legs,
       });
-      let signer: Address;
+      let valid: boolean;
       try {
-        signer = await recoverTypedDataAddress({ ...td, signature } as never);
+        valid = await ctx.publicClient.verifyTypedData({ ...td, address: payer, signature } as never);
       } catch {
         return { ok: false, reason: `leg${i}:bad_signature` };
       }
-      if (!isAddressEqual(signer, payer)) return { ok: false, reason: `leg${i}:signature_not_payer` };
+      if (!valid) return { ok: false, reason: `leg${i}:signature_not_payer` };
       continue;
     }
 

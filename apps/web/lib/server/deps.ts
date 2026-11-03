@@ -46,6 +46,7 @@ export function getApiDeps(): ApiDeps {
     getReferenceRates: () => rates(),
     // Every verified pool is on the 0.01% tier: feeTiers [100] cuts ~30 eth_calls to ~12 per quote.
     solve: (input, opts) => solve(input, { quoter, capUsd: opts.capUsd, permit2Ready: opts.permit2Ready, feeTiers: [100] }),
+    verifyTypedData: (args) => client.verifyTypedData(args as Parameters<typeof client.verifyTypedData>[0]),
     rateLimiter: createMemoryRateLimiter(),
     env: process.env,
   };

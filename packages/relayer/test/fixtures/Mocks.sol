@@ -68,3 +68,20 @@ contract MockEip3009Token {
         );
     }
 }
+
+/// Minimal ERC-1271 wallet: a signature is valid iff it is an ECDSA signature by `owner` over the hash.
+contract Mock1271Wallet {
+    address public immutable owner;
+
+    constructor(address owner_) {
+        owner = owner_;
+    }
+
+    function isValidSignature(bytes32 hash, bytes calldata sig) external view returns (bytes4) {
+        if (sig.length != 65) return 0xffffffff;
+        bytes32 r = bytes32(sig[0:32]);
+        bytes32 s = bytes32(sig[32:64]);
+        uint8 v = uint8(sig[64]);
+        return ecrecover(hash, v, r, s) == owner ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
+    }
+}
