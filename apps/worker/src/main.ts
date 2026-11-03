@@ -4,7 +4,7 @@
  * RELAYER_PRIVATE_KEY exists ONLY on the VPS (systemd EnvironmentFile, see deploy/cobra-worker.service).
  * The key is only handed to @cobra/relayer's signer; this file never logs or stores it.
  */
-import { createPublicClient, http, type PublicClient } from "viem";
+import { createPublicClient, formatEther, http, type PublicClient } from "viem";
 import { celo } from "viem/chains";
 import { createDb } from "@cobra/db";
 import { startIndexer, expireInvoices } from "@cobra/indexer";
@@ -84,6 +84,7 @@ async function main() {
     ...(cfg.operatorChatId && { operatorChatId: cfg.operatorChatId }),
     pollIntervalMs: cfg.pollIntervalMs,
     log: (msg, extra) => log(msg, { svc: "relayer", ...extra }),
+    gasGrant: cfg.gasGrantWei > 0n && cfg.gasGrantDailyMax > 0 ? { amountWei: cfg.gasGrantWei, dailyMax: cfg.gasGrantDailyMax } : false,
   });
 
   indexer = startIndexer({
@@ -114,7 +115,7 @@ async function main() {
     schedulerBusy = false;
   }, 60_000);
 
-  log("worker_started", { router: cfg.router, relayer: signer.address, chainId });
+  log("worker_started", { router: cfg.router, relayer: signer.address, chainId, gasGrantCelo: formatEther(cfg.gasGrantWei), gasGrantDailyMax: cfg.gasGrantDailyMax });
 }
 
 async function shutdown(signal: string) {

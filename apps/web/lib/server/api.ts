@@ -6,7 +6,9 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { getAddress, isAddress, parseSignature, type Address, type Hex } from "viem";
 import {
+  PullKind,
   QUOTE_TTL_MS,
+  TOKENS,
   deserializePlan,
   explorerTx,
   serializeLeg,
@@ -71,6 +73,14 @@ export function isTransientSolverFailure(detail: string | undefined): boolean {
   return !!detail && /\b[1-9]\d* failed quotes?\b|no_ref_rate|missing reference rate/.test(detail);
 }
 
+/**
+ * wFIAT (no EIP-3009) are always planned as PERMIT2 legs, even before the payer approved Permit2: one approval tx,
+ * then every payment is a gasless signature relayed (and attributed) by the agent. The alternative, ALLOWANCE, needs
+ * two payer txs per payment. `needsPermit2Approval` tells the page which approval is still missing, and the worker
+ * sends a small CELO gas grant to payers who hold the wFIAT but no CELO for that approval.
+ */
+const PERMIT2_FIRST_TOKENS: Address[] = TOKENS.filter((t) => t.pullKinds[0] === PullKind.PERMIT2).map((t) => t.address);
+
 const LIVE_SUBMISSION = ["pending", "sending", "sent", "confirmed"] as const;
 
 // ---------------------------------------------------------------- GET /api/invoices/:id
@@ -122,7 +132,7 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   try {
     result = await deps.solve(
       { invoice: { tokenOut: inv.tokenOut, amountOut: inv.amountOut, deadline: inv.deadline }, balances: state.balances, refRates },
-      { capUsd: caps.perPaymentUsd, permit2Ready: permit2ReadyTokens(state) },
+      { capUsd: caps.perPaymentUsd, permit2Ready: [...permit2ReadyTokens(state), ...PERMIT2_FIRST_TOKENS] },
     );
   } catch (e) {
     logEvent("quote.solver_error", { invoiceId: id, kind: e instanceof Error ? e.name : "unknown" });

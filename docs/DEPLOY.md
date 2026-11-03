@@ -142,7 +142,8 @@ PUBLIC_BASE_URL=https://<domaine>
 TELEGRAM_BOT_TOKEN=…
 RELAYER_PRIVATE_KEY=0x…          # SEUL endroit où la clé vit en permanence
 OPERATOR_TELEGRAM_CHAT_ID=…      # alertes : gas bas, paiements non appariés
-# optionnels : ATTRIBUTION_CODE (défaut celo_502e1bea2794), RELAYER_MIN_BALANCE_CELO, REF_RATES, RELAYER_POLL_MS
+# optionnels : ATTRIBUTION_CODE (défaut celo_502e1bea2794), RELAYER_MIN_BALANCE_CELO, REF_RATES, RELAYER_POLL_MS,
+#   GAS_GRANT_CELO (défaut 0.05, 0 = désactivé, max 0.1), GAS_GRANT_DAILY_MAX (défaut 20)
 ```
 
 ```sh

@@ -23,6 +23,8 @@ import { LangSwitch } from "./lang-switch";
 type Phase = "idle" | "quoting" | "quoted" | "signing" | "submitting" | "waiting" | "self_paying" | "paid";
 
 const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
+/** Native balance that covers one ERC-20 approval even at a 2x base fee (~55k gas × ~400 gwei). */
+const GAS_FOR_APPROVAL_WEI = 25_000_000_000_000_000n; // 0.025 CELO
 const TERMINAL = new Set(["paid", "expired", "cancelled"]);
 
 function short(addr: string) {
@@ -93,6 +95,37 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
   const signTypedData = useSignTypedData();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
+
+  // Gas for the one-time Permit2 approval of a wFIAT (no EIP-3009). A payer with no CELO gets a small grant from the
+  // agent (worker, after this quote): poll the native balance until it can pay the approval, give up after 90 s.
+  const [nativeBal, setNativeBal] = useState<bigint | null>(null);
+  const [gasWaitSince, setGasWaitSince] = useState<number | null>(null);
+  const needsApproval = (quote?.needsPermit2Approval.length ?? 0) > 0;
+  useEffect(() => {
+    if (!needsApproval || !address || !publicClient) {
+      setNativeBal(null);
+      setGasWaitSince(null);
+      return;
+    }
+    let stop = false;
+    const poll = async () => {
+      try {
+        const b = await publicClient.getBalance({ address });
+        if (!stop) setNativeBal(b);
+      } catch {
+        /* keep the last value */
+      }
+    };
+    void poll();
+    setGasWaitSince((v) => v ?? Date.now());
+    const id = setInterval(poll, 3000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [needsApproval, address, publicClient]);
+  const lowGas = nativeBal !== null && nativeBal < GAS_FOR_APPROVAL_WEI;
+  const gasGaveUp = lowGas && gasWaitSince !== null && now - gasWaitSince > 90_000;
 
   const expired = remainingS <= 0 && status !== "paid";
   const closed = TERMINAL.has(status) || expired;
@@ -374,10 +407,11 @@ export function PayPage({ invoice, lang, host }: { invoice: PublicInvoice; lang:
                     ))}
                   </ul>
                   <p className="small">{t.cost}: {planView.cost}{planView.savings && <> · <span className="good">{t.savings}: {planView.savings}</span></>}</p>
-                  {!planView.hasAllowanceLeg && <p className="small muted">{t.no_gas}</p>}
+                  {!planView.hasAllowanceLeg && !needsApproval && <p className="small muted">{t.no_gas}</p>}
 
+                  {needsApproval && lowGas && <p className="small muted">{gasGaveUp ? t.gas_missing : `⏳ ${t.gas_incoming}`}</p>}
                   {quote.needsPermit2Approval.map((tok) => (
-                    <button key={tok} type="button" className="btn" disabled={busy} onClick={() => approvePermit2(tok)}>
+                    <button key={tok} type="button" className="btn" disabled={busy || (lowGas && !gasGaveUp)} onClick={() => approvePermit2(tok)}>
                       {tr(t, "approve_permit2", { token: quote.toSign.find((e) => e.token === tok)?.symbol ?? "" })}
                     </button>
                   ))}

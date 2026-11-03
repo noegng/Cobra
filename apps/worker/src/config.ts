@@ -19,6 +19,10 @@ export interface WorkerConfig {
   refRatesOverride: ReferenceRates | undefined;
   minBalanceWei: bigint;
   pollIntervalMs: number;
+  /** CELO per gas grant for wFIAT payers without gas; 0n = disabled. Env GAS_GRANT_CELO (default 0.05). */
+  gasGrantWei: bigint;
+  /** Env GAS_GRANT_DAILY_MAX (default 20). */
+  gasGrantDailyMax: number;
   /** Escape hatch for a dev chain; production refuses anything but Celo mainnet. */
   expectedChainId: number;
 }
@@ -74,6 +78,18 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
   }
   const pollIntervalMs = Number(opt("RELAYER_POLL_MS") ?? 2000);
   if (!Number.isInteger(pollIntervalMs) || pollIntervalMs < 200) errors.push("RELAYER_POLL_MS must be an integer >= 200");
+  let gasGrantWei = parseEther("0.05");
+  const gg = opt("GAS_GRANT_CELO");
+  if (gg) {
+    try {
+      gasGrantWei = parseEther(gg);
+      if (gasGrantWei < 0n || gasGrantWei > parseEther("0.1")) throw new Error();
+    } catch {
+      errors.push("GAS_GRANT_CELO must be a decimal between 0 and 0.1");
+    }
+  }
+  const gasGrantDailyMax = Number(opt("GAS_GRANT_DAILY_MAX") ?? 20);
+  if (!Number.isInteger(gasGrantDailyMax) || gasGrantDailyMax < 0 || gasGrantDailyMax > 500) errors.push("GAS_GRANT_DAILY_MAX must be an integer in [0, 500]");
   const expectedChainId = Number(opt("EXPECTED_CHAIN_ID") ?? 42220);
 
   if (errors.length) throw new Error(`invalid worker env: ${errors.join("; ")}`);
@@ -91,6 +107,8 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
     refRatesOverride,
     minBalanceWei,
     pollIntervalMs,
+    gasGrantWei,
+    gasGrantDailyMax,
     expectedChainId,
   };
 }

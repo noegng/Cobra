@@ -15,9 +15,18 @@
  * (json-rpc style account); every signing action on it is either guarded or blocked.
  *
  * `onSigned` lets the caller persist (hash, nonce) BEFORE the raw tx is broadcast — the basis of idempotent restarts.
+ *
+ * Gas grant (`grantGas`): the only other transaction shape this signer allows. A payer who holds wFIAT but no CELO
+ * cannot send the one Permit2 approval wFIAT needs (no EIP-3009), so the agent sends them a tiny amount of CELO.
+ * Guards, fail closed: kill switch off; 0 < value ≤ GAS_GRANT_MAX_WEI; target is not the router / zero / self and has
+ * no contract code (an EIP-7702 delegation designator is accepted); at most ONE grant per address, ever (row
+ * `flags.gas_grant:<address>` reserved before signing); at most `dailyMax` grants per rolling 24 h; calldata is
+ * exactly the ERC-8021 suffix (checked again at signTransaction).
  */
 import {
+  createPublicClient,
   createWalletClient,
+  parseEther,
   decodeFunctionData,
   encodeFunctionData,
   getAddress,
@@ -35,10 +44,10 @@ import {
 } from "viem";
 import { privateKeyToAccount, toAccount } from "viem/accounts";
 import { celo } from "viem/chains";
-import { and, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
-import { toRoleDataSuffix, withAttribution } from "@celo/attribution-tags";
+import { and, count, eq, gte, inArray, isNotNull, like, ne } from "drizzle-orm";
+import { toDataSuffix, toRoleDataSuffix, withAttribution } from "@celo/attribution-tags";
 import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type OnchainInvoice } from "@cobra/shared";
-import { DEFAULT_CAPS, getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
+import { DEFAULT_CAPS, flags, getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
 import { resolveRates, scaledToUsd, usdToScaled, usdValueScaled, type RatesSource } from "./rates";
 
 export type RefusalCode =
@@ -53,7 +62,11 @@ export type RefusalCode =
   | "self_payment"
   | "unknown_token"
   | "missing_rate"
-  | "blocked_method";
+  | "blocked_method"
+  | "grant_value"
+  | "grant_target"
+  | "grant_already_given"
+  | "grant_daily_cap";
 
 export class SignerRefusedError extends Error {
   constructor(
@@ -112,12 +125,31 @@ export interface SendRequest {
   onSigned?: (tx: { hash: Hash; nonce: number }) => Promise<void>;
 }
 
+/** Hard ceiling of a single gas grant, whatever the caller asks (0.1 CELO ≈ 0.007 USD on 2026-11-03). */
+export const GAS_GRANT_MAX_WEI = parseEther("0.1");
+export const GAS_GRANT_FLAG_PREFIX = "gas_grant:";
+
+export interface GasGrantRequest {
+  to: Address;
+  value: bigint;
+  nonce?: number;
+  maxFeePerGas?: bigint;
+  maxPriorityFeePerGas?: bigint;
+  /** Max grants per rolling 24 h (global). */
+  dailyMax: number;
+  /** Stored with the grant record (audit). */
+  reason?: Record<string, string>;
+  onSigned?: (tx: { hash: Hash; nonce: number }) => Promise<void>;
+}
+
 export interface RelayerSigner {
   readonly address: Address;
   readonly chain: Chain;
   /** Guarded, attributed client to hand to `startRelayer`. */
   readonly walletClient: WalletClient;
   send(req: SendRequest): Promise<Hash>;
+  /** Sends a tiny CELO amount to a payer who needs gas for their approval (see header for the guards). */
+  grantGas(req: GasGrantRequest): Promise<Hash>;
   /** Run every guard without signing. Resolves to the invoice's USD value (for logs). */
   check(req: Pick<SendRequest, "to" | "data" | "value">): Promise<{ usd: number }>;
 }
@@ -183,6 +215,10 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
   const keyAccount = privateKeyToAccount(opts.privateKey);
   const address = keyAccount.address;
   let onSignedHook: SendRequest["onSigned"] | undefined;
+  /** Set only inside the lock while a guarded gas grant is being signed. */
+  let grantInFlight: { to: Address; value: bigint } | null = null;
+  const grantData = (roleSuffix ?? toDataSuffix(opts.attributionCode)).toLowerCase();
+  const reader = createPublicClient({ chain, transport });
 
   // Local account wrapper: signTransaction is the single choke point before eth_sendRawTransaction.
   const hookedAccount = toAccount({
@@ -194,8 +230,16 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
       throw new SignerRefusedError("blocked_method", "signTypedData");
     },
     async signTransaction(tx, options) {
-      if (!tx.to || !isAddressEqual(tx.to, router)) throw new SignerRefusedError("wrong_target");
-      if (!tx.data || tx.data.slice(0, 10).toLowerCase() !== PAY_SELECTOR) throw new SignerRefusedError("wrong_selector");
+      const g = grantInFlight;
+      if (g) {
+        // Gas grant: exactly the target and value checked by grantGas, calldata = the attribution suffix only.
+        if (!tx.to || !isAddressEqual(tx.to, g.to) || tx.value !== g.value) throw new SignerRefusedError("grant_target");
+        if ((tx.data ?? "0x").toLowerCase() !== grantData) throw new SignerRefusedError("wrong_selector", "grant calldata");
+      } else {
+        if (!tx.to || !isAddressEqual(tx.to, router)) throw new SignerRefusedError("wrong_target");
+        if (!tx.data || tx.data.slice(0, 10).toLowerCase() !== PAY_SELECTOR) throw new SignerRefusedError("wrong_selector");
+        if (tx.value && tx.value !== 0n) throw new SignerRefusedError("value_not_zero");
+      }
       const raw = await keyAccount.signTransaction(tx, options);
       if (onSignedHook) await onSignedHook({ hash: keccak256(raw), nonce: Number(tx.nonce) });
       return raw;
@@ -312,6 +356,64 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     });
   }
 
+  async function grantGas(req: GasGrantRequest): Promise<Hash> {
+    return lock(async () => {
+      if (await isKillSwitchOn(opts.db, env)) throw new SignerRefusedError("kill_switch");
+      if (!(req.value > 0n && req.value <= GAS_GRANT_MAX_WEI)) throw new SignerRefusedError("grant_value", String(req.value));
+      let to: Address;
+      try {
+        to = getAddress(req.to);
+      } catch {
+        throw new SignerRefusedError("grant_target", "invalid address");
+      }
+      if (isAddressEqual(to, router) || isAddressEqual(to, address) || /^0x0{40}$/i.test(to)) throw new SignerRefusedError("grant_target");
+      const code = await reader.getCode({ address: to });
+      // EOAs only; an EIP-7702 delegated EOA carries the 0xef0100 designator and is still a person's wallet.
+      if (code && code !== "0x" && !code.toLowerCase().startsWith("0xef0100")) throw new SignerRefusedError("grant_target", "contract");
+      const since = new Date(now().getTime() - 24 * 3600_000);
+      const [row] = await opts.db
+        .select({ n: count() })
+        .from(flags)
+        .where(and(like(flags.key, `${GAS_GRANT_FLAG_PREFIX}%`), gte(flags.updatedAt, since)));
+      const n = Number(row?.n ?? 0);
+      if (n >= req.dailyMax) throw new SignerRefusedError("grant_daily_cap", `${n} >= ${req.dailyMax}`);
+      // Reserve the one-grant-per-address slot BEFORE signing: a crash after this point never grants twice.
+      const key = `${GAS_GRANT_FLAG_PREFIX}${to.toLowerCase()}`;
+      const reserved = await opts.db
+        .insert(flags)
+        .values({ key, value: { status: "signing", value: req.value.toString(), ...req.reason } })
+        .onConflictDoNothing()
+        .returning({ key: flags.key });
+      if (reserved.length === 0) throw new SignerRefusedError("grant_already_given");
+
+      grantInFlight = { to, value: req.value };
+      onSignedHook = async (tx) => {
+        await opts.db
+          .update(flags)
+          .set({ value: { status: "sent", value: req.value.toString(), txHash: tx.hash, ...req.reason }, updatedAt: now() })
+          .where(eq(flags.key, key));
+        await req.onSigned?.(tx);
+      };
+      try {
+        return await inner.sendTransaction({
+          account: hookedAccount,
+          chain,
+          to,
+          value: req.value,
+          data: "0x",
+          gas: 50_000n,
+          ...(req.nonce !== undefined && { nonce: req.nonce }),
+          ...(req.maxFeePerGas !== undefined && { maxFeePerGas: req.maxFeePerGas }),
+          ...(req.maxPriorityFeePerGas !== undefined && { maxPriorityFeePerGas: req.maxPriorityFeePerGas }),
+          ...(roleSuffix && { dataSuffix: roleSuffix }),
+        } as never);
+      } finally {
+        grantInFlight = null;
+        onSignedHook = undefined;
+      }
+    });
+  }
+
   const blocked = (name: string) => async () => {
     throw new SignerRefusedError("blocked_method", name);
   };
@@ -344,7 +446,7 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     () => overrides as never,
   ) as unknown as WalletClient;
 
-  const signer: RelayerSigner = { address, chain, walletClient, send, check };
+  const signer: RelayerSigner = { address, chain, walletClient, send, check, grantGas };
   signers.set(walletClient, signer);
   return signer;
 }

@@ -151,6 +151,11 @@ beyond its price guard.
   submitter. It is also not tested on-chain.
 - **Tokens sent to the router by mistake are stuck**: there is no sweep function by design.
 - **Sponsored gas is declared**: the relayer pays gas in CELO for EIP-3009 and Permit2 payments; the merchant is not charged.
+- **Gas grants for wFIAT payers**: wFIAT have no EIP-3009, so a payer must send one Permit2 approval. When a payer
+  holds the invoice's wFIAT but no CELO (typically after buying it through Ripio), the agent sends them 0.05 CELO
+  (≈ 0.004 USD), tagged ERC-8021: once per address, ever, at most 20 per 24 h, never to contracts, and never below the
+  relayer's own gas reserve. `GAS_GRANT_CELO=0` on the worker disables it. A payer could take the grant and not pay:
+  the cost is bounded by the daily cap.
 - Payers whose wallet is an EIP-7702-delegated EOA depend on the delegate accepting a raw ECDSA signature (ERC-1271).
 - Mobile wallet support for `eth_signTypedData_v4` (MiniPay) is unverified.
 - The router is an author self-review, not an audit; payments are capped (USD caps in the signer).

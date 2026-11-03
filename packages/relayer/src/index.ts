@@ -7,6 +7,7 @@ import type { Db } from "@cobra/db";
 import type { Notifier } from "@cobra/shared";
 import type { Address, PublicClient, WalletClient } from "viem";
 import { runRelayer } from "./relayer";
+import type { GasGrantConfig } from "./gas-grant";
 
 export interface RelayerOptions {
   db: Db;
@@ -17,6 +18,8 @@ export interface RelayerOptions {
   operatorChatId?: string;
   pollIntervalMs?: number;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
+  /** Optional (additive): CELO gas grants for wFIAT payers without gas. Default on; `false` disables. */
+  gasGrant?: GasGrantConfig | false;
 }
 
 export interface Stoppable {
@@ -41,9 +44,12 @@ export {
   type RelayerSignerOptions,
   type RefusalCode,
   type SendRequest,
+  type GasGrantRequest,
+  GAS_GRANT_MAX_WEI,
 } from "./signer";
 export { type RatesSource } from "./rates";
 export { claimNext, createRelayer, payCalldata, type RelayerConfig } from "./relayer";
 export { verifyLegs } from "./verify";
+export { GAS_GRANT_DEFAULTS, findGasGrantCandidates, type GasGrantConfig, type GasGrantCandidate } from "./gas-grant";
 export { buildRegistrationFile, registerCalldata, type AgentRegistrationFile } from "./agent";
 export { createRouterDeployer, loadRouterArtifact, routerDeployData, assertRouterCreation, CELO_ROUTER_ARGS, ROUTER_ARTIFACT_PATH, type RouterArtifact } from "./deploy";

@@ -50,6 +50,7 @@ import {
   type InvoiceRow,
 } from "@cobra/db";
 import { SignerRefusedError, signerOf, type RelayerSigner } from "./signer";
+import { GAS_GRANT_DEFAULTS, findGasGrantCandidates, type GasGrantConfig } from "./gas-grant";
 import { verifyLegs } from "./verify";
 
 export type SubmissionRow = typeof submissions.$inferSelect;
@@ -85,6 +86,8 @@ export interface RelayerConfig {
   alertThrottleMs?: number;
   permit2?: Address;
   tokenDomain?: (token: Address) => { name: string; version: string } | null | undefined;
+  /** Gas grants for wFIAT payers without CELO (see gas-grant.ts). `false` or amountWei 0n disables. */
+  gasGrant?: GasGrantConfig | false;
 }
 
 interface Inflight {
@@ -163,6 +166,8 @@ export function createRelayer(cfg: RelayerConfig) {
   const lastAlert = new Map<string, number>();
   const inflight = new Map<string, Inflight>();
   const minedOk = new Set<string>(); // submission ids whose tx succeeded: indexer finalises
+  const grantCfg = cfg.gasGrant === false ? null : { ...GAS_GRANT_DEFAULTS, ...cfg.gasGrant };
+  const grantSkip = new Map<string, number>(); // payer (lowercase) -> do not re-check before (ms)
 
   async function alert(kind: string, message: string) {
     // level "warn": the worker forwards `level: "alert"` logs itself; this path already notifies directly
@@ -594,6 +599,45 @@ export function createRelayer(cfg: RelayerConfig) {
         cont = false;
       }
       if (!cont) break;
+    }
+    await grantGasToPayers().catch((e) => log("gas_grant_error", { error: errMsg(e) }));
+  }
+
+  // ---------------------------------------------------------------- gas grants (after payments: they never wait)
+  async function grantGasToPayers() {
+    if (!grantCfg || grantCfg.amountWei <= 0n) return;
+    const t = now();
+    const cands = await findGasGrantCandidates({ db, publicClient, router, now: t, cfg: grantCfg, skip: grantSkip, permit2 });
+    if (cands.length === 0) return;
+    // Never let grants eat into the gas that keeps payments flowing.
+    const bal = await publicClient.getBalance({ address: signer!.address });
+    if (bal < minBalance + grantCfg.amountWei * 10n) {
+      log("gas_grant_skipped_low_balance", { balance: formatEther(bal) });
+      return;
+    }
+    for (const c of cands) {
+      try {
+        const est = await publicClient.estimateFeesPerGas();
+        const nonce = await reserveNonce();
+        const hash = await signer!.grantGas({
+          to: c.payer,
+          value: grantCfg.amountWei,
+          nonce,
+          maxFeePerGas: min(est.maxFeePerGas, feeCap),
+          maxPriorityFeePerGas: min(est.maxPriorityFeePerGas, feeCap),
+          dailyMax: grantCfg.dailyMax,
+          reason: { invoiceId: c.invoiceId, quoteId: c.quoteId, token: c.token },
+          onSigned: async (tx) => {
+            nextNonce = tx.nonce + 1;
+          },
+        });
+        log("gas_granted", { payer: c.payer, invoiceId: c.invoiceId, token: c.token, value: formatEther(grantCfg.amountWei), txHash: hash, nonce });
+      } catch (e) {
+        grantSkip.set(c.payer.toLowerCase(), t.getTime() + grantCfg.windowMs);
+        if (isNonceTooLow(e)) nextNonce = null;
+        log("gas_grant_refused", { payer: c.payer, error: e instanceof SignerRefusedError ? e.code : errMsg(e) });
+        if (e instanceof SignerRefusedError && (e.code === "grant_daily_cap" || e.code === "kill_switch")) return;
+      }
     }
   }
 
