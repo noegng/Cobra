@@ -48,7 +48,7 @@ export function buildRegistrationFile(args: {
       "once (EIP-3009 or Permit2, bound to the full payment intent) and this agent relays CobraRouter.pay(), paying the " +
       "gas, so the merchant receives the exact wFIAT amount. It can only submit the exact signed intent (it cannot change " +
       "merchant, amount, token, path or split), enforces per-payment and per-day USD caps, and tags every tx with ERC-8021.",
-    image: `${base}/agent.png`,
+    image: `${base}/icon.svg`, // served by apps/web/public/icon.svg
     services,
     x402Support: false,
     active: true,

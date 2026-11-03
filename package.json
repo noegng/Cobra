@@ -13,6 +13,7 @@
     "contracts:test": "cd contracts && forge test",
     "deploy:router": "cd contracts && forge build && cd .. && tsx scripts/agent/deploy-router.ts",
     "agent:register": "tsx scripts/agent/register.ts",
+    "verify:deploy": "tsx scripts/ops/verify-deploy.ts",
     "dev:web": "pnpm --filter @cobra/web dev",
     "dev:worker": "pnpm --filter @cobra/worker dev"
   },

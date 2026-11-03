@@ -86,6 +86,8 @@ Tests need no secrets and never broadcast.
 
 ## Deployment runbook (human only)
 
+Step-by-step guide (French) with every environment variable and a check after each step: [docs/DEPLOY.md](docs/DEPLOY.md). Read-only post-deployment checks: `pnpm verify:deploy --env .env.verify`.
+
 Agents never broadcast. Mainnet transactions are sent by the human.
 
 1. Build the contract: `(cd contracts && forge build)`.

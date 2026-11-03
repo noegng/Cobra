@@ -65,9 +65,9 @@ export interface Anvil {
   stop(): Promise<void>;
 }
 
-export async function startAnvil(): Promise<Anvil> {
+export async function startAnvil(chainId: number = foundry.id): Promise<Anvil> {
   const port = 20_000 + Math.floor(Math.random() * 30_000);
-  const proc = spawn("anvil", ["--port", String(port), "--silent", "--chain-id", String(foundry.id)], { stdio: "ignore" });
+  const proc = spawn("anvil", ["--port", String(port), "--silent", "--chain-id", String(chainId)], { stdio: "ignore" });
   const url = `http://127.0.0.1:${port}`;
   const publicClient = createPublicClient({ chain: foundry, transport: http(url), pollingInterval: 50 }) as PublicClient;
   for (let i = 0; ; i++) {

@@ -38,7 +38,7 @@ function parseArgs(argv: readonly string[]): Args {
     ...(get("uri") && { uri: get("uri")! }),
     ...(wallet && { wallet: getAddress(wallet) }),
     ...(agentId !== undefined && { agentId: Number(agentId) }),
-    ...(argv.includes("--write") && { write: get("write") && !get("write")!.startsWith("--") ? get("write")! : "docs/agent/registration.json" }),
+    ...(argv.includes("--write") && { write: get("write") && !get("write")!.startsWith("--") ? get("write")! : "apps/web/public/.well-known/agent-registration.json" }), // the file the web app serves
     execute: argv.includes("--execute"),
   };
 }
