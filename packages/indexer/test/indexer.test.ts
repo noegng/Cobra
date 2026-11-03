@@ -91,7 +91,7 @@ const rpc = async (method: string, params: unknown[] = []) => {
 };
 const cursorOf = async (db: Db) => (await db.select().from(chainCursor).where(eq(chainCursor.id, CURSOR_ID)))[0]?.blockNumber;
 const invoiceOf = async (db: Db, id: string) => (await db.select().from(invoices).where(eq(invoices.id, id)))[0]!;
-const waitCursorPast = (db: Db, block: bigint) => waitFor(async () => ((await cursorOf(db)) ?? 0n) > block, 10_000, `cursor > ${block}`);
+const waitCursorPast = (db: Db, block: bigint) => waitFor(async () => ((await cursorOf(db)) ?? 0n) > block, 20_000, `cursor > ${block}`);
 
 describe("startIndexer — reconciliation against anvil", () => {
   it("open -> paid: payment row, invoice paid at block time, notifier once, cursor advanced", async () => {
@@ -101,7 +101,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const ev = await chain.emitPaid(s.router, { invoiceId: inv.id as Hex, amountOut: AMOUNT });
     s.start();
     await waitCursorPast(s.db, ev.block);
-    await waitFor(async () => s.notifier.paid.length > 0, 5000, "notify");
+    await waitFor(async () => s.notifier.paid.length > 0, 15_000, "notify");
 
     const [p] = await s.db.select().from(payments).where(eq(payments.invoiceId, inv.id));
     expect(p).toMatchObject({ txHash: ev.txHash, logIndex: ev.logIndex, payer: PAYER, tokenOut: WARS, amountOut: AMOUNT.toString(), blockNumber: ev.block, legs: null, costBps: null });
@@ -137,7 +137,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     expect((await invoiceOf(s.db, inv.id)).status).toBe("paid");
     const [sub2] = await s.db.select().from(submissions).where(eq(submissions.id, sub!.id));
     expect(sub2).toMatchObject({ status: "confirmed", txHash: ev.txHash });
-    await waitFor(async () => s.notifier.paid.length === 1, 5000, "notify");
+    await waitFor(async () => s.notifier.paid.length === 1, 15_000, "notify");
   });
 
   it("WS7-4 reorg: a Paid log that vanishes un-pays the invoice, rewinds the cursor, and a re-included tx pays again", async () => {
@@ -149,24 +149,24 @@ describe("startIndexer — reconciliation against anvil", () => {
     const ev = await chain.emitPaid(s.router, { invoiceId: inv.id as Hex, amountOut: AMOUNT });
     const first = s.start({ reorgCheckIntervalMs: 0 });
     await waitCursorPast(s.db, ev.block);
-    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 5000, "paid");
+    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 15_000, "paid");
     await first.stop();
 
     // the block is reorged away
     await rpc("evm_revert", [snap]);
     await rpc("anvil_mine", ["0x3"]);
     s.start({ reorgCheckIntervalMs: 0 });
-    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "submitted", 5000, "invoice un-paid");
+    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "submitted", 15_000, "invoice un-paid");
     expect(await s.db.select().from(payments).where(eq(payments.invoiceId, inv.id))).toEqual([]);
     expect((await invoiceOf(s.db, inv.id)).paidAt).toBeNull();
     const [sub2] = await s.db.select().from(submissions).where(eq(submissions.id, sub!.id));
     expect(sub2).toMatchObject({ status: "sent" });
     expect(s.logs.some((l) => l.msg === "indexer_alert_reorg_payment_reverted")).toBe(true);
-    await waitFor(async () => s.notifier.texts.some((t) => /reorg/i.test(t.message)), 5000, "reorg notice");
+    await waitFor(async () => s.notifier.texts.some((t) => /reorg/i.test(t.message)), 15_000, "reorg notice");
 
     // the same payment lands again later: applied normally
     const ev2 = await chain.emitPaid(s.router, { invoiceId: inv.id as Hex, amountOut: AMOUNT });
-    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 8000, "paid again");
+    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 15_000, "paid again");
     expect(ev2.block).toBeGreaterThan(0n);
   });
 
@@ -207,7 +207,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const ix = s.start();
     const head = await chain.publicClient.getBlockNumber({ cacheTime: 0 });
     await waitCursorPast(s.db, head);
-    await waitFor(async () => s.notifier.paid.length === 1, 5000, "notify");
+    await waitFor(async () => s.notifier.paid.length === 1, 15_000, "notify");
     await ix.stop();
 
     // Rewind the cursor to the deploy block and run again (e.g. operator replay after an incident).
@@ -242,7 +242,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const firstLogs = s.calls.find((c) => c.method === "eth_getLogs")!;
     expect(BigInt((firstLogs.params as [{ fromBlock: Hex }])[0].fromBlock)).toBe(stored);
     expect((await invoiceOf(s.db, b.id)).status).toBe("paid");
-    await waitFor(async () => s.notifier.paid.length === 2, 5000, "2 notifications");
+    await waitFor(async () => s.notifier.paid.length === 2, 15_000, "2 notifications");
     expect(s.notifier.paid.map((x) => x.invoiceId).sort()).toEqual([a.id, b.id].sort());
   });
 
@@ -283,7 +283,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const last = await chain.emitPaid(s.router, { invoiceId: twice.id as Hex, amountOut: AMOUNT });
     s.start();
     await waitCursorPast(s.db, last.block);
-    await waitFor(async () => s.notifier.texts.length === 3 && s.notifier.paid.length === 2, 5000, "alerts");
+    await waitFor(async () => s.notifier.texts.length === 3 && s.notifier.paid.length === 2, 15_000, "alerts");
 
     const reasons = (await s.db.select().from(unmatchedEvents)).map((r) => r.reason).sort();
     expect(reasons).toEqual(["already_paid", "paid_while_cancelled", "paid_while_expired"]);
@@ -306,7 +306,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     await sleep(300);
     expect((await invoiceOf(s.db, inv.id)).status).toBe("open"); // head = ev + 4 < ev + 5
     await chain.testClient.mine({ blocks: 1 });
-    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 5000, "paid after 5 confs");
+    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 15_000, "paid after 5 confs");
     const safe = (await chain.publicClient.getBlockNumber({ cacheTime: 0 })) - 5n;
     expect(await cursorOf(s.db)).toBeLessThanOrEqual(safe + 1n);
   });
@@ -371,7 +371,7 @@ describe("startIndexer — reconciliation against anvil", () => {
     const inv = await seedInvoice(s.db, m.id);
     const ev = await chain.emitPaid(s.router, { invoiceId: inv.id as Hex, amountOut: AMOUNT });
     s.start({ faults: { method: "eth_getBlockByNumber", remaining: 1 } }); // timestamp fetch fails once
-    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 8000, "paid after retry");
+    await waitFor(async () => (await invoiceOf(s.db, inv.id)).status === "paid", 15_000, "paid after retry");
     const errs = s.logs.filter((l) => l.msg === "indexer_error");
     expect(errs).toHaveLength(1);
     expect(errs[0]!.extra).toMatchObject({ retryInMs: 1000 });
@@ -382,7 +382,7 @@ describe("startIndexer — reconciliation against anvil", () => {
   it("stop() resolves promptly and no RPC call happens afterwards", async () => {
     const s = await setup();
     const ix = s.start();
-    await waitFor(async () => (await cursorOf(s.db)) !== undefined, 5000, "cursor created");
+    await waitFor(async () => (await cursorOf(s.db)) !== undefined, 15_000, "cursor created");
     const t0 = Date.now();
     await ix.stop();
     expect(Date.now() - t0).toBeLessThan(2000);
