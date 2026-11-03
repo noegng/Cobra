@@ -241,6 +241,16 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
       const r = await deps.fetch(`${base}/api/invoices/0x${"00".repeat(32)}`);
       add("web", "API + database", r.status === 404 ? "PASS" : "FAIL", `unknown invoice → HTTP ${r.status} (want 404)`);
     });
+    await guard("web", "quote API configured (ROUTER_ADDRESS)", async () => {
+      // The quote handler checks its router before the invoice: 503 not_configured = ROUTER_ADDRESS missing on the web host.
+      const r = await deps.fetch(`${base}/api/invoices/0x${"00".repeat(32)}/quote`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ payer: "0x000000000000000000000000000000000000dEaD" }),
+      });
+      const body = (await r.json().catch(() => ({}))) as { error?: string };
+      add("web", "quote API configured (ROUTER_ADDRESS)", r.status === 404 ? "PASS" : "FAIL", `unknown invoice quote → HTTP ${r.status}${body.error ? ` ${body.error}` : ""} (want 404)`);
+    });
   }
 
   // ── Telegram

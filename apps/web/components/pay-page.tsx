@@ -59,6 +59,7 @@ function errorKey(code: string | undefined): keyof Dict {
     case "temporarily_unavailable":
     case "upstream_unavailable":
     case "solver_unavailable":
+    case "not_configured":
       return "temporarily_unavailable";
     default:
       return "generic_error";
