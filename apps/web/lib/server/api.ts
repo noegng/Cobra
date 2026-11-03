@@ -4,7 +4,7 @@
  * against PGlite with a fake solver / fake RPC. The Next.js route files are one-line adapters.
  */
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { getAddress, isAddress, parseSignature, recoverTypedDataAddress, type Address, type Hex } from "viem";
+import { getAddress, isAddress, parseSignature, type Address, type Hex } from "viem";
 import {
   QUOTE_TTL_MS,
   deserializePlan,
@@ -38,6 +38,8 @@ export interface ApiDeps {
   getReferenceRates(): Promise<ReferenceRates>;
   /** `permit2Ready`: tokens whose Permit2 allowance already covers the payer's balance (WS2 SolverOptions). */
   solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult>;
+  /** ERC-1271/6492-aware typed-data signature check (viem publicClient.verifyTypedData); EOAs use ecrecover. */
+  verifyTypedData(args: Record<string, unknown> & { address: Address; signature: Hex }): Promise<boolean>;
   rateLimiter: RateLimiter;
   env: Record<string, string | undefined>;
 }
@@ -244,18 +246,22 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   const sigs: Hex[] = [];
   for (let i = 0; i < signing.length; i++) {
     const sig = signatures[i];
-    if (typeof sig !== "string" || !/^0x[0-9a-fA-F]{130}$/.test(sig)) return apiError(400, "bad_signature", { leg: i });
     const s = signing[i]!;
-    let recovered: Address;
+    // EOA signatures are 65 bytes; Permit2 legs may carry longer ERC-1271 / ERC-6492 contract-wallet signatures.
+    const sigRe = s.kind === "PERMIT2" ? /^0x([0-9a-fA-F]{2}){1,8192}$/ : /^0x[0-9a-fA-F]{130}$/;
+    if (typeof sig !== "string" || !sigRe.test(sig)) return apiError(400, "bad_signature", { leg: i });
+    let valid: boolean;
     try {
-      const parsed = parseSignature(sig as Hex);
-      if (BigInt(parsed.s) > SECP256K1_N_HALF) return apiError(400, "bad_signature", { leg: i });
+      if (sig.length === 132) {
+        const parsed = parseSignature(sig as Hex);
+        if (BigInt(parsed.s) > SECP256K1_N_HALF) return apiError(400, "bad_signature", { leg: i });
+      }
       // typedData is non-null here (ALLOWANCE rejected above)
-      recovered = await recoverTypedDataAddress({ ...(s.typedData as NonNullable<typeof s.typedData>), signature: sig as Hex } as Parameters<typeof recoverTypedDataAddress>[0]);
+      valid = await deps.verifyTypedData({ ...(s.typedData as NonNullable<typeof s.typedData>), address: payer, signature: sig as Hex });
     } catch {
       return apiError(400, "bad_signature", { leg: i });
     }
-    if (getAddress(recovered) !== payer) return apiError(400, "bad_signature", { leg: i });
+    if (!valid) return apiError(400, "bad_signature", { leg: i });
     sigs.push(sig as Hex);
   }
 
