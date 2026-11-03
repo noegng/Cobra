@@ -6,7 +6,9 @@
  *   2. calldata must decode as `CobraRouter.pay(...)` (selector + full ABI decode);
  *   3. kill switch (env KILL_SWITCH or flags.kill_switch) must be off;
  *   4. USD caps (flags.caps): invoice amountOut × reference rate ≤ perPaymentUsd, and the rolling-24h total of
- *      relayed invoices (+ this one) ≤ perDayUsd. Unknown token / missing rate => refused;
+ *      relayed invoices (+ this one) ≤ perDayUsd, and the same total restricted to this merchant payout address
+ *      (≤ perMerchantDayUsd) and to this payer (≤ perPayerDayUsd), so one actor cannot exhaust the shared
+ *      budget. payer == invoice.merchant (self-payment) is refused outright. Unknown token / missing rate => refused;
  *   5. the ERC-8021 attribution suffix is appended by `withAttribution(code)` from @celo/attribution-tags.
  *
  * The key never leaves this module and is never logged. The exposed `walletClient` holds only the address
@@ -36,7 +38,7 @@ import { celo } from "viem/chains";
 import { and, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
 import { toRoleDataSuffix, withAttribution } from "@celo/attribution-tags";
 import { CELO, cobraRouterAbi, tokenByAddress, type Currency, type OnchainInvoice } from "@cobra/shared";
-import { getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
+import { DEFAULT_CAPS, getCaps, invoices, isKillSwitchOn, submissions, type Db } from "@cobra/db";
 import { resolveRates, scaledToUsd, usdToScaled, usdValueScaled, type RatesSource } from "./rates";
 
 export type RefusalCode =
@@ -46,6 +48,9 @@ export type RefusalCode =
   | "kill_switch"
   | "cap_per_payment"
   | "cap_per_day"
+  | "cap_per_merchant_day"
+  | "cap_per_payer_day"
+  | "self_payment"
   | "unknown_token"
   | "missing_rate"
   | "blocked_method";
@@ -129,14 +134,22 @@ function defaultTokenMeta(token: Address): TokenMeta | undefined {
   return t ? { decimals: t.decimals, currency: t.currency } : undefined;
 }
 
-function decodePay(data: Hex): { inv: OnchainInvoice } {
+function decodePay(data: Hex): { inv: OnchainInvoice; payer: Address } {
   if (data.slice(0, 10).toLowerCase() !== PAY_SELECTOR) throw new SignerRefusedError("wrong_selector");
   try {
     const { functionName, args } = decodeFunctionData({ abi: cobraRouterAbi, data });
     if (functionName !== "pay") throw new Error(functionName);
-    return { inv: args[0] as OnchainInvoice };
+    return { inv: args[0] as OnchainInvoice, payer: args[1] as Address };
   } catch {
     throw new SignerRefusedError("wrong_selector", "calldata is not a valid pay()");
+  }
+}
+
+function sameAddress(a: string, b: Address): boolean {
+  try {
+    return isAddressEqual(getAddress(a), b);
+  } catch {
+    return false;
   }
 }
 
@@ -193,10 +206,21 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     withAttribution(opts.attributionCode),
   );
 
-  async function dayTotalScaled(excludeInvoiceId: string): Promise<bigint> {
+  /** Rolling-24h relayed USD totals (excluding this invoice): global, for `merchant`, and for `payer`. */
+  async function dayTotalsScaled(
+    excludeInvoiceId: string,
+    merchant: Address,
+    payer: Address,
+  ): Promise<{ all: bigint; merchant: bigint; payer: bigint }> {
     const since = new Date(now().getTime() - 24 * 3600_000);
     const rows = await opts.db
-      .select({ id: invoices.id, tokenOut: invoices.tokenOut, amountOut: invoices.amountOut })
+      .select({
+        id: invoices.id,
+        tokenOut: invoices.tokenOut,
+        amountOut: invoices.amountOut,
+        merchantAddress: invoices.merchantAddress,
+        payer: submissions.payer,
+      })
       .from(submissions)
       .innerJoin(invoices, eq(submissions.invoiceId, invoices.id))
       .where(
@@ -209,22 +233,27 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
       );
     const rates = await resolveRates(opts.rates);
     const seen = new Set<string>();
-    let total = 0n;
+    const totals = { all: 0n, merchant: 0n, payer: 0n };
     for (const r of rows) {
       if (seen.has(r.id)) continue;
       seen.add(r.id);
       const meta = tokenMeta(getAddress(r.tokenOut));
       if (!meta) throw new SignerRefusedError("unknown_token", r.tokenOut);
-      total += usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      const usd = usdValueScaled(BigInt(r.amountOut), meta.decimals, meta.currency, rates);
+      totals.all += usd;
+      if (sameAddress(r.merchantAddress, merchant)) totals.merchant += usd;
+      if (sameAddress(r.payer, payer)) totals.payer += usd;
     }
-    return total;
+    return totals;
   }
 
   async function check(req: Pick<SendRequest, "to" | "data" | "value">): Promise<{ usd: number }> {
     if (!req.to || !isAddressEqual(req.to, router)) throw new SignerRefusedError("wrong_target");
     if (req.value !== undefined && req.value !== 0n) throw new SignerRefusedError("value_not_zero");
-    const { inv } = decodePay(req.data);
+    const { inv, payer } = decodePay(req.data);
     if (await isKillSwitchOn(opts.db, env)) throw new SignerRefusedError("kill_switch");
+    // Self-dealing: the merchant paying its own invoice moves no value but would burn the shared relay budget.
+    if (isAddressEqual(payer, inv.merchant)) throw new SignerRefusedError("self_payment");
 
     const meta = tokenMeta(getAddress(inv.tokenOut));
     if (!meta) throw new SignerRefusedError("unknown_token", inv.tokenOut);
@@ -238,15 +267,23 @@ export function createRelayerSigner(opts: RelayerSignerOptions): RelayerSigner {
     if (usd > usdToScaled(caps.perPaymentUsd)) {
       throw new SignerRefusedError("cap_per_payment", `${scaledToUsd(usd)} USD > ${caps.perPaymentUsd}`);
     }
-    let day: bigint;
+    let day: { all: bigint; merchant: bigint; payer: bigint };
     try {
-      day = await dayTotalScaled(inv.id);
+      day = await dayTotalsScaled(inv.id, inv.merchant, payer);
     } catch (e) {
       if (e instanceof SignerRefusedError) throw e;
       throw new SignerRefusedError("missing_rate", String((e as Error).message));
     }
-    if (day + usd > usdToScaled(caps.perDayUsd)) {
-      throw new SignerRefusedError("cap_per_day", `${scaledToUsd(day + usd)} USD > ${caps.perDayUsd}`);
+    const perMerchant = caps.perMerchantDayUsd ?? DEFAULT_CAPS.perMerchantDayUsd;
+    if (day.merchant + usd > usdToScaled(perMerchant)) {
+      throw new SignerRefusedError("cap_per_merchant_day", `${scaledToUsd(day.merchant + usd)} USD > ${perMerchant}`);
+    }
+    const perPayer = caps.perPayerDayUsd ?? DEFAULT_CAPS.perPayerDayUsd;
+    if (day.payer + usd > usdToScaled(perPayer)) {
+      throw new SignerRefusedError("cap_per_payer_day", `${scaledToUsd(day.payer + usd)} USD > ${perPayer}`);
+    }
+    if (day.all + usd > usdToScaled(caps.perDayUsd)) {
+      throw new SignerRefusedError("cap_per_day", `${scaledToUsd(day.all + usd)} USD > ${caps.perDayUsd}`);
     }
     return { usd: scaledToUsd(usd) };
   }

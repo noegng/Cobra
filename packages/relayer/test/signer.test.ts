@@ -2,23 +2,30 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { encodeFunctionData, parseAbi, type Address, type Hex } from "viem";
 import { foundry } from "viem/chains";
 import { cobraRouterAbi, PullKind } from "@cobra/shared";
-import { setFlag, type Db } from "@cobra/db";
+import { invoices, setFlag, submissions, type Db } from "@cobra/db";
 import { createTestDb } from "@cobra/db/testing";
 import { createRelayerSigner, PAY_SELECTOR, SignerRefusedError, type RelayerSigner } from "../src/signer";
 import { buildRegistrationFile, registerCalldata, REGISTRATION_TYPE } from "../src/agent";
 import { usdValueScaled, USD_SCALE } from "../src/rates";
-import { ANVIL_KEYS, ATTRIBUTION_CODE, RATES, WARS } from "./helpers";
+import { ANVIL_KEYS, ATTRIBUTION_CODE, MERCHANT, RATES, seedMerchant, WARS } from "./helpers";
 
 const ROUTER: Address = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const OTHER: Address = "0x00000000000000000000000000000000DeaDBeef";
+const PAYER: Address = "0x000000000000000000000000000000000000bEEF";
 
-function payData(amountOut = 4500n * 10n ** 18n, tokenOut: Address = WARS): Hex {
+function payData(
+  amountOut = 4500n * 10n ** 18n,
+  tokenOut: Address = WARS,
+  merchant: Address = OTHER,
+  payer: Address = PAYER,
+  id: Hex = `0x${"11".repeat(32)}`,
+): Hex {
   return encodeFunctionData({
     abi: cobraRouterAbi,
     functionName: "pay",
     args: [
-      { id: `0x${"11".repeat(32)}`, merchant: OTHER, tokenOut, amountOut, deadline: 2_000_000_000n },
-      OTHER,
+      { id, merchant, tokenOut, amountOut, deadline: 2_000_000_000n },
+      payer,
       [{ token: tokenOut, amountIn: 1n, kind: PullKind.PERMIT2, pullData: "0x", path: "0x" }],
     ],
   });
@@ -93,6 +100,40 @@ describe("signer guards", () => {
     await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2 });
     expect(await code(s.check({ to: ROUTER, data: payData() }))).toBe("cap_per_day");
     await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
+  });
+
+  it("WS7-1: self-payment (payer == invoice.merchant) is refused", async () => {
+    expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, OTHER) }))).toBe("self_payment");
+    expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, PAYER, PAYER) }))).toBe("self_payment");
+  });
+
+  it("WS7-1: one merchant / one payer cannot exhaust the global daily budget", async () => {
+    // A relayed (sent) ~2.7 USD invoice: merchant MERCHANT, payer PAYER, 1 minute ago.
+    const m = await seedMerchant(db);
+    const id = `0x${"22".repeat(32)}` as Hex;
+    await db.insert(invoices).values({
+      id, merchantId: m.id, amountLocal: "4500", currency: "ARS", tokenOut: WARS,
+      amountOut: (4500n * 10n ** 18n).toString(), merchantAddress: MERCHANT, expiresAt: new Date(Date.now() + 600_000),
+    });
+    await db.insert(submissions).values({ invoiceId: id, payer: PAYER, legs: [], status: "sent", txHash: `0x${"ab".repeat(32)}` });
+    const fresh: Address = "0x000000000000000000000000000000000000f00d";
+    const nextId = `0x${"33".repeat(32)}` as Hex;
+    try {
+      // Global budget is ample; the per-merchant budget is not.
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000, perMerchantDayUsd: 5, perPayerDayUsd: 2000 });
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, MERCHANT, fresh, nextId) }))).toBe("cap_per_merchant_day");
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, fresh, nextId) }))).toBe("ok");
+      // Same for the payer.
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000, perMerchantDayUsd: 2000, perPayerDayUsd: 5 });
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, PAYER, nextId) }))).toBe("cap_per_payer_day");
+      expect(await code(s.check({ to: ROUTER, data: payData(undefined, undefined, OTHER, fresh, nextId) }))).toBe("ok");
+      // Stored flags without the new fields fall back to DEFAULT_CAPS (500 USD each), not "unlimited".
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
+      expect(await code(s.check({ to: ROUTER, data: payData(200n * 1650n * 10n ** 18n - 10n ** 18n, undefined, MERCHANT, fresh, nextId) }))).toBe("ok");
+    } finally {
+      await db.delete(submissions);
+      await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 2000 });
+    }
   });
 
   it("kill switch from env or flag", async () => {

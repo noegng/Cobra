@@ -14,6 +14,9 @@ import {
 import { invoices, onchainInvoiceFromRow, quotes, setFlag, submissions } from "@cobra/db";
 import { handleCreateStaticInvoice, handleGetInvoice, handleQuote, handleStatus, handleSubmit } from "../lib/server/api";
 import type { QuoteError, QuoteOk, StatusResponse } from "../lib/wire";
+import { privateKeyToAccount } from "viem/accounts";
+import { buildLegSigning } from "../lib/server/signing";
+import { deserializePlan, type SerializedPlan } from "@cobra/shared";
 import { MERCHANT_PAYOUT, ROUTER, T0, USDC, WARS, other, payer, planFor, req, setup, signAll } from "./helpers";
 
 async function quote(fx: Awaited<ReturnType<typeof setup>>, who = payer.address) {
@@ -258,6 +261,38 @@ describe("submit rejections", () => {
     await fx.db.update(invoices).set({ status: "submitted" }).where(eq(invoices.id, fx.invoiceId));
     const res = await handleSubmit(req("POST", { quoteId: body.quoteId, signatures: await signAll(body.toSign) }), fx.invoiceId, fx.deps);
     expect(res.status).toBe(409);
+  });
+});
+
+describe("WS7-1: self-payment (payer == invoice merchant)", () => {
+  // anvil's public test account #2 — the fixture merchant payout address.
+  const merchantAcc = privateKeyToAccount("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a");
+
+  it("quote is refused with 400 self_payment, nothing stored", async () => {
+    const fx = await setup();
+    expect(merchantAcc.address).toBe(MERCHANT_PAYOUT);
+    const { res, body } = await quote(fx, MERCHANT_PAYOUT);
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("self_payment");
+    expect(await fx.db.select().from(quotes)).toHaveLength(0);
+  });
+
+  it("submit of a correctly signed self-payment quote is refused, no submission", async () => {
+    const fx = await setup();
+    const { body } = await quote(fx);
+    // A quote whose payer is the merchant itself (e.g. stored before the quote-side check), signed by the merchant.
+    await fx.db.update(quotes).set({ payer: MERCHANT_PAYOUT }).where(eq(quotes.id, body.quoteId));
+    const [q] = await fx.db.select().from(quotes).where(eq(quotes.id, body.quoteId));
+    const [row] = await fx.db.select().from(invoices).where(eq(invoices.id, fx.invoiceId));
+    const signing = buildLegSigning({
+      router: ROUTER, chainId: 42220, permit2: fx.deps.permit2, invoice: onchainInvoiceFromRow(row!),
+      payer: MERCHANT_PAYOUT, legs: deserializePlan(q!.plan as SerializedPlan).legs,
+    });
+    const signatures = await Promise.all(signing.map((x) => merchantAcc.signTypedData(x.typedData as never)));
+    const res = await handleSubmit(req("POST", { quoteId: body.quoteId, signatures }), fx.invoiceId, fx.deps);
+    expect(await res.json()).toEqual({ error: "self_payment" });
+    expect(res.status).toBe(400);
+    expect(await fx.db.select().from(submissions)).toHaveLength(0);
   });
 });
 
