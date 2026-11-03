@@ -11,6 +11,11 @@ export interface RateLimiter {
 export const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
   quote: { limit: 20, windowMs: 60_000 },
   submit: { limit: 10, windowMs: 60_000 },
+  // WS7-2: keyed by payer address / invoice id, on top of the per-IP buckets (a script rotating IPs is still bounded)
+  quotePayer: { limit: 10, windowMs: 60_000 },
+  quoteInvoice: { limit: 30, windowMs: 60_000 },
+  submitPayer: { limit: 6, windowMs: 60_000 },
+  submitInvoice: { limit: 10, windowMs: 60_000 },
   staticInvoice: { limit: 10, windowMs: 60_000 },
   read: { limit: 120, windowMs: 60_000 },
 };

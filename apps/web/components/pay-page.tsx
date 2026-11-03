@@ -50,6 +50,7 @@ function errorKey(code: string | undefined): keyof Dict {
       return "no_route";
     case "over_cap":
       return "over_cap";
+    case "rate_limited":
     case "temporarily_unavailable":
     case "upstream_unavailable":
     case "solver_unavailable":
@@ -230,11 +231,12 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ quoteId: quote.quoteId, signatures }),
       });
-      if (res.ok || res.status === 409) {
+      const body = res.ok ? {} : ((await res.json().catch(() => ({}))) as { error?: string });
+      // Only "already submitted" means a payment is in flight; any other 409/429 is a "try again", not a dead end.
+      if (res.ok || (res.status === 409 && (body as { error?: string }).error === "already_submitted")) {
         setStatus("submitted");
       } else {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setNotice(errorKey(body.error));
+        setNotice(errorKey((body as { error?: string }).error));
         setQuote(null);
       }
     } catch (e) {

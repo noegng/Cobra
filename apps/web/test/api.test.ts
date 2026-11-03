@@ -372,6 +372,51 @@ describe("quote rejections", () => {
   });
 });
 
+describe("WS7-2: per-payer / per-invoice limits and revert ban", () => {
+  it("per-payer quote limit is independent of the client IP (11th quote of one payer → 429)", async () => {
+    const fx = await setup();
+    const statuses: number[] = [];
+    for (let i = 0; i < 11; i++) {
+      const r = await handleQuote(req("POST", { payer: payer.address }, { "x-forwarded-for": `10.0.0.${i}` }), fx.invoiceId, fx.deps);
+      statuses.push(r.status);
+    }
+    expect(statuses.slice(0, 10)).not.toContain(429);
+    expect(statuses[10]).toBe(429);
+  });
+
+  it("per-invoice quote limit holds across payers and IPs", async () => {
+    const fx = await setup();
+    let last = 0;
+    for (let i = 0; i < 31; i++) {
+      const who = privateKeyToAccount(`0x${(i + 1).toString(16).padStart(64, "0")}`).address;
+      last = (await handleQuote(req("POST", { payer: who }, { "x-forwarded-for": `10.1.0.${i}` }), fx.invoiceId, fx.deps)).status;
+    }
+    expect(last).toBe(429);
+  });
+
+  it("a payer with 3 recent reverts is refused (quote and submit) until the oldest one leaves the window", async () => {
+    const fx = await setup();
+    const rows = [0, 1, 2].map((i) => ({
+      invoiceId: fx.invoiceId,
+      payer: payer.address,
+      legs: [],
+      status: "failed" as const,
+      error: i === 0 ? "simulation_reverted:X" : "tx_reverted:Y",
+      updatedAt: new Date(fx.clock.now - 60_000 * (i + 1)),
+    }));
+    await fx.deps.db.insert(submissions).values(rows);
+    const { res, body } = await quote(fx);
+    expect(res.status).toBe(429);
+    expect(body.error).toBe("payer_blocked");
+    expect((body as unknown as { retryAfter: number }).retryAfter).toBeGreaterThan(0);
+    // another payer is unaffected
+    expect((await quote(fx, other.address)).res.status).toBe(200);
+    // 31 minutes later the oldest revert is out of the window
+    fx.clock.now += 31 * 60_000;
+    expect((await quote(fx)).body.error).not.toBe("payer_blocked");
+  });
+});
+
 describe("POST /api/m/:slug/invoice (static QR)", () => {
   it("creates an open static_qr invoice with amountOut 1:1 in wFIAT base units", async () => {
     const fx = await setup();
