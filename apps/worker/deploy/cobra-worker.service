@@ -11,6 +11,9 @@
 Description=Cobra worker (relayer + indexer + schedulers)
 Wants=network-online.target
 After=network-online.target
+# Start limits belong to [Unit] (systemd ignores them in [Service]): at most 10 starts per 5 min.
+StartLimitIntervalSec=300
+StartLimitBurst=10
 
 [Service]
 Type=simple
@@ -19,7 +22,9 @@ Group=cobra
 WorkingDirectory=/opt/cobra/apps/worker
 EnvironmentFile=/etc/cobra/worker.env
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/env pnpm start
+# tsx directly, not `pnpm start`: pnpm re-runs an install before scripts, which fails (by design) for the
+# read-only `cobra` user. Node must be on systemd's PATH (e.g. /usr/local/bin/node).
+ExecStart=/opt/cobra/node_modules/.bin/tsx src/main.ts
 # SIGTERM → graceful shutdown (relayer persists in-flight txHash, indexer commits its batch); main.ts force-exits after 20 s
 KillSignal=SIGTERM
 TimeoutStopSec=30
@@ -27,8 +32,6 @@ Restart=on-failure
 RestartSec=5
 # 78 = EX_CONFIG (invalid env): do not restart-loop, fix /etc/cobra/worker.env first
 RestartPreventExitStatus=78
-StartLimitIntervalSec=300
-StartLimitBurst=10
 
 # Hardening
 NoNewPrivileges=true
