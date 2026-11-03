@@ -10,7 +10,7 @@ import { MERCHANT_PAYOUT, WARS, payer } from "./helpers";
 const AGENT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 const hex = (n: number) => `0x${n.toString(16).padStart(64, "0")}`;
 const render = (stats: Awaited<ReturnType<typeof proofStats>>, lang: "es" | "pt" | "en" = "es", agent: string | null = AGENT) =>
-  renderToStaticMarkup(createElement(ProofView, { stats, lang, agentAddress: agent, routerAddress: null }));
+  renderToStaticMarkup(createElement(ProofView, { stats, lang, agentAddress: agent, routerAddress: null, agentId: 10033 }));
 
 describe("/proof view", () => {
   it("empty state", async () => {
@@ -41,7 +41,7 @@ describe("/proof view", () => {
       for (let n = 1; n <= 3; n++) expect(html).toContain(`/tx/${hex(500 + n)}`);
       expect((html.match(/\/tx\//g) ?? []).length).toBe(stats.paymentCount);
       expect(html).toContain(`/address/${AGENT}`);
-      expect(html).toContain("8004scan");
+      expect(html).toContain("https://8004scan.io/agents/celo/10033");
     }
   });
 });

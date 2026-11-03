@@ -4,12 +4,25 @@ import type { ProofStats } from "@cobra/db/queries";
 import { formatUnits } from "../lib/amount";
 import { DICTS, localeFor } from "../lib/i18n";
 
-export const identityUrl = (agent: string) => `https://www.8004scan.io/search?q=${encodeURIComponent(agent)}`;
+/** 8004scan agent page (its search does not resolve wallet addresses). */
+export const identityUrl = (agentId: number) => `https://8004scan.io/agents/celo/${agentId}`;
 
 const short = (h: string) => `${h.slice(0, 8)}…${h.slice(-6)}`;
 
 /** Pure presentation of DB-derived numbers; no hand-typed figures. */
-export function ProofView({ stats, lang, agentAddress, routerAddress }: { stats: ProofStats; lang: Language; agentAddress: string | null; routerAddress: string | null }) {
+export function ProofView({
+  stats,
+  lang,
+  agentAddress,
+  routerAddress,
+  agentId = null,
+}: {
+  stats: ProofStats;
+  lang: Language;
+  agentAddress: string | null;
+  routerAddress: string | null;
+  agentId?: number | null;
+}) {
   const t = DICTS[lang];
   const locale = localeFor(lang);
   const sym = (a: string) => tokenByAddress(a)?.symbol ?? short(a);
@@ -59,7 +72,7 @@ export function ProofView({ stats, lang, agentAddress, routerAddress }: { stats:
         <h2>{t.proof_agent}</h2>
         <p className="small">{t.proof_agent_wallet}: {agentAddress ? <a href={explorerAddress(agentAddress)} target="_blank" rel="noreferrer noopener">{agentAddress}</a> : t.proof_unset}</p>
         <p className="small">{t.proof_router}: {routerAddress ? <a href={explorerAddress(routerAddress)} target="_blank" rel="noreferrer noopener">{routerAddress}</a> : t.proof_unset}</p>
-        <p className="small">{agentAddress ? <a href={identityUrl(agentAddress)} target="_blank" rel="noreferrer noopener">{t.proof_identity}</a> : `${t.proof_identity}: ${t.proof_unset}`}</p>
+        <p className="small">{agentId != null ? <a href={identityUrl(agentId)} target="_blank" rel="noreferrer noopener">{t.proof_identity} #{agentId}</a> : `${t.proof_identity}: ${t.proof_unset}`}</p>
       </section>
     </>
   );
