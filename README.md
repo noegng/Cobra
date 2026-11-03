@@ -406,9 +406,11 @@ Mainnet transactions are only ever sent by a human. AI coding agents working on 
 | Deploy block | 81818614 |
 | Relayer / agent wallet | [`0x9E828B877EFCdb79B507fF6234d841A8265Cccd5`](https://celoscan.io/address/0x9E828B877EFCdb79B507fF6234d841A8265Cccd5) |
 | ERC-8004 agent id and registration tx | `10033` on IdentityRegistry `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, tx [`0xe02818c2…4de85811`](https://celoscan.io/tx/0xe02818c2fa247cb0e70790b82bb372f28c5afb20ca7138dcb6841fc74de85811) |
-| Proof payment: wARS | TBD |
-| Proof payment: wBRL | TBD |
-| Proof payment: multi-leg split | TBD |
+| Proof payment 1: USD₮ → wARS (EIP-3009, swap) | [`0x7951aea4…fe07ddc3`](https://celoscan.io/tx/0x7951aea4693affabca3250605dcb43ee8ecebe2597a9dd416a06aa58fe07ddc3): invoice `100 ARS`, payer signs 0.060673 USD₮, swapped on Uniswap V3, merchant receives exactly **100 wARS**, 0.47 wARS surplus refunded to the payer. Sent by the agent, tagged ERC-8021 |
+| Gas grant to a payer with 0 CELO | [`0x0052cc07…02f2af0fe`](https://celoscan.io/tx/0x0052cc07e384c7cd8794b9f0514c298ea3a60719d862097d6d971bb02f2af0fe): the agent sends 0.05 CELO (tagged) so the payer can send their one-time Permit2 approval |
+| Proof payment 2: wARS → wARS (Permit2) | [`0x66cc8e51…52a2fb19`](https://celoscan.io/tx/0x66cc8e5185076c10fd03cc0ce3e591e5e84395885ce6b67a7f42304352a2fb19): invoice `1000 ARS`, same payer, merchant receives exactly **1 000 wARS**, gasless signature relayed by the agent |
+| Proof payment: wBRL | not yet on mainnet (fork test `test_fork_usdt_to_wBRL_buySide`) |
+| Proof payment: multi-leg split | not yet on mainnet (fork tests `test_fork_twoLegs_usdc3009_usdtPermit2`, `test_fork_threeLegs_mixed_payerSends`) |
 | Web URL | https://cobra-beige.vercel.app |
 | Telegram bot | [@cobra_agent_telegram_bot](https://t.me/cobra_agent_telegram_bot) |
 
