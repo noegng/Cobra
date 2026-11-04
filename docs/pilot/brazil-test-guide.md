@@ -24,6 +24,8 @@ us, can hold or redirect your funds. But it is new and **has not been audited** 
 
 ## What you need
 
+> **No wallet yet, or no funds on Celo?** Start with the [wallet setup guide](brazil-wallet-guide.md) (10 minutes).
+
 | | |
 | --- | --- |
 | **Telegram** | On your phone or computer |

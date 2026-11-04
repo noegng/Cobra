@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cobrá — Set up a Celo wallet (Brazil)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap">
+<style>
+  :root { --bg:#f6f4ee; --card:#fffdf8; --fg:#111311; --sub:#5c615c; --line:#ddd8cb; --line2:#b9b3a4; --soft:#ece8dd; --accent:#0b6b3a; --accent-fg:#fff; --accent-soft:#dcebdf; --warn-bg:#fbecc8; --warn-fg:#6b4300; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d0f0e; --card:#151816; --fg:#edede6; --sub:#9ca29b; --line:#2a2f2b; --line2:#454c46; --soft:#1b1f1c; --accent:#3ddc84; --accent-fg:#06120b; --accent-soft:#143322; --warn-bg:#3a2c0c; --warn-fg:#f5c46a; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 "Space Grotesk", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  .mono, code, kbd { font-family:"JetBrains Mono", ui-monospace, Menlo, monospace; }
+  a { color:var(--accent); font-weight:600; text-decoration:none; } a:hover { text-decoration:underline; }
+  .wrap { max-width:46rem; margin:0 auto; padding:1.5rem 1.25rem 4rem; }
+  header.top { display:flex; align-items:center; gap:.7rem; padding-bottom:1rem; border-bottom:1px dashed var(--line2); }
+  header.top img { width:2.4rem; height:2.4rem; display:block; }
+  header.top b { font-size:1.2rem; letter-spacing:-.03em; }
+  header.top .tag { margin-left:auto; font:600 .7rem/1 "JetBrains Mono", monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--sub); }
+  h1 { font-size:clamp(2rem, 6vw, 3rem); line-height:1; letter-spacing:-.045em; margin:2rem 0 .8rem; }
+  h1 .g { color:var(--accent); }
+  .lead { color:var(--sub); font-size:1.08rem; margin:0 0 1.2rem; }
+  .label { font:600 .72rem/1.2 "JetBrains Mono", monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 .5rem; }
+  h2 { font-size:1.6rem; letter-spacing:-.035em; line-height:1.1; margin:.2rem 0 .9rem; }
+  section { margin-top:3rem; padding-top:1.4rem; border-top:1px solid var(--fg); }
+  .links { display:flex; flex-wrap:wrap; gap:.5rem; margin:1rem 0 0; }
+  .btn { display:inline-flex; align-items:center; gap:.4rem; min-height:2.6rem; padding:0 1rem; border-radius:6px; border:1px solid var(--fg); color:var(--fg); font-weight:600; }
+  .btn.p { background:var(--accent); border-color:var(--accent); color:var(--accent-fg); }
+  .btn:hover { text-decoration:none; background:var(--soft); } .btn.p:hover { background:var(--accent); filter:brightness(.95); }
+  .warn { background:var(--warn-bg); color:var(--warn-fg); border:1px dashed currentColor; border-radius:6px; padding:1rem 1.1rem; }
+  .warn ul { margin:.5rem 0 0; padding-left:1.1rem; } .warn li { margin:.3rem 0; } .warn b { color:inherit; }
+  ol.steps { list-style:none; padding:0; margin:0; counter-reset:s; }
+  ol.steps > li { position:relative; padding:.85rem 0 .85rem 2.6rem; border-bottom:1px dashed var(--line2); counter-increment:s; }
+  ol.steps > li::before { content:counter(s, decimal-leading-zero); position:absolute; left:0; top:.85rem; font:700 .95rem/1.5 "JetBrains Mono", monospace; color:var(--accent); }
+  ol.steps ul { margin:.4rem 0 0; padding-left:1.1rem; color:var(--sub); }
+  table { width:100%; border-collapse:collapse; margin:.5rem 0; font-size:.95rem; }
+  th, td { text-align:left; vertical-align:top; padding:.65rem .5rem .65rem 0; border-bottom:1px dashed var(--line); }
+  th { font:600 .72rem/1.3 "JetBrains Mono", monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--sub); width:34%; }
+  td b { font-weight:700; }
+  .ticket { position:relative; background:var(--card); border:1px solid var(--line); border-bottom:none; border-radius:6px 6px 0 0; padding:1.1rem 1.2rem 1.3rem; margin:1rem 0 1.4rem; }
+  .ticket::after { content:""; position:absolute; left:-1px; right:-1px; bottom:-8px; height:8px;
+    background:linear-gradient(-45deg, transparent 5.5px, var(--card) 0) 0 0/11px 8px repeat-x, linear-gradient(45deg, transparent 5.5px, var(--card) 0) 0 0/11px 8px repeat-x; }
+  .cmd { display:block; font:600 1.05rem/1.4 "JetBrains Mono", monospace; background:var(--fg); color:var(--bg); padding:.75rem 1rem; border-radius:6px; margin:.6rem 0; }
+  .rcpt { display:flex; justify-content:space-between; gap:1rem; padding:.45rem 0; border-bottom:1px dashed var(--line2); }
+  .rcpt:last-child { border-bottom:none; border-top:1px solid var(--fg); font-weight:700; }
+  .rcpt span:last-child { font-family:"JetBrains Mono", monospace; font-weight:700; text-align:right; }
+  .rcpt small { display:block; font:400 .75rem/1.3 "Space Grotesk", sans-serif; color:var(--sub); }
+  .muted { color:var(--sub); }
+  code { font-size:.9em; background:var(--soft); padding:.05rem .3rem; border-radius:3px; }
+  footer { margin-top:3rem; padding-top:1rem; border-top:1px dashed var(--line2); color:var(--sub); font:400 .8rem/1.5 "JetBrains Mono", monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <img src="data:image/png;base64,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" alt="">
+    <b>Cobrá</b>
+    <span class="tag">Wallet setup · Brazil · ~10 min</span>
+  </header>
+
+    <h1>Set up a Celo wallet<br><span class="g">and add funds.</span></h1>
+  <p class="lead">For testers who have <b>never used a crypto wallet</b>. About <b>10 minutes</b>, plus Ripio's identity check the first time. Then follow the <a href="https://github.com/noegng/Cobra/blob/main/docs/pilot/brazil-test-guide.md">pilot test guide</a>.</p>
+  <div class="warn"><b>Wallet choice still being confirmed.</b> We recommend <b>MiniPay</b>; if it is not in your app store, use <b>MetaMask</b> (step 1b). Tell us which one worked for you.</div>
+
+  <section>
+    <p class="label">00 / Three rules</p>
+    <h2>Before you start</h2>
+    <ol class="steps">
+      <li><b>Your recovery phrase (12 or 24 words) is the key to your money.</b> Write it on paper, keep it offline, and <b>never give it to anyone</b>: not to Cobrá, not to "support", not to a website. Anyone who has it can take your funds.</li>
+      <li><b>Always use the Celo network.</b> Money sent on another network (Ethereum, Tron, BNB…) does not arrive and can be lost. Check the network every time you buy or withdraw.</li>
+      <li><b>Start small</b>: 10 to 20 reais is enough for the whole pilot.</li>
+    </ol>
+    <p class="muted">You need <b>two wallets</b> for the full test (a merchant cannot pay their own invoice): one to <b>receive</b> (merchant) and one to <b>pay</b> (customer). Two phones, or two wallets in the same app, both work.</p>
+  </section>
+
+  <section>
+    <p class="label">01 / Install</p>
+    <h2>Install a wallet</h2>
+    <p class="label" style="color:var(--fg)">1a · MiniPay (recommended, check availability)</p>
+    <ol class="steps">
+      <li>Install <b>MiniPay</b> from the <a href="https://www.opera.com/products/minipay">official page</a> (Play Store / App Store), or open it inside the Opera Mini browser.</li>
+      <li>Create your account and follow the <b>backup</b> instructions carefully.</li>
+      <li>MiniPay is built for <b>Celo</b> and stablecoins, and Cobrá's payment page connects to it automatically. When you send money to it from somewhere else, the network must still be <b>Celo</b>.</li>
+    </ol>
+    <p class="label" style="color:var(--fg); margin-top:1.5rem">1b · MetaMask (if MiniPay is not available)</p>
+    <ol class="steps">
+      <li>Install <b>MetaMask</b> from <a href="https://metamask.io">metamask.io</a> (official app only).</li>
+      <li>Create a new wallet and <b>write down the recovery phrase</b> on paper.</li>
+      <li>Add the <b>Celo</b> network: <i>Networks → Add network → Add manually</i>. Cobrá's payment page also offers <b>Switch to Celo</b> when you connect.
+        <table>
+          <tr><th>Network name</th><td>Celo</td></tr>
+          <tr><th>RPC URL</th><td><code>https://forno.celo.org</code></td></tr>
+          <tr><th>Chain ID</th><td><code>42220</code></td></tr>
+          <tr><th>Currency symbol</th><td><code>CELO</code></td></tr>
+          <tr><th>Block explorer</th><td><code>https://celoscan.io</code></td></tr>
+        </table>
+      </li>
+      <li><span class="muted">(Optional)</span> So the balances show, <i>Import tokens</i> on Celo:
+        <ul><li><b>wBRL</b> (digital real): <code>0xD76f5Faf6888e24D9F04Bf92a0c8B921FE4390e0</code>, 18 decimals</li>
+        <li><b>USD₮</b> (digital dollar): <code>0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e</code>, 6 decimals</li></ul>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="label">02 / Address</p>
+    <h2>Find your address</h2>
+    <p>Your <b>address</b> starts with <code>0x</code> and has 42 characters. It is public: you can share it to receive money.</p>
+    <ol class="steps">
+      <li><b>MiniPay</b>: tap <i>Receive</i> / your account to copy it.</li>
+      <li><b>MetaMask</b>: tap the account name at the top to copy it.</li>
+    </ol>
+    <p class="muted">Copy and paste it, <b>never type it by hand</b>. This is the address you give the Cobrá bot when you sign up as a merchant.</p>
+  </section>
+
+  <section>
+    <p class="label">03 / Funds · customer wallet</p>
+    <h2>Add funds: pick one path</h2>
+    <div class="ticket">
+      <p class="label">Path A · in reais, with Pix (simplest)</p>
+      <p>You buy <b>wBRL</b> (1 wBRL = R$1) and pay the merchant directly in reais. No exchange rate, no conversion.</p>
+      <ol class="steps">
+        <li>Open Ripio's ramp, prefilled for R$20 of wBRL on Celo:<br><a href="https://ramp.ripio.com/?country=BR&amp;chain=42220&amp;token=WBRL&amp;amount=20">ramp.ripio.com/?country=BR&amp;chain=42220&amp;token=WBRL&amp;amount=20</a></li>
+        <li>Paste the <b>address of your customer wallet</b> (step 02) when asked.</li>
+        <li>Ripio asks you to sign up and verify your identity with your <b>CPF</b> (first time only).</li>
+        <li>Pay with <b>Pix</b>. The wBRL arrive in your wallet, on Celo.</li>
+        <li><b>The first time you pay a Cobrá invoice in wBRL</b>, the page asks for a one-time <b>"Authorize wBRL"</b> step. If your wallet has no CELO for the network fee, Cobrá's agent sends you a little (0.05 CELO, automatically, once): just wait until the button is active. After that, every payment is a single signature.</li>
+      </ol>
+      <p class="muted">We have <b>not tested this Ripio purchase end to end yet</b>: please tell us how long it took, the fees, and any problem. Cobrá's payment page also shows a <b>"Pay in reais"</b> button that opens this same Ripio link, prefilled with the invoice amount, when your balance is too low.</p>
+    </div>
+    <div class="ticket">
+      <p class="label">Path B · in digital dollars (USD₮)</p>
+      <p>For people who already save in dollars. You pay with <b>USD₮</b>; Cobrá converts and the merchant still receives reais (about 0.5–0.7% total cost).</p>
+      <ol class="steps">
+        <li><b>In MiniPay</b>: use its <i>Add cash / Deposit</i> options, if available in Brazil.</li>
+        <li><b>From an exchange</b>: withdraw <b>USD₮ (Tether)</b> and, on the withdrawal screen, choose the <b>Celo network</b>. If Celo is not in the list, <b>do not withdraw</b>: that exchange cannot send to Celo.</li>
+        <li>About <b>US$2</b> pays a R$10 invoice. You do <b>not</b> need CELO for fees: Cobrá pays them.</li>
+      </ol>
+      <p class="muted">Prefer <b>USD₮</b> over USDC for Brazil: it gets the best price. USDC can be refused for wBRL payments for now.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">04 / Check</p>
+    <h2>Check, then start the pilot</h2>
+    <ol class="steps">
+      <li>Your customer wallet shows <b>wBRL</b> (path A) or <b>USD₮</b> (path B) on <b>Celo</b>.</li>
+      <li>You can also paste your address on <a href="https://celoscan.io">celoscan.io</a> to see the balances.</li>
+      <li>Now open the <a href="https://github.com/noegng/Cobra/blob/main/docs/pilot/brazil-test-guide.md">pilot test guide</a> and sign up as a merchant with the <i>other</i> wallet.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="label">05 / Help</p>
+    <h2>Common problems</h2>
+    <table>
+      <tr><th>I sent funds but they do not show</th><td>Check you used the <b>Celo</b> network and the right address on celoscan.io. In MetaMask, import the token (step 1b).</td></tr>
+      <tr><th>The exchange does not offer Celo</th><td>Do not withdraw from it. Use path A (Pix) or MiniPay.</td></tr>
+      <tr><th>"Authorize wBRL" stays greyed out</th><td>Cobrá's agent is sending you a little CELO for the fee: wait up to a minute.</td></tr>
+      <tr><th>Ripio refuses my verification</th><td>That is on Ripio's side: try path B, and tell us what happened.</td></tr>
+      <tr><th>I lost my recovery phrase</th><td>Funds cannot be recovered without it. That is why we test with small amounts only.</td></tr>
+    </table>
+    <p><b>Never</b> share your recovery phrase. Cobrá, Ripio and real support teams will never ask for it.</p>
+  </section>
+  <footer>Cobrá · checkout on Celo mainnet · <a href="https://cobra-beige.vercel.app/proof">real payments</a> · <a href="https://github.com/noegng/Cobra">open source</a></footer>
+</div>
+</body>
+</html>
