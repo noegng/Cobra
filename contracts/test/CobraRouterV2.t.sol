@@ -121,9 +121,8 @@ contract CobraRouterV2Test is RouterV2TestBase {
 
     function test_mixed_textile_plus_direct() public {
         ICobraRouter.Invoice memory inv = _invoice(BUY + 100e18);
-        ICobraRouter.Leg[] memory legs = _sign(
-            inv, _legs2(_oneOrderLeg(BUY, OUT, IN, EIP3009), _leg(address(wBRL), 100e18, PERMIT2, ""))
-        );
+        ICobraRouter.Leg[] memory legs =
+            _sign(inv, _legs2(_oneOrderLeg(BUY, OUT, IN, EIP3009), _leg(address(wBRL), 100e18, PERMIT2, "")));
         _payAsRelayer(inv, legs);
         assertEq(wBRL.balanceOf(merchant), BUY + 100e18);
         assertEq(wBRL.balanceOf(payer), 100_000e18 - 100e18);
@@ -160,9 +159,7 @@ contract CobraRouterV2Test is RouterV2TestBase {
                     _withFee(55e6, FEE_BPS), EIP3009, _orders1(_signed(MAKER_PK, _quoteOrder(MAKER_PK, 300e18, 55e6)))
                 ),
                 _textileLeg(
-                    _withFee(45e6, FEE_BPS),
-                    PERMIT2,
-                    _orders1(_signed(MAKER2_PK, _quoteOrder(MAKER2_PK, 240e18, 45e6)))
+                    _withFee(45e6, FEE_BPS), PERMIT2, _orders1(_signed(MAKER2_PK, _quoteOrder(MAKER2_PK, 240e18, 45e6)))
                 )
             )
         );
@@ -218,9 +215,7 @@ contract CobraRouterV2Test is RouterV2TestBase {
     function test_revert_textile_secondOrderInvalid() public {
         LimitOrder memory bad = _quoteOrder(MAKER2_PK, 10e18, 2e6);
         bad.info.reactor = IReactor(makeAddr("other-reactor"));
-        _expectInvalidOrder(
-            _orders2(_signed(MAKER_PK, _quoteOrder(MAKER_PK, BUY, OUT)), _signed(MAKER2_PK, bad))
-        );
+        _expectInvalidOrder(_orders2(_signed(MAKER_PK, _quoteOrder(MAKER_PK, BUY, OUT)), _signed(MAKER2_PK, bad)));
     }
 
     function test_revert_textile_noOrders() public {
@@ -406,7 +401,9 @@ contract CobraRouterV2Test is RouterV2TestBase {
         ICobraRouter.Invoice memory inv = _invoice(BUY);
         ICobraRouter.Leg[] memory legs = _sign(inv, _legs1(_evilLeg(evil, 3)));
         SignedOrder[] memory none = new SignedOrder[](0);
-        evil.arm(address(reactor), address(reactor), abi.encodeCall(reactor.executeBatchWithCallback, (none, bytes(""))));
+        evil.arm(
+            address(reactor), address(reactor), abi.encodeCall(reactor.executeBatchWithCallback, (none, bytes("")))
+        );
         _payAsRelayer(inv, legs);
         assertTrue(evil.attempted());
         assertFalse(evil.innerSuccess()); // UniswapX reactor's own nonReentrant
