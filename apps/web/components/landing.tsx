@@ -81,11 +81,14 @@ export function Landing({
   stats,
   agentId,
   routerAddress,
+  legacyRouterAddress = null,
 }: {
   lang: Language;
   stats: LandingStats | null;
   agentId: number | null;
   routerAddress: string;
+  /** Previous (v1) router, listed next to the active one after a router switch. */
+  legacyRouterAddress?: string | null;
 }) {
   const t = LANDING[lang];
   const nf = new Intl.NumberFormat(lang === "pt" ? "pt-BR" : lang === "en" ? "en-US" : "es-AR");
@@ -259,6 +262,9 @@ export function Landing({
           <a href="/api/agent/journal">{t.foot_journal}</a>
           <a href="/.well-known/agent-registration.json">{t.foot_card}</a>
           <a href={explorerAddress(routerAddress)} target="_blank" rel="noopener noreferrer">CobraRouter</a>
+          {legacyRouterAddress && (
+            <a href={explorerAddress(legacyRouterAddress)} target="_blank" rel="noopener noreferrer">CobraRouter v1</a>
+          )}
           <a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t.foot_code}</a>
         </nav>
       </footer>

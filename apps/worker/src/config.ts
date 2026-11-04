@@ -10,6 +10,10 @@ export interface WorkerConfig {
   rpcUrl: string;
   router: Address;
   routerDeployBlock: bigint;
+  /** v1 router still followed by the indexer after the switch to v2 (LEGACY_ROUTER_ADDRESS + LEGACY_ROUTER_DEPLOY_BLOCK). */
+  legacyRouter: { address: Address; deployBlock: bigint } | undefined;
+  /** Textile partner API key (secret). undefined = Textile off on the worker (no RFQ submit reports). */
+  textileApiKey: string | undefined;
   publicBaseUrl: string;
   telegramBotToken: string;
   operatorChatId: string | undefined;
@@ -50,6 +54,20 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
 
   if (routerRaw && !isAddress(routerRaw, { strict: false })) errors.push("ROUTER_ADDRESS is not an address");
   if (deployBlock && !/^\d+$/.test(deployBlock)) errors.push("ROUTER_DEPLOY_BLOCK must be an integer");
+  // WS13: legacy (v1) router, both or neither; must differ from the active router.
+  const legacyRaw = opt("LEGACY_ROUTER_ADDRESS");
+  const legacyBlock = opt("LEGACY_ROUTER_DEPLOY_BLOCK");
+  if (!!legacyRaw !== !!legacyBlock) errors.push("LEGACY_ROUTER_ADDRESS and LEGACY_ROUTER_DEPLOY_BLOCK must be set together");
+  if (legacyRaw && !isAddress(legacyRaw, { strict: false })) errors.push("LEGACY_ROUTER_ADDRESS is not an address");
+  if (legacyBlock && !/^\d+$/.test(legacyBlock)) errors.push("LEGACY_ROUTER_DEPLOY_BLOCK must be an integer");
+  if (legacyRaw && routerRaw && isAddress(legacyRaw, { strict: false }) && isAddress(routerRaw, { strict: false }) && getAddress(legacyRaw) === getAddress(routerRaw)) {
+    errors.push("LEGACY_ROUTER_ADDRESS must differ from ROUTER_ADDRESS");
+  }
+  // Textile only exists on router v2, i.e. after a switch: the previous (v1) router must be kept as legacy.
+  const textileApiKey = opt("TEXTILE_API_KEY");
+  const textileOn = !!textileApiKey && opt("TEXTILE_ENABLED") !== "false";
+  if (textileOn && !legacyRaw) errors.push("TEXTILE_API_KEY needs the v2 router: set LEGACY_ROUTER_ADDRESS (+ _DEPLOY_BLOCK) to the v1 router, or unset TEXTILE_API_KEY");
+  if (opt("TEXTILE_ENABLED") && !["true", "false"].includes(opt("TEXTILE_ENABLED")!)) errors.push("TEXTILE_ENABLED must be true or false");
   if (rpcUrl && !/^https?:\/\//.test(rpcUrl)) errors.push("RPC_URL must be http(s)");
   if (publicBaseUrl && !/^https:\/\//.test(publicBaseUrl)) errors.push("PUBLIC_BASE_URL must be https");
   if (key && !/^0x[0-9a-fA-F]{64}$/.test(key)) errors.push("RELAYER_PRIVATE_KEY must be 0x + 64 hex chars");
@@ -98,6 +116,8 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
     rpcUrl,
     router: getAddress(routerRaw),
     routerDeployBlock: BigInt(deployBlock),
+    legacyRouter: legacyRaw && legacyBlock ? { address: getAddress(legacyRaw), deployBlock: BigInt(legacyBlock) } : undefined,
+    textileApiKey: textileOn ? textileApiKey : undefined,
     publicBaseUrl,
     telegramBotToken,
     operatorChatId: opt("OPERATOR_TELEGRAM_CHAT_ID"),

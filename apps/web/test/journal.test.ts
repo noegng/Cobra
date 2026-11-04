@@ -2,11 +2,11 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { getAddress } from "viem";
-import { PullKind, encodePath } from "@cobra/shared";
+import { PullKind, encodePath, encodeTextileVenue } from "@cobra/shared";
 import { createTestDb } from "@cobra/db/testing";
 import { flags, invoices, merchants, payments, quotes, submissions, type Db } from "@cobra/db";
 import { JournalView } from "../components/journal-view";
-import { AGENT_WALLET, ERC8021_TAG, bpsPercent, describeRoute, feeTierLabel, queryJournal } from "../lib/server/journal";
+import { AGENT_WALLET, ERC8021_TAG, bpsPercent, describeRoute, feeTierLabel, queryJournal, routeEntry } from "../lib/server/journal";
 import { handleJournalGet, resetJournalCache } from "../lib/server/journal-api";
 import { createMemoryRateLimiter } from "../lib/server/rate-limit";
 import { USDT, WARS } from "./helpers";
@@ -80,6 +80,20 @@ describe("pure formatting", () => {
     expect(bpsPercent(9)).toBe("0.09");
     expect(bpsPercent(250)).toBe("2.50");
     expect(bpsPercent(21, "es")).toBe("0,21");
+  });
+});
+
+describe("venue (WS13)", () => {
+  const base = { txHash: TX_ROUTE, payer: PAYER1, tokenOut: WARS.address, amountOut: "100000000000000000000", paidAt: new Date(T_ROUTE), costBps: -5, savingsBps: 14, amountLocal: "100", currency: "ARS", paymentLegs: null };
+  it("a Textile leg is labelled 'Textile RFQ'; a Uniswap leg stays 'Uniswap V3'", () => {
+    const tx = { token: USDT.address, amountIn: "60673", kind: PullKind.EIP3009, path: encodeTextileVenue([{ order: "0xabcd", sig: "0x1234" }]), quotedOut: "100000000000000000000" };
+    const e = routeEntry({ ...base, plan: { legs: [tx] } });
+    expect(e.venue).toBe("textile");
+    expect(e.legs[0]).toMatchObject({ venue: "textile", hops: ["USDT", "wARS"] });
+    expect(describeRoute(e.legs)).toBe("USDT → wARS · Textile RFQ");
+    const uni = routeEntry({ ...base, plan: { legs: [{ ...tx, path: encodePath([USDT.address, WARS.address], [100]) }] } });
+    expect(uni.venue).toBe("uniswap_v3");
+    expect(describeRoute(uni.legs)).toBe("USDT → wARS · Uniswap V3 0.01 %");
   });
 });
 

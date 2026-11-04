@@ -4,13 +4,14 @@
  * RELAYER_PRIVATE_KEY exists ONLY on the VPS (systemd EnvironmentFile, see deploy/cobra-worker.service).
  * The key is only handed to @cobra/relayer's signer; this file never logs or stores it.
  */
-import { createPublicClient, formatEther, http, type PublicClient } from "viem";
+import { BaseError, createPublicClient, formatEther, getAddress, http, parseAbi, type PublicClient } from "viem";
 import { celo } from "viem/chains";
 import { createDb } from "@cobra/db";
 import { startIndexer, expireInvoices } from "@cobra/indexer";
 import { createTelegramNotifier, runDailyClose, runReminders, withOperatorChat } from "@cobra/bot";
 import { createRelayerSigner, startRelayer, type Stoppable } from "@cobra/relayer";
-import { createReferenceRateSource } from "@cobra/solver";
+import { createReferenceRateSource, createTextileClient } from "@cobra/solver";
+import { TEXTILE_REACTOR_CELO } from "@cobra/shared";
 import { createLogger, loadWorkerConfig, type WorkerConfig } from "./config";
 
 const baseLog = createLogger();
@@ -25,6 +26,7 @@ function loadOrExit(): WorkerConfig {
 const cfg = loadOrExit();
 // The key now lives only in cfg → signer; drop it from the process environment (child processes, crash dumps).
 delete process.env.RELAYER_PRIVATE_KEY;
+delete process.env.TEXTILE_API_KEY; // lives only in cfg.textileApiKey → textile client
 
 const db = createDb(cfg.databaseUrl);
 const publicClient = createPublicClient({ chain: celo, transport: http(cfg.rpcUrl) }) as PublicClient;
@@ -61,9 +63,28 @@ let indexer: Stoppable | null = null;
 let minute: ReturnType<typeof setInterval> | null = null;
 let shuttingDown = false;
 
+const reactorAbi = parseAbi(["function TEXTILE_REACTOR() view returns (address)"]);
+/** CobraRouterV2 exposes TEXTILE_REACTOR(); v1 has no such function (revert / empty return). Other errors propagate. */
+async function probeTextileReactor(): Promise<string | null> {
+  try {
+    return getAddress(await publicClient.readContract({ address: cfg.router, abi: reactorAbi, functionName: "TEXTILE_REACTOR" }));
+  } catch (e) {
+    if (e instanceof BaseError && e.walk((x) => ["ContractFunctionZeroDataError", "ContractFunctionRevertedError"].includes((x as Error).name))) return null;
+    throw e;
+  }
+}
+
 async function main() {
   const chainId = await publicClient.getChainId();
   if (chainId !== cfg.expectedChainId) throw new Error(`RPC chain id ${chainId} != expected ${cfg.expectedChainId}`);
+
+  // WS13: is ROUTER_ADDRESS a v2 router (exposes TEXTILE_REACTOR())? A revert / empty return means v1.
+  const reactor = await probeTextileReactor();
+  if (cfg.textileApiKey && (!reactor || reactor.toLowerCase() !== TEXTILE_REACTOR_CELO.toLowerCase())) {
+    baseLog("worker_config_error", { level: "error", error: "TEXTILE_API_KEY is set but ROUTER_ADDRESS is not a v2 router bound to the Textile reactor" });
+    process.exit(78);
+  }
+  const textile = cfg.textileApiKey ? createTextileClient({ apiKey: cfg.textileApiKey, log: (m, e) => log(m, { svc: "textile", ...e }) }) : null;
 
   const signer = createRelayerSigner({
     privateKey: cfg.relayerPrivateKey,
@@ -80,6 +101,8 @@ async function main() {
     publicClient,
     walletClient: signer.walletClient,
     router: cfg.router,
+    allowTextile: !!reactor,
+    ...(textile && { onTextileSent: ({ rfqId, txHash }: { rfqId: string; txHash: string }) => textile.submit(rfqId, txHash) }),
     notifier,
     ...(cfg.operatorChatId && { operatorChatId: cfg.operatorChatId }),
     pollIntervalMs: cfg.pollIntervalMs,
@@ -92,6 +115,7 @@ async function main() {
     publicClient,
     router: cfg.router,
     fromBlock: cfg.routerDeployBlock,
+    ...(cfg.legacyRouter && { legacyRouter: { address: cfg.legacyRouter.address, fromBlock: cfg.legacyRouter.deployBlock } }),
     notifier,
     log: (msg, extra) => log(msg, { svc: "indexer", ...extra }),
   });
@@ -115,7 +139,7 @@ async function main() {
     schedulerBusy = false;
   }, 60_000);
 
-  log("worker_started", { router: cfg.router, relayer: signer.address, chainId, gasGrantCelo: formatEther(cfg.gasGrantWei), gasGrantDailyMax: cfg.gasGrantDailyMax });
+  log("worker_started", { router: cfg.router, legacyRouter: cfg.legacyRouter?.address ?? null, textile: !!textile, routerV2: !!reactor, relayer: signer.address, chainId, gasGrantCelo: formatEther(cfg.gasGrantWei), gasGrantDailyMax: cfg.gasGrantDailyMax });
 }
 
 async function shutdown(signal: string) {

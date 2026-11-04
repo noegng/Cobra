@@ -23,6 +23,14 @@ describe("landing page", () => {
     expect(html).toContain('class="tg-fab"');
   });
 
+  it("lists the legacy v1 router next to the active one when configured", () => {
+    const V1 = "0x00000000000000000000000000000000c0b4a000";
+    const html = renderToStaticMarkup(createElement(Landing, { lang: "en", stats: null, agentId: 10033, routerAddress: ROUTER, legacyRouterAddress: V1 }));
+    expect(html).toContain(`celoscan.io/address/${ROUTER}`);
+    expect(html).toContain(`celoscan.io/address/${V1}`);
+    expect(render("en", null)).not.toContain("CobraRouter v1");
+  });
+
   it("hides the live strip when the DB is unreachable or empty", () => {
     expect(render("es", null)).not.toContain(LANDING.es.stats_payments);
     expect(render("es", { paymentCount: 0, distinctPayers: 0, merchantCount: 0 })).not.toContain(LANDING.es.stats_payments);

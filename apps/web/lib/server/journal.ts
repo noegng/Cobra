@@ -7,7 +7,7 @@
  */
 import { and, desc, eq, gte, inArray, isNotNull, like } from "drizzle-orm";
 import { getAddress, isHex } from "viem";
-import { decodePath, explorerAddress, explorerTx, tokenByAddress, type SerializedLeg, type SerializedPlan } from "@cobra/shared";
+import { decodePath, explorerAddress, isTextileVenue, explorerTx, tokenByAddress, type SerializedLeg, type SerializedPlan } from "@cobra/shared";
 import { flags, invoices, payments, quotes, submissions, type Db } from "@cobra/db";
 import { formatUnits } from "../amount";
 
@@ -31,6 +31,8 @@ export interface JournalLeg {
   /** Uniswap V3 fee tiers in hundredths of a bp (100 = 0.01 %). */
   fees: number[];
   quotedOut: string | null;
+  /** Venue that settled the leg: Textile FX RFQ (path carries the signed orders) or Uniswap V3 (default). */
+  venue: "textile" | "uniswap_v3";
 }
 
 export interface RouteEntry {
@@ -48,6 +50,8 @@ export interface RouteEntry {
   amountLocal: string | null;
   currency: string | null;
   legs: JournalLeg[];
+  /** "textile" when any leg was settled by a Textile RFQ, else "uniswap_v3". */
+  venue: "textile" | "uniswap_v3";
   legCount: number;
   split: boolean;
   /** Sum of quoted leg outputs minus amountOut, when positive: what the quote expected to refund to the payer (estimate, not the on-chain refund). */
@@ -112,14 +116,18 @@ export function bpsPercent(bps: number, locale = "en"): string {
   return `${sign}${Math.floor(a / 100)}${sep}${String(a % 100).padStart(2, "0")}`;
 }
 
-export function legsFromJson(raw: unknown): JournalLeg[] {
+export function legsFromJson(raw: unknown, tokenOut?: string): JournalLeg[] {
   if (!Array.isArray(raw)) return [];
   const out: JournalLeg[] = [];
   for (const l of raw as (Partial<SerializedLeg> & { quotedOut?: string })[]) {
     if (!l || typeof l.token !== "string" || typeof l.amountIn !== "string" || !/^\d+$/.test(l.amountIn)) continue;
     let hops: string[] = [];
     let fees: number[] = [];
-    if (typeof l.path === "string" && isHex(l.path)) {
+    let venue: JournalLeg["venue"] = "uniswap_v3";
+    if (typeof l.path === "string" && isHex(l.path) && isTextileVenue(l.path)) {
+      venue = "textile";
+      hops = [tokenMeta(l.token).symbol, ...(tokenOut ? [tokenMeta(tokenOut).symbol] : [])];
+    } else if (typeof l.path === "string" && isHex(l.path)) {
       try {
         const p = decodePath(l.path);
         hops = p.tokens.map((t) => tokenMeta(t).symbol);
@@ -138,6 +146,7 @@ export function legsFromJson(raw: unknown): JournalLeg[] {
       hops,
       fees,
       quotedOut: typeof l.quotedOut === "string" && /^\d+$/.test(l.quotedOut) ? l.quotedOut : null,
+      venue,
     });
   }
   return out;
@@ -160,8 +169,8 @@ export interface PaymentRow {
 export function routeEntry(r: PaymentRow, agent = AGENT_WALLET): RouteEntry {
   const plan = (r.plan ?? null) as SerializedPlan | null;
   // Prefer the quote's plan (carries quotedOut); fall back to the legs copied onto the payment.
-  let legs = legsFromJson(plan?.legs);
-  if (legs.length === 0) legs = legsFromJson(r.paymentLegs);
+  let legs = legsFromJson(plan?.legs, r.tokenOut);
+  if (legs.length === 0) legs = legsFromJson(r.paymentLegs, r.tokenOut);
   const relayed = r.paymentLegs != null;
   const quoted = legs.length > 0 && legs.every((l) => l.quotedOut != null) ? legs.reduce((s, l) => s + BigInt(l.quotedOut!), 0n) : null;
   const surplus = quoted != null && quoted > BigInt(r.amountOut) ? quoted - BigInt(r.amountOut) : null;
@@ -179,6 +188,7 @@ export function routeEntry(r: PaymentRow, agent = AGENT_WALLET): RouteEntry {
     amountLocal: r.amountLocal,
     currency: r.currency,
     legs,
+    venue: legs.some((l) => l.venue === "textile") ? "textile" : "uniswap_v3",
     legCount: legs.length,
     split: legs.length > 1,
     quotedSurplus: surplus == null ? null : surplus.toString(),
@@ -195,6 +205,7 @@ export function describeRoute(legs: JournalLeg[]): string {
   return legs
     .map((l) => {
       const hops = l.hops.length ? l.hops.join(" → ") : l.symbolIn;
+      if (l.venue === "textile") return `${hops} · Textile RFQ`;
       const fees = [...new Set(l.fees.map(feeTierLabel))].join("/");
       return fees ? `${hops} · Uniswap V3 ${fees} %` : hops;
     })

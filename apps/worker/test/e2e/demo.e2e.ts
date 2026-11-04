@@ -292,6 +292,19 @@ describe.skipIf(!ready)("end-to-end on a Celo mainnet fork", () => {
     });
   });
 
+  // WS13: cannot run until WS12's CobraRouterV2 is merged (contracts/src/CobraRouterV2.sol + its deploy helper).
+  it.todo(
+    "Textile RFQ leg on a mainnet fork (router v2): " +
+      "1) deploy CobraRouterV2 to the anvil fork with the same constructor args as v1 + TEXTILE_REACTOR_CELO (0xa9aa0a64769cbed4d3b1ceb4df01cde915c235b3); " +
+      "2) set ROUTER_ADDRESS to it in the harness deps and the relayer/signer config (single target), LEGACY_ROUTER_* to the v1 mock if the indexer is under test; " +
+      "3) build a Textile order by hand with the UniswapX LimitOrder encoder: swapper = a maker funded via anvil_setBalance/deal with wARS, input = wARS (tokenOut), " +
+      "output = USD₮ to the reactor's fee recipient/taker flow, signed by a maker anvil key (public test key), reactor = the REAL reactor on the fork, deadline = fork time + 120 s; " +
+      "4) solver double: return plan {legs:[{token:USDT, amountIn: takerPays, kind:EIP3009, path: encodeTextileVenue([{order, sig}])}]} with meta {venue:'textile', textile:{rfqId:'fork-1'}}; " +
+      "5) payer holds only USD₮, signs EIP-3009 against the v2 router domain, relayer verifies (allowTextile) and sends; " +
+      "6) assert merchant received exactly amountOut wARS, payer spent <= takerPays, router holds no residual USD₮/wARS, Paid emitted by v2, indexer marks the invoice paid, journal shows 'Textile RFQ'; " +
+      "7) negative: tampered path after signing -> API bad_signature; expired order deadline -> simulation revert, invoice stays open.",
+  );
+
   it("covers the tokens the scenes rely on (guard against registry drift)", () => {
     for (const sym of ZERO_ADDRESS_TOKENS) expect(tokenBySymbol(sym)?.verified).toBe(true);
   });

@@ -39,7 +39,7 @@ export default async function Proof() {
           <LangSwitch lang={lang} />
         </span>
       </div>
-      <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} agentId={AGENT_ID} />
+      <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} legacyRouterAddress={envAddr("LEGACY_ROUTER_ADDRESS")} agentId={AGENT_ID} />
       <JournalView journal={journal} lang={lang} />
       <TelegramFab lang={lang} />
     </main>
