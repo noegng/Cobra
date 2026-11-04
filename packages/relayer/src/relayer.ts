@@ -205,10 +205,6 @@ export function createRelayer(cfg: RelayerConfig) {
     return chainId;
   }
 
-  /**
-   * Conditional: never overwrites a row the indexer already set to `confirmed` / `failed` (superseded).
-   * Returns true only if THIS call moved the row to failed.
-   */
   /** Closed-code refusal record; transient/internal signer refusals collapse into "refused_other". */
   function recordRefusal(e: SignerRefusedError): void {
     try {
@@ -218,6 +214,10 @@ export function createRelayer(cfg: RelayerConfig) {
     }
   }
 
+  /**
+   * Conditional: never overwrites a row the indexer already set to `confirmed` / `failed` (superseded).
+   * Returns true only if THIS call moved the row to failed.
+   */
   async function fail(id: string, error: string): Promise<boolean> {
     const rows = await db
       .update(submissions)

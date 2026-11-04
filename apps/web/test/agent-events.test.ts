@@ -41,12 +41,12 @@ describe("WS15 agent_events: every refusal site writes its code", () => {
     expect((await quote(fx, MERCHANT_PAYOUT)).res.status).toBe(400);
     expect(await events(fx.db)).toEqual(["quote:self_payment"]);
   });
-  it("quote price_guard and no_route", async () => {
-    for (const reason of ["price_guard", "no_route"] as const) {
+  it("quote price_guard is recorded, no_route is not (empty wallet, not a refusal)", async () => {
+    for (const [reason, want] of [["price_guard", ["quote:price_guard"]], ["no_route", []]] as const) {
       const fx = await withRecorder();
       fx.setSolver(() => ({ ok: false, reason, fallback: "ripio", detail: "x" }));
       expect((await quote(fx)).res.status).toBe(422);
-      expect(await events(fx.db)).toEqual([`quote:${reason}`]);
+      expect(await events(fx.db)).toEqual(want);
     }
   });
   it("quote over_cap from the solver -> cap_per_payment", async () => {

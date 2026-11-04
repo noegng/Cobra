@@ -232,7 +232,9 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
         : null;
     const out: QuoteError = { error: result.reason, fallback: result.fallback, rampUrl, directTransfer };
     logEvent("quote.no_plan", { invoiceId: id, reason: result.reason });
-    if (result.reason === "price_guard" || result.reason === "no_route") refused(deps, "quote", result.reason);
+    // no_route is not recorded: it is mostly an empty wallet, not a risky payment the agent refused (and anyone could
+    // inflate the public /proof counter with an empty address, since quotes are unauthenticated).
+    if (result.reason === "price_guard") refused(deps, "quote", "price_guard");
     else if (result.reason === "over_cap") refused(deps, "quote", "cap_per_payment");
     return json(out, 422);
   }
