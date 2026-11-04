@@ -50,7 +50,7 @@ function PhoneMock({ t }: { t: (typeof LANDING)["es"] }) {
     <div className="lp-visual" aria-hidden="true">
       <div className="lp-phone">
         <div className="lp-phone-bar">
-          <span className="lp-avatar">C</span>
+          <img className="lp-avatar" src="/logo-192.png" alt="" width={30} height={30} />
           <span>
             <b>Cobrá</b>
             <small>bot</small>

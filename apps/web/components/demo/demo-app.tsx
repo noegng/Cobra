@@ -206,7 +206,7 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
           <h2 className="dm-label">{t.merchant_side}</h2>
           <div className="dm-phone">
             <div className="dm-bar">
-              <span className="lp-avatar">C</span>
+              <img className="lp-avatar" src="/logo-192.png" alt="" width={30} height={30} />
               <span>
                 <b>Cobrá</b>
                 <small>bot · {cfg.merchant}</small>
