@@ -9,8 +9,13 @@
 import { z } from "zod";
 
 export const TEXTILE_BASE_URL = "https://api.textilecredit.com";
-export const TEXTILE_PREVIEW_TIMEOUT_MS = 1_500;
-export const TEXTILE_REQUEST_TIMEOUT_MS = 2_500;
+export const TEXTILE_PREVIEW_TIMEOUT_MS = 3_000;
+/**
+ * Firm request: makers answer within ~750 ms, but Textile documents that a cold corridor can hold the call for an
+ * on-chain decimals preflight (up to ~70 s). A payer cannot wait that long: past 8 s we fall back to Uniswap; the
+ * corridor warms up after the first calls.
+ */
+export const TEXTILE_REQUEST_TIMEOUT_MS = 8_000;
 export const TEXTILE_ACTION_TIMEOUT_MS = 3_000;
 
 const hexStr = z.string().regex(/^0x([0-9a-fA-F]{2})*$/);

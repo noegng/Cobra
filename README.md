@@ -401,9 +401,10 @@ Mainnet transactions are only ever sent by a human. AI coding agents working on 
 
 | Item | Value |
 | --- | --- |
-| CobraRouter | [`0xfe38683105fa36ee664acefe7e714ba93492e458`](https://celoscan.io/address/0xfe38683105fa36ee664acefe7e714ba93492e458) |
-| Router deploy tx | [`0x06edbc66…6cd892148`](https://celoscan.io/tx/0x06edbc66bfd5312620541da2327387eb8b198a0f0c6a40a80c799ca6cd892148) (ERC-8021 tag `celo_502e1bea2794`) |
-| Deploy block | 81818614 |
+| CobraRouterV2 (Uniswap V3 + Textile FX RFQ) | [`0x5658505fc0632269e024893a7448a3b5070d7069`](https://celoscan.io/address/0x5658505fc0632269e024893a7448a3b5070d7069) |
+| V2 deploy tx | [`0x1210747d…83202af1`](https://celoscan.io/tx/0x1210747d76db666fd668e9c3606bdc871189142800cd2862c3fe758783202af1) (ERC-8021 tag `celo_502e1bea2794`), block 81913649 |
+| CobraRouter v1 (Uniswap V3 only, still on-chain, immutable) | [`0xfe38683105fa36ee664acefe7e714ba93492e458`](https://celoscan.io/address/0xfe38683105fa36ee664acefe7e714ba93492e458) |
+| V1 deploy tx | [`0x06edbc66…6cd892148`](https://celoscan.io/tx/0x06edbc66bfd5312620541da2327387eb8b198a0f0c6a40a80c799ca6cd892148) (ERC-8021 tag `celo_502e1bea2794`), block 81818614 |
 | Relayer / agent wallet | [`0x9E828B877EFCdb79B507fF6234d841A8265Cccd5`](https://celoscan.io/address/0x9E828B877EFCdb79B507fF6234d841A8265Cccd5) |
 | ERC-8004 agent id and registration tx | `10033` on IdentityRegistry `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, tx [`0xe02818c2…4de85811`](https://celoscan.io/tx/0xe02818c2fa247cb0e70790b82bb372f28c5afb20ca7138dcb6841fc74de85811) |
 | Proof payment 1: USD₮ → wARS (EIP-3009, swap) | [`0x7951aea4…fe07ddc3`](https://celoscan.io/tx/0x7951aea4693affabca3250605dcb43ee8ecebe2597a9dd416a06aa58fe07ddc3): invoice `100 ARS`, payer signs 0.060673 USD₮, swapped on Uniswap V3, merchant receives exactly **100 wARS**, 0.47 wARS surplus refunded to the payer. Sent by the agent, tagged ERC-8021 |
