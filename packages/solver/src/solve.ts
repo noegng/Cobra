@@ -103,7 +103,13 @@ function limiter(max: number) {
   };
 }
 
-export async function solveImpl(input: SolverInput, opts: SolverOptions): Promise<SolveResult> {
+/**
+ * Uniswap result. On a price_guard refusal it also carries the cost of the best route the guard rejected
+ * (`refusedCostBps`), so another venue (Textile) can report its saving against what Uniswap actually offered.
+ */
+export type UniswapResult = SolveResult & { refusedCostBps?: number };
+
+export async function solveImpl(input: SolverInput, opts: SolverOptions): Promise<UniswapResult> {
   const now = opts.now ?? Date.now;
   const quotedAt = now();
   const registry = opts.registry ?? TOKENS;
@@ -415,7 +421,11 @@ export async function solveImpl(input: SolverInput, opts: SolverOptions): Promis
   if (options.length === 0) {
     const relaxed = await evaluate(false);
     if (relaxed.length > 0) {
-      return fail("price_guard", `implied price deviates more than ${maxDev} bps from reference (${outInfo.currency})`);
+      const refused = relaxed.reduce((m, o) => (o.costE2 < m ? o.costE2 : m), relaxed[0]!.costE2);
+      return {
+        ...fail("price_guard", `implied price deviates more than ${maxDev} bps from reference (${outInfo.currency})`),
+        refusedCostBps: e2ToBps(refused),
+      };
     }
     const usdAvail = routable.reduce((s, c) => s + usdE18(c.balance, c.info.decimals, c.rateE18), 0n);
     return fail(

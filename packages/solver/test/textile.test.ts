@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getAddress, type Address } from "viem";
 import { PullKind, TEXTILE_REACTOR_CELO, decodeTextileVenue, isTextileVenue, type SolverInput } from "@cobra/shared";
 import { createTextileClient, solve, type SolveResultEx, type SolverOptions } from "../src/index";
-import { RATES, T, ars, baseOpts, invoiceArs, usd } from "./helpers";
+import { RATES, T, ars, baseOpts, brl, invoiceArs, mainnetLikePools, sim, usd } from "./helpers";
 
 const ROUTER_V2 = getAddress("0x00000000000000000000000000000000000000b2");
 const NOW = 1_700_000_000_000;
@@ -99,6 +99,7 @@ describe("solve + Textile", () => {
     expect(decodeTextileVenue(leg.path)).toEqual([{ order: ORDER, sig: SIG }]);
     expect(r.plan.minOut).toBe(ars("82500"));
     expect(r.plan.costBps).toBeLessThan(0); // paying less than the reference value
+    expect(r.plan.savingsBps).toBeGreaterThan(0); // vs the Uniswap route it beat
     const req = fake.calls.find((c) => c.path === "/v2/rfq/request")!;
     expect(req.body).toMatchObject({ taker: ROUTER_V2, chainId: 42220, sellToken: T.USDT, buyToken: T.ARS, buyAmount: ars("82500").toString() });
     expect(req.auth).toBe("Bearer test-key");
@@ -208,6 +209,26 @@ describe("solve + Textile", () => {
   it("no textile option: result identical to v1 (no meta)", async () => {
     const r = await solve(input(), baseOpts());
     expect("meta" in r).toBe(false);
+  });
+
+  it("saving is measured against the Uniswap route even when our price guard refused it (one-sided wBRL pool)", async () => {
+    // Pool sells wBRL at 5.20/USD vs a 5.40 reference (-3.7%, beyond the 350 bps BRL guard); Textile ~ at reference.
+    const fake = fakeTextile({ buyAmount: brl("270"), previewTakerPays: usd("50.10"), firmTakerPays: usd("50.10") });
+    const opts = setup(fake, { quoter: sim(mainnetLikePools({ brlPrice: 5.2 })) });
+    opts.textile = { ...opts.textile!, corridors: [T.BRL] };
+    const brlInput: SolverInput = {
+      invoice: { tokenOut: T.BRL, amountOut: brl("270"), deadline: 2_000_000_000n },
+      balances: [{ token: T.USDT, amount: usd("100") }],
+      refRates: RATES,
+    };
+    const uniOnly = await solve(brlInput, baseOpts(sim(mainnetLikePools({ brlPrice: 5.2 }))));
+    expect(uniOnly).toMatchObject({ ok: false, reason: "price_guard" });
+    const r = ok(await solve(brlInput, opts));
+    expect(r.meta?.venue).toBe("textile");
+    expect(r.plan.costBps).toBeLessThan(50);
+    expect(r.plan.naiveCostBps).toBeGreaterThan(350); // what Uniswap offered
+    expect(r.plan.savingsBps).toBe(r.plan.naiveCostBps! - r.plan.costBps);
+    expect(r.plan.savingsBps).toBeGreaterThan(300);
   });
 
   it("Textile rescues an invoice Uniswap cannot serve", async () => {

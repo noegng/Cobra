@@ -20,7 +20,10 @@ describe.skipIf(!fixture)("replay of real Celo QuoterV2 quotes", () => {
       const q = fixtureQuoter(f.quotes);
       const r = await solve(s.input, { quoter: q, capUsd: REPLAY_CAP_USD, now: () => REPLAY_NOW, maxConcurrentQuotes: 4 });
       expect(q.misses, s.name).toEqual([]);
-      expect(r, s.name).toEqual(f.results[s.name]);
+      // refusedCostBps is a diagnostic added after the fixture was recorded (cost of the route a price guard refused).
+      const { refusedCostBps, ...core } = r as typeof r & { refusedCostBps?: number };
+      expect(core, s.name).toEqual(f.results[s.name]);
+      if (!r.ok && r.reason === "price_guard" && r.detail?.startsWith("implied price")) expect(typeof refusedCostBps, s.name).toBe("number");
       if (r.ok) {
         const sumOut = r.plan.legs.reduce((a, l) => a + l.quotedOut, 0n);
         expect(sumOut).toBeGreaterThanOrEqual(s.input.invoice.amountOut);

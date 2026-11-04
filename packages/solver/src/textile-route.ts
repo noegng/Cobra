@@ -19,7 +19,7 @@ import {
 } from "@cobra/shared";
 import type { SolverOptions } from "./index";
 import { absBig, costE2, e2ToBps, rateToE18, usdE18, usdToE18 } from "./math";
-import { DEFAULT_CAP_USD, QUOTE_TTL_MS, maxDeviationBps, pickPullKind } from "./solve";
+import { DEFAULT_CAP_USD, QUOTE_TTL_MS, maxDeviationBps, pickPullKind, type UniswapResult } from "./solve";
 import type { TextileClient } from "./textile";
 
 /** Plan/quote expiry = Textile `expiresAt` minus this margin (signing + relaying time). */
@@ -51,7 +51,7 @@ export type SolveResultEx = SolveResult & { meta?: PlanMeta };
 
 const lower = (a: string) => a.toLowerCase();
 
-export async function solveWithTextile(input: SolverInput, opts: SolverOptions, uni: SolveResult): Promise<SolveResultEx> {
+export async function solveWithTextile(input: SolverInput, opts: SolverOptions, uni: UniswapResult): Promise<SolveResultEx> {
   const tx = opts.textile;
   if (!tx || !tx.client.enabled) return uni;
   const log = tx.log ?? (() => {});
@@ -140,7 +140,9 @@ export async function solveWithTextile(input: SolverInput, opts: SolverOptions, 
   const expiresAt = Math.min(quotedAt + QUOTE_TTL_MS, quote.expiresAt - TEXTILE_EXPIRY_MARGIN_MS);
   if (expiresAt - quotedAt < TEXTILE_MIN_REMAINING_MS) return giveBack("quote_too_short");
 
-  const naive = uni.ok ? uni.plan.naiveCostBps : null;
+  // Saving vs what Uniswap offered for the same invoice: its naive route when it had a plan, else its best route
+  // even if our price guard refused it (e.g. the one-sided wBRL pool), else nothing to compare with (wCOP: no pool).
+  const naive = uni.ok ? (uni.plan.naiveCostBps ?? uni.plan.costBps) : (uni.refusedCostBps ?? null);
   const costBps = e2ToBps(firmCost);
   const plan: PaymentPlan = {
     legs: [
