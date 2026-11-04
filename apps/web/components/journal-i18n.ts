@@ -26,6 +26,12 @@ export interface JournalStrings {
   failed_note: string;
   json: string;
   invoice: string;
+  surplus_real: string;
+  refusals_title: string;
+  refusals_note: string;
+  refusals_none: string;
+  /** Labels of the closed refusal codes (AGENT_EVENT_CODES). */
+  refusal_codes: Record<string, string>;
 }
 
 export const JOURNAL: Record<Language, JournalStrings> = {
@@ -54,6 +60,11 @@ export const JOURNAL: Record<Language, JournalStrings> = {
     failed_note: "Los motivos (límite de precio, topes, autopago) no se publican.",
     json: "Diario en JSON",
     invoice: "Cobro",
+    surplus_real: "Excedente devuelto al pagador (real, on-chain)",
+    refusals_title: "Rechazos del agente (últimos 14 días)",
+    refusals_note: "Solo conteos por motivo: no se guarda ninguna dirección, monto ni identificador.",
+    refusals_none: "Ningún rechazo registrado.",
+    refusal_codes: { price_guard: "Precio fuera del límite de referencia", no_route: "Sin ruta de swap", cap_per_payment: "Tope por pago", cap_per_day: "Tope diario", cap_per_merchant_day: "Tope diario por comercio", cap_per_payer_day: "Tope diario por pagador", self_payment: "Autopago (pagador = comercio)", smart_account_unsupported: "Cuenta inteligente no compatible", payer_blocked: "Pagador bloqueado temporalmente", refused_other: "Otro rechazo de seguridad" },
   },
   pt: {
     title: "Decisões do agente",
@@ -80,6 +91,11 @@ export const JOURNAL: Record<Language, JournalStrings> = {
     failed_note: "Os motivos (limite de preço, tetos, autopagamento) não são publicados.",
     json: "Diário em JSON",
     invoice: "Cobrança",
+    surplus_real: "Excedente devolvido ao pagador (real, on-chain)",
+    refusals_title: "Recusas do agente (últimos 14 dias)",
+    refusals_note: "Apenas contagens por motivo: nenhum endereço, valor ou identificador é guardado.",
+    refusals_none: "Nenhuma recusa registrada.",
+    refusal_codes: { price_guard: "Preço fora do limite de referência", no_route: "Sem rota de swap", cap_per_payment: "Limite por pagamento", cap_per_day: "Limite diário", cap_per_merchant_day: "Limite diário por lojista", cap_per_payer_day: "Limite diário por pagador", self_payment: "Autopagamento (pagador = lojista)", smart_account_unsupported: "Conta inteligente não suportada", payer_blocked: "Pagador bloqueado temporariamente", refused_other: "Outra recusa de segurança" },
   },
   en: {
     title: "Agent decisions",
@@ -106,5 +122,10 @@ export const JOURNAL: Record<Language, JournalStrings> = {
     failed_note: "Reasons (price guard, caps, self-payment) are not published.",
     json: "Journal as JSON",
     invoice: "Invoice",
+    surplus_real: "Surplus refunded to the payer (actual, on-chain)",
+    refusals_title: "Refusals by the agent (last 14 days)",
+    refusals_note: "Counts by reason only: no address, amount or identifier is stored.",
+    refusals_none: "No refusals recorded.",
+    refusal_codes: { price_guard: "Price outside the reference guard", no_route: "No swap route", cap_per_payment: "Per-payment cap", cap_per_day: "Daily cap", cap_per_merchant_day: "Per-merchant daily cap", cap_per_payer_day: "Per-payer daily cap", self_payment: "Self-payment (payer = merchant)", smart_account_unsupported: "Smart account not supported", payer_blocked: "Payer temporarily blocked", refused_other: "Other safety refusal" },
   },
 };

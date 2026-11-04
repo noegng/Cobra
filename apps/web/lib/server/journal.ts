@@ -5,10 +5,10 @@
  * Privacy: never selects invoice descriptions, references, merchant names, Telegram ids or merchant addresses.
  * Money stays as base-unit integer strings; formatting is bigint-only (`formatUnits`).
  */
-import { and, desc, eq, gte, inArray, isNotNull, like } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, like } from "drizzle-orm";
 import { getAddress, isHex } from "viem";
 import { decodePath, explorerAddress, isTextileVenue, explorerTx, tokenByAddress, type SerializedLeg, type SerializedPlan } from "@cobra/shared";
-import { flags, invoices, payments, quotes, submissions, type Db } from "@cobra/db";
+import { AGENT_EVENT_CODES, agentEvents, flags, invoices, payments, quotes, submissions, type Db } from "@cobra/db";
 import { formatUnits } from "../amount";
 
 /** The relayer wallet (ERC-8004 agent) and the ERC-8021 attribution tag its transactions carry. */
@@ -56,6 +56,8 @@ export interface RouteEntry {
   split: boolean;
   /** Sum of quoted leg outputs minus amountOut, when positive: what the quote expected to refund to the payer (estimate, not the on-chain refund). */
   quotedSurplus: string | null;
+  /** Real amount refunded to the payer on-chain (indexer, from the receipt); null = unknown, the quoted figure is shown instead. */
+  refundedOut: string | null;
   costBps: number | null;
   savingsBps: number | null;
   relayed: boolean;
@@ -90,6 +92,8 @@ export interface Journal {
   agent: { address: string; attributionTag: string };
   entries: JournalEntry[];
   days: JournalDay[];
+  /** Structured refusals by the agent in the window, by closed code (no personal data exists in the source table). */
+  refusals: { code: string; count: number }[];
 }
 
 // ---------- pure helpers ----------
@@ -164,6 +168,7 @@ export interface PaymentRow {
   plan: unknown;
   amountLocal: string | null;
   currency: string | null;
+  refundedOut?: string | null;
 }
 
 export function routeEntry(r: PaymentRow, agent = AGENT_WALLET): RouteEntry {
@@ -192,6 +197,7 @@ export function routeEntry(r: PaymentRow, agent = AGENT_WALLET): RouteEntry {
     legCount: legs.length,
     split: legs.length > 1,
     quotedSurplus: surplus == null ? null : surplus.toString(),
+    refundedOut: r.refundedOut != null && /^\d+$/.test(r.refundedOut) ? r.refundedOut : null,
     costBps: r.costBps,
     savingsBps: r.savingsBps,
     relayed,
@@ -261,6 +267,7 @@ export async function queryJournal(db: Db, opts: { now?: Date; limit?: number; d
       paidAt: payments.paidAt,
       costBps: payments.costBps,
       savingsBps: payments.savingsBps,
+      refundedOut: payments.refundedOut,
       paymentLegs: payments.legs,
       plan: quotes.plan,
       amountLocal: invoices.amountLocal,
@@ -307,10 +314,21 @@ export async function queryJournal(db: Db, opts: { now?: Date; limit?: number; d
     const date = r.key.slice(r.key.lastIndexOf(":") + 1); // key = daily_close:<merchantId>:<yyyy-mm-dd>; the merchant id is dropped
     if (/^\d{4}-\d{2}-\d{2}$/.test(date) && date >= sinceDate) bucket(date).dailyCloses++;
   }
+  const refusalRows = await db
+    .select({ code: agentEvents.code, n: count() })
+    .from(agentEvents)
+    .where(gte(agentEvents.at, since))
+    .groupBy(agentEvents.code);
+  const known: readonly string[] = AGENT_EVENT_CODES;
+  const refusals = refusalRows
+    .filter((r) => known.includes(r.code))
+    .map((r) => ({ code: r.code, count: Number(r.n) }))
+    .sort((a, b) => b.count - a.count || (a.code < b.code ? -1 : 1));
   return {
     agent: { address: agent, attributionTag: ERC8021_TAG },
     entries,
     days: [...days.values()].sort((a, b) => (a.date < b.date ? 1 : -1)),
+    refusals,
   };
 }
 

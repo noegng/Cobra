@@ -112,6 +112,8 @@ export const payments = pgTable("payments", {
   legs: jsonb("legs"), // copied from the submission when known (null for self-submitted)
   costBps: integer("cost_bps"),
   savingsBps: integer("savings_bps"),
+  /** Real surplus refunded to the payer (base units of tokenOut, integer string); null = unknown (receipt unreadable / pre-0001). */
+  refundedOut: text("refunded_out"),
   blockNumber: bigint("block_number", { mode: "bigint" }).notNull(),
   paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
 });
@@ -143,3 +145,32 @@ export const FLAG_KEYS = {
   killSwitch: "kill_switch", // { enabled: boolean }
   caps: "caps", // { perPaymentUsd: number, perDayUsd: number }
 } as const;
+
+/** Closed list of structured agent refusal codes. No personal data is ever stored with them (public /proof page). */
+export const AGENT_EVENT_KINDS = ["quote", "submit", "relayer"] as const;
+export type AgentEventKind = (typeof AGENT_EVENT_KINDS)[number];
+export const AGENT_EVENT_CODES = [
+  "price_guard",
+  "no_route",
+  "cap_per_payment",
+  "cap_per_day",
+  "cap_per_merchant_day",
+  "cap_per_payer_day",
+  "self_payment",
+  "smart_account_unsupported",
+  "payer_blocked",
+  "refused_other",
+] as const;
+export type AgentEventCode = (typeof AGENT_EVENT_CODES)[number];
+
+/** Structured refusals by the agent. Deliberately no address / amount / invoice id / IP / free text. */
+export const agentEvents = pgTable(
+  "agent_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: text("kind").notNull(), // AgentEventKind
+    code: text("code").notNull(), // AgentEventCode
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("agent_events_at_idx").on(t.at)],
+);

@@ -208,6 +208,21 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     expect(await nonceOf(s.address)).toBe(0);
   });
 
+  it("WS15: a signer refusal is recorded as a closed code; a throwing recorder changes nothing", async () => {
+    const seen: string[] = [];
+    await setFlag(db, "caps", { perPaymentUsd: 1, perDayUsd: 2000 });
+    const a1 = await seedSubmission(db, { router, token3009 });
+    await tick(relayer(signer(), { recordEvent: (k, c) => void seen.push(`${k}:${c}`) }));
+    expect((await sub(a1.submissionId)).status).toBe("failed");
+    expect(seen).toEqual(["relayer:cap_per_payment"]);
+
+    const a2 = await seedSubmission(db, { router, token3009 });
+    await tick(relayer(signer(), { recordEvent: () => { throw new Error("boom"); } }));
+    const row = await sub(a2.submissionId);
+    expect(row.status).toBe("failed");
+    expect(row.error).toMatch(/cap_per_payment/);
+  });
+
   it("per-day cap counts invoices already relayed in the last 24h", async () => {
     const s = signer();
     await setFlag(db, "caps", { perPaymentUsd: 200, perDayUsd: 5 });

@@ -14,6 +14,7 @@ import type { Db } from "@cobra/db";
 import { cobraRouterAbi, type Notifier } from "@cobra/shared";
 import { drainOutbox } from "./outbox";
 import { applyBatch, loadCursor, type PaidLog } from "./reconcile";
+import { fetchRefundedOut } from "./refund";
 import { verifyRecentPayments } from "./reorg";
 import { errorMessage, isRangeError } from "./rpc-errors";
 
@@ -149,6 +150,8 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
             logIndex: r.logIndex,
             blockNumber: r.blockNumber,
             blockTimestamp: ts,
+            // Receipt read outside the DB transaction; a failure leaves null and never blocks the payment.
+            refundedOut: await fetchRefundedOut(o.publicClient, { txHash: r.transactionHash, tokenOut: r.args.tokenOut, router: r.address, payer: r.args.payer }),
           });
         }
 

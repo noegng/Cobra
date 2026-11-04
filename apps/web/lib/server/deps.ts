@@ -6,7 +6,7 @@
 import { createPublicClient, getAddress, hashTypedData, http, isAddress, type Address } from "viem";
 import { celo } from "viem/chains";
 import { CELO, CELO_CHAIN_ID } from "@cobra/shared";
-import { createDb, type Db } from "@cobra/db";
+import { agentEventRecorder, createDb, type Db } from "@cobra/db";
 import { createReferenceRateSource, createTextileClient, createUniswapQuoter, solve } from "@cobra/solver";
 import type { ApiDeps } from "./api";
 import { accountAcceptsSignature, isEip7702Delegation, readPayerState, type MulticallClient } from "./balances";
@@ -67,6 +67,7 @@ export function getApiDeps(): ApiDeps {
       }),
     verifyTypedData: (args) => client.verifyTypedData(args as Parameters<typeof client.verifyTypedData>[0]),
     rateLimiter: createMemoryRateLimiter(),
+    recordEvent: agentEventRecorder(getDb(), (m, x) => console.warn(JSON.stringify({ msg: m, ...x }))),
     env: process.env,
   };
   return deps;

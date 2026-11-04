@@ -20,7 +20,7 @@ import {
   isTextileVenue,
   type SolverInput,
 } from "@cobra/shared";
-import { getCaps, isKillSwitchOn, onchainInvoiceFromRow, payments, quotes, submissions, type Db } from "@cobra/db";
+import { getCaps, isKillSwitchOn, onchainInvoiceFromRow, payments, quotes, submissions, type AgentEventCode, type AgentEventKind, type Db } from "@cobra/db";
 import { parseLocalAmount } from "../amount";
 import { buildRipioOnrampUrl } from "../ramp";
 import { toWire, type QuoteError, type QuoteOk, type StatusResponse, type ToSignEntry, type WireTypedData } from "../wire";
@@ -62,12 +62,23 @@ export interface ApiDeps {
   /** ERC-1271/6492-aware typed-data signature check (viem publicClient.verifyTypedData); EOAs use ecrecover. */
   verifyTypedData(args: Record<string, unknown> & { address: Address; signature: Hex }): Promise<boolean>;
   rateLimiter: RateLimiter;
+  /** WS15: structured refusal log (closed codes only). Fire-and-forget; must never throw or change a response. */
+  recordEvent?(kind: AgentEventKind, code: AgentEventCode): void;
   env: Record<string, string | undefined>;
 }
 
 /** An invoice must have at least this much life left to be quoted (signing + relaying time). */
 export const MIN_REMAINING_MS = 20_000;
 const SECP256K1_N_HALF = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0n;
+
+/** Records a refusal; any failure (sync throw included) is swallowed. */
+function refused(deps: ApiDeps, kind: AgentEventKind, code: AgentEventCode): void {
+  try {
+    deps.recordEvent?.(kind, code);
+  } catch {
+    /* never affects the response */
+  }
+}
 
 function limited(deps: ApiDeps, bucket: string, req: Request): Response | null {
   const wait = deps.rateLimiter.hit(bucket, clientIp(req), deps.now());
@@ -102,6 +113,7 @@ export async function payerBanned(deps: ApiDeps, payer: Address): Promise<Respon
   if (rows.length < REVERT_BAN_THRESHOLD) return null;
   // the ban lifts when the oldest of the last N reverts leaves the window
   const retryAfter = Math.max(1, Math.ceil((rows[rows.length - 1]!.at.getTime() + REVERT_BAN_WINDOW_MS - nowMs) / 1000));
+  refused(deps, "submit", "payer_blocked");
   return apiError(429, "payer_blocked", { retryAfter });
 }
 
@@ -169,7 +181,10 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   if (status === "expired" || row.expiresAt.getTime() - now < MIN_REMAINING_MS) return apiError(410, "invoice_expired");
   if (status !== "open") return apiError(409, "invoice_not_open", { status });
   // WS7-1: self-payment moves no value but consumes the relayer's shared daily budget — refuse it.
-  if (payer === getAddress(row.merchantAddress)) return apiError(400, "self_payment");
+  if (payer === getAddress(row.merchantAddress)) {
+    refused(deps, "quote", "self_payment");
+    return apiError(400, "self_payment");
+  }
 
   const inv = onchainInvoiceFromRow(row);
   let state: PayerChainState;
@@ -217,6 +232,8 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
         : null;
     const out: QuoteError = { error: result.reason, fallback: result.fallback, rampUrl, directTransfer };
     logEvent("quote.no_plan", { invoiceId: id, reason: result.reason });
+    if (result.reason === "price_guard" || result.reason === "no_route") refused(deps, "quote", result.reason);
+    else if (result.reason === "over_cap") refused(deps, "quote", "cap_per_payment");
     return json(out, 422);
   }
 
@@ -342,7 +359,10 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   const plan = deserializePlan(quote.plan as SerializedPlan);
   if (signatures.length !== plan.legs.length) return apiError(400, "invalid_signatures");
   const payer = getAddress(quote.payer);
-  if (payer === getAddress(row.merchantAddress)) return apiError(400, "self_payment");
+  if (payer === getAddress(row.merchantAddress)) {
+    refused(deps, "submit", "self_payment");
+    return apiError(400, "self_payment");
+  }
   const rlPayer = limitedBy(deps, "submitPayer", payer);
   if (rlPayer) return rlPayer;
   const banned = await payerBanned(deps, payer);
@@ -381,6 +401,7 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
       }
       if (accepts === false) {
         logEvent("submit.delegate_rejects_signature", { invoiceId: id, leg: i });
+        refused(deps, "submit", "smart_account_unsupported");
         return apiError(422, "smart_account_unsupported");
       }
     }
@@ -388,7 +409,10 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   }
 
   const caps = await getCaps(deps.db);
-  if (usdCents(plan.legs) > BigInt(Math.round(caps.perPaymentUsd * 100))) return apiError(422, "over_cap");
+  if (usdCents(plan.legs) > BigInt(Math.round(caps.perPaymentUsd * 100))) {
+    refused(deps, "submit", "cap_per_payment");
+    return apiError(422, "over_cap");
+  }
 
   const live = await deps.db
     .select({ id: submissions.id })

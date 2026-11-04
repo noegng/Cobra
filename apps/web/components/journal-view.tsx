@@ -27,7 +27,9 @@ function Route({ e, lang }: { e: RouteEntry; lang: Language }) {
         </p>
       )}
       <p className="small">
-        {e.quotedSurplus != null && <>{s.surplus}: {fmtAmount(e.quotedSurplus, e.decimalsOut, locale)} {e.symbolOut}<br /></>}
+        {e.refundedOut != null
+          ? BigInt(e.refundedOut) > 0n && <>{s.surplus_real}: {fmtAmount(e.refundedOut, e.decimalsOut, locale)} {e.symbolOut}<br /></>
+          : e.quotedSurplus != null && <>{s.surplus}: {fmtAmount(e.quotedSurplus, e.decimalsOut, locale)} {e.symbolOut}<br /></>}
         {e.costBps != null && <>{s.cost}: {bpsPercent(e.costBps, locale)} %<br /></>}
         {e.savingsBps != null && <>{s.savings}: {bpsPercent(e.savingsBps, locale)} %<br /></>}
         {e.relayed && e.sender ? <>{s.relayed_by} {link(explorerAddress(e.sender), shortAddr(e.sender))} · {s.tag} {e.attributionTag}</> : s.self_submitted}
@@ -75,6 +77,17 @@ export function JournalView({ journal, lang }: { journal: Journal; lang: Languag
           <p className="small">{s.failed_note}</p>
         </div>
       )}
+      <div className="card" data-testid="journal-refusals">
+        <h3>{s.refusals_title}</h3>
+        {journal.refusals.length === 0 ? <p className="small">{s.refusals_none}</p> : (
+          <ul>
+            {journal.refusals.map((r) => (
+              <li key={r.code} className="small" data-testid="journal-refusal">{s.refusal_codes[r.code] ?? r.code}: {r.count}</li>
+            ))}
+          </ul>
+        )}
+        <p className="small">{s.refusals_note}</p>
+      </div>
     </section>
   );
 }

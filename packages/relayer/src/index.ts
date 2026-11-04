@@ -3,7 +3,7 @@
  * The ONLY package allowed to hold a private key, and only via ./signer (caps + whitelist).
  * FROZEN public signatures below; internals are yours.
  */
-import type { Db } from "@cobra/db";
+import type { Db, RecordAgentEvent } from "@cobra/db";
 import type { Notifier } from "@cobra/shared";
 import type { Address, PublicClient, WalletClient } from "viem";
 import { runRelayer } from "./relayer";
@@ -18,6 +18,8 @@ export interface RelayerOptions {
   operatorChatId?: string;
   pollIntervalMs?: number;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
+  /** WS15 (additive): structured refusal log (closed codes, no personal data), fire-and-forget. */
+  recordEvent?: RecordAgentEvent;
   /** Optional (additive): CELO gas grants for wFIAT payers without gas. Default on; `false` disables. */
   gasGrant?: GasGrantConfig | false;
   /** WS13 (additive): accept Textile RFQ legs (router v2). Default true. */
