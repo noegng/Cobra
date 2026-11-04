@@ -15,11 +15,16 @@ contract VectorsTest is Test {
         json = vm.readFile(string.concat(vm.projectRoot(), "/test/vectors/eip712.json"));
         vm.chainId(vm.parseJsonUint(json, ".chainId"));
         address at = vm.parseJsonAddress(json, ".router");
-        // Constructor args are irrelevant to hashing; non-zero placeholders.
-        deployCodeTo("CobraRouterHarness.sol:CobraRouterHarness", abi.encode(address(0xbeef1), address(0xbeef2)), at);
+        _deployHarness(at);
         router = CobraRouterHarness(at);
         assertEq(block.chainid, 42220);
         assertEq(address(router).code.length > 0, true);
+    }
+
+    /// @dev Overridden by V2VectorsTest to run every case against CobraRouterV2 (same exposed_* names).
+    function _deployHarness(address at) internal virtual {
+        // Constructor args are irrelevant to hashing; non-zero placeholders.
+        deployCodeTo("CobraRouterHarness.sol:CobraRouterHarness", abi.encode(address(0xbeef1), address(0xbeef2)), at);
     }
 
     function _invoice() internal view returns (ICobraRouter.Invoice memory inv) {

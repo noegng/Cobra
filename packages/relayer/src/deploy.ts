@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  concatHex,
   createWalletClient,
   encodeDeployData,
   getAddress,
@@ -21,8 +22,8 @@ import {
 } from "viem";
 import { privateKeyToAccount, toAccount } from "viem/accounts";
 import { celo } from "viem/chains";
-import { withAttribution } from "@celo/attribution-tags";
-import { CELO } from "@cobra/shared";
+import { toDataSuffix, withAttribution } from "@celo/attribution-tags";
+import { CELO, TEXTILE_REACTOR_CELO } from "@cobra/shared";
 import { SignerRefusedError } from "./signer";
 
 export interface RouterArtifact {
@@ -45,6 +46,33 @@ export const CELO_ROUTER_ARGS = {
 
 export function routerDeployData(art: RouterArtifact, permit2: Address, swapRouter: Address): Hex {
   return encodeDeployData({ abi: art.abi, bytecode: art.bytecode, args: [getAddress(permit2), getAddress(swapRouter)] });
+}
+
+// ───────────── CobraRouterV2 (Textile FX RFQ venue, docs/interfaces.md §7) ─────────────
+
+export const ROUTER_V2_ARTIFACT_PATH = resolve(
+  import.meta.dirname,
+  "../../../contracts/out/CobraRouterV2.sol/CobraRouterV2.json",
+);
+
+/** v1 args + Textile's UniswapX LimitOrderReactor on Celo. */
+export const CELO_ROUTER_V2_ARGS = {
+  ...CELO_ROUTER_ARGS,
+  textileReactor: getAddress(TEXTILE_REACTOR_CELO),
+} as const;
+
+/** constructor(address permit2, address swapRouter, address textileReactor). */
+export function routerV2DeployData(art: RouterArtifact, permit2: Address, swapRouter: Address, textileReactor: Address): Hex {
+  return encodeDeployData({
+    abi: art.abi,
+    bytecode: art.bytecode,
+    args: [getAddress(permit2), getAddress(swapRouter), getAddress(textileReactor)],
+  });
+}
+
+/** The exact creation calldata `withAttribution` sends: initcode ++ ERC-8021 suffix (ignored by the constructor). */
+export function taggedCreationData(deployData: Hex, attributionCode: string): Hex {
+  return concatHex([deployData, toDataSuffix(attributionCode) as Hex]);
 }
 
 export interface RouterDeployerOptions {
@@ -87,6 +115,11 @@ export function createRouterDeployer(opts: RouterDeployerOptions) {
     /** Sends the tagged creation tx. Goes through the attributed sendTransaction (suffix appended). */
     deploy(permit2: Address, swapRouter: Address): Promise<Hash> {
       const data = routerDeployData(opts.artifact, permit2, swapRouter);
+      return client.sendTransaction({ account, chain, data } as never);
+    },
+    /** v2: same narrow signer, CobraRouterV2 artifact expected in `opts.artifact`. */
+    deployV2(permit2: Address, swapRouter: Address, textileReactor: Address): Promise<Hash> {
+      const data = routerV2DeployData(opts.artifact, permit2, swapRouter, textileReactor);
       return client.sendTransaction({ account, chain, data } as never);
     },
   };
