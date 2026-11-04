@@ -5,6 +5,7 @@
 import { fromDataSuffix } from "@celo/attribution-tags";
 import { and, count, eq, inArray, lt } from "drizzle-orm";
 import {
+  BaseError,
   formatEther,
   getAddress,
   hashDomain,
@@ -15,7 +16,7 @@ import {
   type Hash,
   type PublicClient,
 } from "viem";
-import { CELO, CELO_CHAIN_ID, HACKATHON_ATTRIBUTION_CODE, ROUTER_DOMAIN } from "@cobra/shared";
+import { CELO, CELO_CHAIN_ID, HACKATHON_ATTRIBUTION_CODE, ROUTER_DOMAIN, TEXTILE_REACTOR_CELO } from "@cobra/shared";
 import { chainCursor, isKillSwitchOn, merchants, submissions, type Db } from "@cobra/db";
 import { REGISTRATION_TYPE, agentCardUrl } from "./agent";
 
@@ -31,6 +32,7 @@ const routerViewAbi = parseAbi([
   "function PERMIT2() view returns (address)",
   "function SWAP_ROUTER() view returns (address)",
   "function DOMAIN_SEPARATOR() view returns (bytes32)",
+  "function TEXTILE_REACTOR() view returns (address)",
 ]);
 const erc721Abi = parseAbi([
   "function balanceOf(address owner) view returns (uint256)",
@@ -105,6 +107,22 @@ export interface VerifyEnv {
   DATABASE_URL?: string;
   RELAYER_MIN_BALANCE_CELO?: string;
   ATTRIBUTION_CODE?: string;
+  /** v1 router still followed by the indexer after the switch to v2 (same pair as the worker). */
+  LEGACY_ROUTER_ADDRESS?: string;
+  LEGACY_ROUTER_DEPLOY_BLOCK?: string;
+  /** Only its presence is read (never printed): Textile on the worker requires a v2 ROUTER_ADDRESS. */
+  TEXTILE_API_KEY?: string;
+  TEXTILE_ENABLED?: string;
+}
+
+/** CobraRouterV2 exposes TEXTILE_REACTOR(); v1 has none (revert / empty return) → null. Other errors propagate. */
+async function probeTextileReactor(pc: PublicClient, router: Address): Promise<Address | null> {
+  try {
+    return getAddress(await pc.readContract({ address: router, abi: routerViewAbi, functionName: "TEXTILE_REACTOR" }));
+  } catch (e) {
+    if (e instanceof BaseError && e.walk((x) => ["ContractFunctionZeroDataError", "ContractFunctionRevertedError"].includes((x as Error).name))) return null;
+    throw e;
+  }
 }
 
 export interface VerifyDeps {
@@ -140,23 +158,21 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
     add("chain", "RPC chain id", id === CELO_CHAIN_ID ? "PASS" : "FAIL", `chainId=${id}`);
   });
 
-  // ── router
-  if (!env.ROUTER_ADDRESS) add("router", "ROUTER_ADDRESS", "SKIP", "not set");
-  else {
-    const router = getAddress(env.ROUTER_ADDRESS);
-    await guard("router", "bytecode", async () => {
+  // Shared by the active and the legacy router: code, immutables, EIP-712 domain. Check names are prefixed for legacy.
+  const checkRouterBasics = async (group: string, router: Address) => {
+    await guard(group, "bytecode", async () => {
       const bc = await pc.getCode({ address: router });
-      add("router", "bytecode", bc && bc !== "0x" ? "PASS" : "FAIL", bc ? `${(bc.length - 2) / 2} bytes` : "no code");
+      add(group, "bytecode", bc && bc !== "0x" ? "PASS" : "FAIL", bc ? `${(bc.length - 2) / 2} bytes` : "no code");
     });
-    await guard("router", "immutables", async () => {
+    await guard(group, "immutables", async () => {
       const [p2, sr] = await Promise.all([
         pc.readContract({ address: router, abi: routerViewAbi, functionName: "PERMIT2" }),
         pc.readContract({ address: router, abi: routerViewAbi, functionName: "SWAP_ROUTER" }),
       ]);
       const ok = isAddressEqual(p2, CELO.permit2.address) && isAddressEqual(sr, CELO.uniswapV3.swapRouter.address);
-      add("router", "immutables", ok ? "PASS" : "FAIL", `PERMIT2=${p2} SWAP_ROUTER=${sr}`);
+      add(group, "immutables", ok ? "PASS" : "FAIL", `PERMIT2=${p2} SWAP_ROUTER=${sr}`);
     });
-    await guard("router", "EIP-712 domain", async () => {
+    await guard(group, "EIP-712 domain", async () => {
       const ds = await pc.readContract({ address: router, abi: routerViewAbi, functionName: "DOMAIN_SEPARATOR" });
       const want = hashDomain({
         domain: { ...ROUTER_DOMAIN, chainId: BigInt(CELO_CHAIN_ID), verifyingContract: router },
@@ -165,7 +181,27 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
           { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" },
         ] },
       });
-      add("router", "EIP-712 domain", ds === want ? "PASS" : "FAIL", ds === want ? "matches packages/shared" : `got ${ds}, want ${want}`);
+      add(group, "EIP-712 domain", ds === want ? "PASS" : "FAIL", ds === want ? "matches packages/shared" : `got ${ds}, want ${want}`);
+    });
+  };
+
+  // ── router
+  const textileOn = !!env.TEXTILE_API_KEY && env.TEXTILE_ENABLED !== "false";
+  const legacy = env.LEGACY_ROUTER_ADDRESS;
+  if (!env.ROUTER_ADDRESS) add("router", "ROUTER_ADDRESS", "SKIP", "not set");
+  else {
+    const router = getAddress(env.ROUTER_ADDRESS);
+    await checkRouterBasics("router", router);
+    await guard("router", "version (Textile reactor)", async () => {
+      const reactor = await probeTextileReactor(pc, router);
+      if (reactor === null) {
+        // v1: fine on its own, but the worker refuses to start with Textile on (code 78).
+        add("router", "version (Textile reactor)", textileOn ? "FAIL" : "PASS", textileOn ? "v1 router but TEXTILE_API_KEY is set: the worker will refuse to start" : "v1 (no Textile venue)");
+        return;
+      }
+      if (!isAddressEqual(reactor, TEXTILE_REACTOR_CELO)) return add("router", "version (Textile reactor)", "FAIL", `v2 but TEXTILE_REACTOR()=${reactor}, want ${TEXTILE_REACTOR_CELO}`);
+      // After a v1 → v2 switch the indexer must keep following v1 (in-flight quotes, late Paid logs).
+      add("router", "version (Textile reactor)", legacy ? "PASS" : "WARN", legacy ? `v2, reactor ${reactor}` : `v2, reactor ${reactor}; LEGACY_ROUTER_ADDRESS not set: v1 Paid logs are no longer indexed`);
     });
     if (!env.ROUTER_DEPLOY_TX) add("router", "deployment tx tagged (ERC-8021)", "WARN", "ROUTER_DEPLOY_TX not set: tag not checked");
     else {
@@ -186,6 +222,21 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
         add("router", "deployment tx tagged (ERC-8021)", p.length ? "FAIL" : "PASS", p.join("; ") || `block ${rc.blockNumber}, code ${code}`);
       });
     }
+  }
+
+  // ── legacy router (v1 kept after the switch to v2) — same pairing rules as apps/worker/src/config.ts
+  if (!legacy && !env.LEGACY_ROUTER_DEPLOY_BLOCK) add("legacy router", "LEGACY_ROUTER_ADDRESS", "SKIP", "not set");
+  else if (!legacy || !env.LEGACY_ROUTER_DEPLOY_BLOCK || !/^\d+$/.test(env.LEGACY_ROUTER_DEPLOY_BLOCK)) {
+    add("legacy router", "LEGACY_ROUTER_ADDRESS", "FAIL", "LEGACY_ROUTER_ADDRESS and LEGACY_ROUTER_DEPLOY_BLOCK (integer) must be set together");
+  } else {
+    const old = getAddress(legacy);
+    if (env.ROUTER_ADDRESS && isAddressEqual(old, getAddress(env.ROUTER_ADDRESS))) add("legacy router", "LEGACY_ROUTER_ADDRESS", "FAIL", "must differ from ROUTER_ADDRESS");
+    else add("legacy router", "LEGACY_ROUTER_ADDRESS", "PASS", `${old} from block ${env.LEGACY_ROUTER_DEPLOY_BLOCK}`);
+    await checkRouterBasics("legacy router", old);
+    await guard("legacy router", "legacy is v1", async () => {
+      const reactor = await probeTextileReactor(pc, old);
+      add("legacy router", "legacy is v1", reactor === null ? "PASS" : "WARN", reactor === null ? "no TEXTILE_REACTOR()" : `legacy exposes TEXTILE_REACTOR()=${reactor}: is it really the old v1?`);
+    });
   }
 
   // ── agent wallet + ERC-8004
@@ -288,7 +339,10 @@ export async function runVerification(env: VerifyEnv, deps: VerifyDeps): Promise
       if (!c) return add("worker", "indexer cursor", "FAIL", "no router_paid cursor: indexer never ran");
       const ageS = deps.nowSec - Math.floor(c.updatedAt.getTime() / 1000);
       const p: string[] = [];
-      if (env.ROUTER_DEPLOY_BLOCK && c.blockNumber < BigInt(env.ROUTER_DEPLOY_BLOCK)) p.push(`cursor ${c.blockNumber} < deploy block`);
+      // The indexer starts at the earliest followed router (legacy v1 included), so compare against that block.
+      const blocks = [env.ROUTER_DEPLOY_BLOCK, env.LEGACY_ROUTER_DEPLOY_BLOCK].filter((b): b is string => !!b && /^\d+$/.test(b)).map(BigInt);
+      const from = blocks.length ? blocks.reduce((m, b) => (b < m ? b : m)) : undefined;
+      if (from !== undefined && c.blockNumber < from) p.push(`cursor ${c.blockNumber} < deploy block ${from}`);
       add("worker", "indexer cursor", p.length ? "FAIL" : ageS > 600 ? "WARN" : "PASS", p.join("; ") || `block ${c.blockNumber}, updated ${ageS}s ago${ageS > 600 ? " (idle >10 min: worker down, or simply no new batch)" : ""}`);
     });
     await guard("worker", "relay queue", async () => {
