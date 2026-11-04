@@ -344,7 +344,7 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
         {!closed && <span className={`sub tabular ${remainingS < 60 ? "warn" : ""}`}>{mm}:{ss}</span>}
       </header>
 
-      <section className="hero">
+      <section className="hero ticket">
         <p className="amount">{formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span></p>
         {invoice.description && <p className="sub">{invoice.description}</p>}
         <a className="sub mono" href={explorerAddress(invoice.payoutAddress)} target="_blank" rel="noopener noreferrer">→ {short(invoice.payoutAddress)}</a>

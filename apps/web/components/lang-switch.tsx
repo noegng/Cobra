@@ -3,26 +3,31 @@
 import { useRouter } from "next/navigation";
 import type { Language } from "@cobra/shared";
 import { DICTS, LANG_COOKIE, LANGS } from "../lib/i18n";
+import { ThemeToggle } from "./theme-toggle";
 
+/** Display preferences shown on every page: light/dark theme + language. */
 export function LangSwitch({ lang }: { lang: Language }) {
   const router = useRouter();
   return (
-    <label className="small">
-      <span className="sr-only">{DICTS[lang].language}</span>
-      <select
-        value={lang}
-        aria-label={DICTS[lang].language}
-        onChange={(e) => {
-          document.cookie = `${LANG_COOKIE}=${e.target.value}; path=/; max-age=31536000; samesite=lax`;
-          router.refresh();
-        }}
-      >
-        {LANGS.map((l) => (
-          <option key={l} value={l}>
-            {l.toUpperCase()}
-          </option>
-        ))}
-      </select>
-    </label>
+    <span className="prefs">
+      <ThemeToggle />
+      <label className="small">
+        <span className="sr-only">{DICTS[lang].language}</span>
+        <select
+          value={lang}
+          aria-label={DICTS[lang].language}
+          onChange={(e) => {
+            document.cookie = `${LANG_COOKIE}=${e.target.value}; path=/; max-age=31536000; samesite=lax`;
+            router.refresh();
+          }}
+        >
+          {LANGS.map((l) => (
+            <option key={l} value={l}>
+              {l.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </label>
+    </span>
   );
 }
