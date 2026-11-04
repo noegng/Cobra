@@ -22,6 +22,23 @@ describe("matchCharge (fast path regex)", () => {
     expect(matchCharge(text)).toEqual({ amountText: amount, description });
   });
 
+  it.each([
+    ["cobrar 4 500 café", "4 500", "café"],
+    ["cobrar 500 100 gramos de queso", "500 100", "gramos de queso"],
+    ["cobrar 1\u00a0500 alfajor", "1\u00a0500", "alfajor"],
+  ])("flags an unmarked space-grouped amount followed by text as ambiguous: %j", (text, amount, description) => {
+    expect(matchCharge(text)).toEqual({ amountText: amount, description, spaceAmbiguous: true });
+  });
+
+  it.each([
+    ["cobrar 4 500", "4 500", ""], // nothing after: the grouping is the only reading
+    ["cobrar R$ 1 500 corte", "R$ 1 500", "corte"],
+    ["cobrar 4 500 pesos café", "4 500 pesos", "café"],
+    ["cobrar 4 cafés", "4", "cafés"],
+  ])("keeps unambiguous forms: %j", (text, amount, description) => {
+    expect(matchCharge(text)).toEqual({ amountText: amount, description });
+  });
+
   it("returns an empty amount for a bare trigger (usage reply)", () => {
     expect(matchCharge("cobrar")).toEqual({ amountText: "", description: "" });
     expect(matchCharge("/cobrar")).toEqual({ amountText: "", description: "" });

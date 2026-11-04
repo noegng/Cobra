@@ -189,8 +189,6 @@ describe("matchCharge edge cases", () => {
     ["cobrar 2 milhões", "2", "milhões"],
     ["cobrar 2 mil milanesas", "2 mil", "milanesas"],
     ["cobrar 5 mil", "5 mil", ""],
-    ["cobrar 4 500 café", "4 500", "café"],
-    ["cobrar 4 500 café", "4 500", "café"],
     ["cobrar $4500 café", "$4500", "café"],
     ["cobrar ARS 4500 café", "ARS 4500", "café"],
     ["cobrar 1.234.567,89 reforma", "1.234.567,89", "reforma"],
@@ -199,6 +197,13 @@ describe("matchCharge edge cases", () => {
     ["COBRAR 4500 café", "4500", "café"],
   ])("%j", (text, amount, description) => {
     expect(matchCharge(text)).toEqual({ amountText: amount, description });
+  });
+
+  it.each([
+    ["cobrar 4 500 café", "4 500", "café"],
+    ["cobrar 4 500 café", "4 500", "café"],
+  ])("asks instead of guessing for an unmarked space-grouped amount: %j", (text, amount, description) => {
+    expect(matchCharge(text)).toEqual({ amountText: amount, description, spaceAmbiguous: true });
   });
 
   it("does not claim non-numeric or negative requests", () => {

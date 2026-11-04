@@ -4,20 +4,28 @@
  */
 const TRIGGER = /^\/?(?:cobrar|cobr[aá]|charge)(?:@\w+)?(?:\s+([\s\S]*))?$/i;
 
+const SPACE = "[ \\u00a0\\u202f]";
 const AMOUNT_TOKEN = new RegExp(
   "^(" +
-    "(?:r\\$|ar\\$|mx\\$|s\\/|\\$|ars|brl|mxn|cop|clp|pen|us\\$|usd)?\\s*" + // optional currency marker
-    "(?:\\d{1,3}(?:[ \\u00a0\\u202f]\\d{3})+(?:[.,]\\d+)?(?=\\s|$)|\\d(?:[\\d.,]*\\d)?)" + // space-grouped or compact number
+    "(?<pre>(?:r\\$|ar\\$|mx\\$|s\\/|\\$|ars|brl|mxn|cop|clp|pen|us\\$|usd)\\s*)?" + // optional currency marker
+    `(?:\\d{1,3}(?:${SPACE}\\d{3})+(?:[.,]\\d+)?(?=\\s|$)|\\d(?:[\\d.,]*\\d)?)` + // space-grouped or compact number
     "(?:\\s*mil(?![a-zà-ÿ]))?" + // "2 mil" (not "milanesa")
-    "(?:\\s*(?:pesos?|reais|real|soles?|ars|brl|usd|d[oó]lares?)(?![a-zà-ÿ]))?" + // optional currency word
+    "(?<word>\\s*(?:pesos?|reais|real|soles?|ars|brl|usd|d[oó]lares?)(?![a-zà-ÿ]))?" + // optional currency word
     ")",
   "i",
 );
+const SPACE_GROUPED = new RegExp(`\\d${SPACE}\\d`);
 
 export interface ChargeMatch {
   /** Raw amount text, to be parsed by parseAmount. */
   amountText: string;
   description: string;
+  /**
+   * "cobrar 4 500 café": a space-grouped number with no currency marker, followed by a description. It reads as
+   * 4500 *or* as 4 + "500 café" (and "cobrar 500 100 gramos" as 500100): the bot asks instead of guessing.
+   * Unambiguous forms: "$ 4 500 café", "4 500 pesos café", "4500 café", or "cobrar 4 500" alone.
+   */
+  spaceAmbiguous?: true;
 }
 
 /**
@@ -39,5 +47,7 @@ export function matchCharge(text: string): ChargeMatch | null {
     .slice(a[0].length)
     .replace(/^[\s,.:;\-–—]+/, "")
     .trim();
+  const marked = !!(a.groups?.pre || a.groups?.word);
+  if (!marked && description !== "" && SPACE_GROUPED.test(amountText)) return { amountText, description, spaceAmbiguous: true };
   return { amountText, description };
 }
