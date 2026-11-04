@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@cobra/shared": "workspace:*",
-    "viem": "2.57.14"
+    "viem": "2.57.14",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "fast-check": "4.10.2"

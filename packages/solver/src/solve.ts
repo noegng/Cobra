@@ -153,12 +153,7 @@ export async function solveImpl(input: SolverInput, opts: SolverOptions): Promis
   if (usdOutTotal > capE18) {
     return fail("over_cap", `invoice ≈ ${fmtUsd(usdOutTotal)} USD > cap ${opts.capUsd ?? DEFAULT_CAP_USD} USD`);
   }
-  const maxDev = BigInt(
-    opts.maxPriceDeviationBpsByCurrency?.[outInfo.currency] ??
-      opts.maxPriceDeviationBps ??
-      DEFAULT_PRICE_DEVIATION_BPS_BY_CURRENCY[outInfo.currency] ??
-      DEFAULT_MAX_PRICE_DEVIATION_BPS,
-  );
+  const maxDev = BigInt(maxDeviationBps(opts, outInfo.currency));
   const hubs = (opts.hubTokens ?? registry.filter((t) => t.symbol === "USDT").map((t) => t.address)).map((h) =>
     getAddress(h),
   );
@@ -452,6 +447,16 @@ export async function solveImpl(input: SolverInput, opts: SolverOptions): Promis
     expiresAt: quotedAt + QUOTE_TTL_MS,
   };
   return { ok: true, plan };
+}
+
+/** Price-guard width for a tokenOut currency (shared by the Uniswap and Textile routes). */
+export function maxDeviationBps(opts: SolverOptions, currency: Currency): number {
+  return (
+    opts.maxPriceDeviationBpsByCurrency?.[currency] ??
+    opts.maxPriceDeviationBps ??
+    DEFAULT_PRICE_DEVIATION_BPS_BY_CURRENCY[currency] ??
+    DEFAULT_MAX_PRICE_DEVIATION_BPS
+  );
 }
 
 /** First pull kind in registry order; PERMIT2 only when the payer already has a Permit2 allowance. */
