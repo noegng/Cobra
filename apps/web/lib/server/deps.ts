@@ -3,13 +3,13 @@
  * Env (server): DATABASE_URL, RPC_URL, ROUTER_ADDRESS, QUOTER_V2_ADDRESS (optional override), KILL_SWITCH,
  * TEXTILE_API_KEY (optional, server-only: enables the Textile RFQ route), TEXTILE_ENABLED ("false" = off).
  */
-import { createPublicClient, getAddress, http, isAddress, type Address } from "viem";
+import { createPublicClient, getAddress, hashTypedData, http, isAddress, type Address } from "viem";
 import { celo } from "viem/chains";
 import { CELO, CELO_CHAIN_ID } from "@cobra/shared";
 import { createDb, type Db } from "@cobra/db";
 import { createReferenceRateSource, createTextileClient, createUniswapQuoter, solve } from "@cobra/solver";
 import type { ApiDeps } from "./api";
-import { isEip7702Delegation, readPayerState, type MulticallClient } from "./balances";
+import { accountAcceptsSignature, isEip7702Delegation, readPayerState, type MulticallClient } from "./balances";
 import { createMemoryRateLimiter } from "./rate-limit";
 
 let db: Db | null = null;
@@ -50,7 +50,10 @@ export function getApiDeps(): ApiDeps {
     textileEnabled: textileOn,
     cancelTextileRfq: textileOn ? async (id) => void (await textileClient.cancel(id)) : undefined,
     permit2: CELO.permit2.address,
-    isDelegatedAccount: async (payer) => isEip7702Delegation(await client.getCode({ address: payer })),
+    delegatedAccountAccepts: async (payer, typedData, signature) => {
+      if (!isEip7702Delegation(await client.getCode({ address: payer }))) return null;
+      return accountAcceptsSignature(client, payer, hashTypedData(typedData as Parameters<typeof hashTypedData>[0]), signature);
+    },
     readPayerState: (payer) => readPayerState(client as unknown as MulticallClient, payer, CELO.permit2.address),
     getReferenceRates: () => rates(),
     // Every verified pool is on the 0.01% tier: feeTiers [100] cuts ~30 eth_calls to ~12 per quote.

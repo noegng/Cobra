@@ -1,5 +1,5 @@
 /** Payer balances + Permit2 allowances in one multicall (read-only eth_call). */
-import { erc20Abi, getAddress, type Address } from "viem";
+import { BaseError, erc20Abi, getAddress, parseAbi, type Address, type Hex, type PublicClient } from "viem";
 import { TOKENS, type TokenBalance } from "@cobra/shared";
 
 export interface PayerChainState {
@@ -27,11 +27,6 @@ export class BalanceReadError extends Error {
  * Tokens the solver may route through Permit2 (WS2 `permit2Ready`): the existing Permit2 allowance covers the
  * payer's whole balance of that token, hence any amount the solver could pick from it.
  */
-/** EIP-7702 delegation designator: code is exactly 0xef0100 followed by a 20-byte address. */
-export function isEip7702Delegation(code: string | undefined | null): boolean {
-  return !!code && /^0xef0100[0-9a-fA-F]{40}$/.test(code);
-}
-
 export function permit2ReadyTokens(state: PayerChainState): Address[] {
   return state.balances.filter((b) => (state.permit2Allowances[getAddress(b.token)] ?? 0n) >= b.amount).map((b) => getAddress(b.token));
 }
@@ -53,4 +48,29 @@ export async function readPayerState(client: MulticallClient, payer: Address, pe
     permit2Allowances[getAddress(t.address)] = allow?.status === "success" && typeof allow.result === "bigint" ? allow.result : 0n;
   });
   return { balances, permit2Allowances };
+}
+
+/** EIP-7702 delegation designator: code is exactly 0xef0100 followed by a 20-byte address. */
+export function isEip7702Delegation(code: string | undefined | null): boolean {
+  return !!code && /^0xef0100[0-9a-fA-F]{40}$/.test(code);
+}
+
+const ERC1271_MAGIC = "0x1626ba7e";
+const erc1271Abi = parseAbi(["function isValidSignature(bytes32 hash, bytes signature) view returns (bytes4)"]);
+
+/** ERC-1271 check on the account itself (eth_call). A revert or any other return value = rejected. */
+export async function accountAcceptsSignature(
+  client: Pick<PublicClient, "readContract">,
+  account: Address,
+  hash: Hex,
+  signature: Hex,
+): Promise<boolean> {
+  try {
+    const r = await client.readContract({ address: account, abi: erc1271Abi, functionName: "isValidSignature", args: [hash, signature] });
+    return r.toLowerCase() === ERC1271_MAGIC;
+  } catch (e) {
+    // A revert is an answer (rejected); a transport failure is not: let it propagate (→ 502, payer retries).
+    if (e instanceof BaseError && e.walk((x) => ["ContractFunctionZeroDataError", "ContractFunctionRevertedError"].includes((x as Error).name))) return false;
+    throw e;
+  }
 }

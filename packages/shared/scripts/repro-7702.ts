@@ -36,14 +36,17 @@ async function attempt(label: string, to: Address, data: Hex) {
 }
 const TARGET: Record<string, Address> = {};
 
-for (const mode of ["delegated", "plain"] as const) {
-  if (mode === "plain") await test.setCode({ address: acct.address, bytecode: "0x" });
+// sweeper = anvil key #0's mainnet delegate (rejects ERC-1271); metamask = EIP7702StatelessDeleGator (accepts the EOA's sig).
+const MODES = { sweeper: undefined, metamask: "0xef010063c0c19a282a1B52b07dD5a65b58948A07DAE32B", plain: "0x" } as const;
+for (const mode of ["sweeper", "metamask", "plain"] as const) {
+  const code = MODES[mode];
+  if (code) await test.setCode({ address: acct.address, bytecode: code });
   console.log(`== payer ${acct.address} code=${(await pub.getCode({ address: acct.address }))?.slice(0, 12)} (${mode})`);
   const router = "0x00000000000000000000000000000000000c0b4a" as Address;
   for (const sym of ["USDT", "USDC"] as const) {
     const t = TOKENS.find((x) => x.symbol === sym)!;
     await fund(t.address, sym === "USDC" ? 9n : 51n);
-    const nonce = keccak256("0x1234");
+    const nonce = keccak256(`0x${mode === "sweeper" ? "01" : mode === "metamask" ? "02" : "03"}`);
     const td = eip3009TypedData({ token: t.address, tokenDomain: t.eip712!, chainId: 42220, from: acct.address, router, value: 1_000_000n, validAfter: 0n, validBefore: 2n ** 40n, nonce });
     const sig = await acct.signTypedData(td);
     const r = sig.slice(0, 66) as Hex, s = ("0x" + sig.slice(66, 130)) as Hex, v = parseInt(sig.slice(130, 132), 16);
@@ -62,9 +65,9 @@ for (const mode of ["delegated", "plain"] as const) {
     await test.impersonateAccount({ address: acct.address });
     const h = await test.sendUnsignedTransaction({ from: acct.address, to: t.address, data: encodeFunctionData({ abi: erc, functionName: "approve", args: [PERMIT2, 2n ** 256n - 1n] }) }).catch((e: Error) => e.message.slice(0, 80));
     void h;
-    const p2td = { domain: { name: "Permit2", chainId: 42220, verifyingContract: PERMIT2 }, types: { PermitTransferFrom: [{ name: "permitted", type: "TokenPermissions" }, { name: "spender", type: "address" }, { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }], TokenPermissions: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }] }, primaryType: "PermitTransferFrom", message: { permitted: { token: t.address, amount: 1_000_000n }, spender: router, nonce: 7n, deadline: 2n ** 40n } } as const;
+    const p2td = { domain: { name: "Permit2", chainId: 42220, verifyingContract: PERMIT2 }, types: { PermitTransferFrom: [{ name: "permitted", type: "TokenPermissions" }, { name: "spender", type: "address" }, { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }], TokenPermissions: [{ name: "token", type: "address" }, { name: "amount", type: "uint256" }] }, primaryType: "PermitTransferFrom", message: { permitted: { token: t.address, amount: 1_000_000n }, spender: router, nonce: BigInt(mode.length), deadline: 2n ** 40n } } as const;
     const sig2 = await acct.signTypedData(p2td);
-    const d2 = encodeFunctionData({ abi: p2abi, functionName: "permitTransferFrom", args: [{ permitted: { token: t.address, amount: 1_000_000n }, nonce: 7n, deadline: 2n ** 40n }, { to: RECEIVER, requestedAmount: 1_000_000n }, acct.address, sig2] });
+    const d2 = encodeFunctionData({ abi: p2abi, functionName: "permitTransferFrom", args: [{ permitted: { token: t.address, amount: 1_000_000n }, nonce: BigInt(mode.length), deadline: 2n ** 40n }, { to: RECEIVER, requestedAmount: 1_000_000n }, acct.address, sig2] });
     await attempt(`PERMIT2 ${sym}`, router, d2);
   }
 }

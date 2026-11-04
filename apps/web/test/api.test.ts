@@ -297,20 +297,39 @@ describe("WS7-1: self-payment (payer == invoice merchant)", () => {
   });
 });
 
-describe("7702-delegated payer", () => {
-  it("quote is refused with 422 smart_account_unsupported, nothing stored", async () => {
+describe("7702-delegated payer (checked at submit, against the account's ERC-1271)", () => {
+  const submitWith = async (accepts: boolean | null | Error) => {
     const fx = await setup();
-    fx.deps.isDelegatedAccount = async () => true;
-    const { res, body } = await quote(fx);
+    const seen: string[] = [];
+    fx.deps.delegatedAccountAccepts = async (who, _td, sig) => {
+      seen.push(`${who}:${sig.length}`);
+      if (accepts instanceof Error) throw accepts;
+      return accepts;
+    };
+    const { res: q, body } = await quote(fx);
+    expect(q.status).toBe(200); // never refused at quote time: MetaMask's delegator accepts plain signatures
+    const signatures = await signAll(body.toSign);
+    const res = await handleSubmit(req("POST", { quoteId: body.quoteId, signatures }), fx.invoiceId, fx.deps);
+    return { fx, res, body: await res.json(), seen };
+  };
+  it("a delegate that rejects the signature → 422 smart_account_unsupported, nothing queued", async () => {
+    const { fx, res, body, seen } = await submitWith(false);
     expect(res.status).toBe(422);
     expect(body.error).toBe("smart_account_unsupported");
-    expect(await fx.db.select().from(quotes)).toHaveLength(0);
+    expect(seen[0]).toBe(`${payer.address}:132`);
+    expect(await fx.db.select().from(submissions)).toHaveLength(0);
   });
-  it("a plain EOA is quoted as usual", async () => {
-    const fx = await setup();
-    fx.deps.isDelegatedAccount = async () => false;
-    const { res } = await quote(fx);
-    expect(res.status).toBe(200);
+  it("a delegate that accepts it (MetaMask) and a plain EOA (null) are queued as usual", async () => {
+    for (const v of [true, null]) {
+      const { fx, res } = await submitWith(v);
+      expect(res.status, String(v)).toBe(202);
+      expect(await fx.db.select().from(submissions)).toHaveLength(1);
+    }
+  });
+  it("an RPC failure is a 502 (retry), not a rejection", async () => {
+    const { res, body } = await submitWith(new Error("timeout"));
+    expect(res.status).toBe(502);
+    expect(body.error).toBe("upstream_unavailable");
   });
   it("isEip7702Delegation matches only the 23-byte designator", () => {
     expect(isEip7702Delegation("0xef010033bcd6304fc165ef0bb85bd5720bc677baae4ce7")).toBe(true);
