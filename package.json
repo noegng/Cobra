@@ -16,7 +16,8 @@
     "agent:register": "tsx scripts/agent/register.ts",
     "verify:deploy": "tsx scripts/ops/verify-deploy.ts",
     "dev:web": "pnpm --filter @cobra/web dev",
-    "dev:worker": "pnpm --filter @cobra/worker dev"
+    "dev:worker": "pnpm --filter @cobra/worker dev",
+    "bot:commands": "tsx packages/bot/scripts/register-commands.ts"
   },
   "devDependencies": {
     "@neon/config": "1.10.0",
