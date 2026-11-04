@@ -6,3 +6,4 @@ export * from "./eip712";
 export * from "./path";
 export * from "./invoice-state";
 export * from "./json";
+export * from "./textile-venue";

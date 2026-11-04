@@ -102,3 +102,29 @@ invoice is `open` or `submitted`. Anything else → `unmatched_events` (never au
 
 See `.env.example`. `RELAYER_PRIVATE_KEY` exists only on the VPS. Tests never need secrets: use PGlite
 (`@cobra/db/testing`), fake `QuoteSource`, anvil / fork with public RPC.
+
+## 7. CobraRouter v2: Textile FX RFQ venue (added 2026-11-04, additive)
+
+Goal: settle a leg at Textile FX RFQ prices (UniswapX `LimitOrderReactor` operated by Textile, Celo
+`0xa9aa0a64769cbed4d3b1ceb4df01cde915c235b3`) while keeping the payment atomic and non-custodial.
+
+- **Same ABI and signing scheme as v1.** `CobraRouterV2` implements the frozen `ICobraRouter` unchanged (same `pay`,
+  `Leg`, `Invoice`, `Paid`, EIP-712 types; domain name "Cobra Router", version "1", separated from v1 by
+  `verifyingContract`). It adds `ICobraRouterV2 is ICobraRouter { function TEXTILE_REACTOR() external view returns (address); }`
+  and implements UniswapX `IReactorCallback.reactorCallback`.
+- **Venue selection is by `leg.path` content only** (codec: `packages/shared/src/textile-venue.ts`):
+  - empty → `token == tokenOut`, no swap (as v1);
+  - starts with `TXF1` (`0x54584631`) → Textile leg: `path = magic ++ abi.encode((bytes order, bytes sig)[])`;
+  - otherwise → Uniswap V3 path (as v1).
+  The payer signs `keccak256(path)` in `LegCommitment.pathHash`, so the Textile orders are bound to the intent.
+- **Textile leg execution** (inside `pay`, after the pull): approve the reactor for exactly `leg.amountIn` of `leg.token`,
+  call `executeBatchWithCallback(orders, "")`; the reactor transfers each maker's input (`inv.tokenOut`) to the router
+  and pulls the maker outputs + protocol fee (`leg.token`) from the router; `reactorCallback` only accepts
+  `msg.sender == TEXTILE_REACTOR` during an active `pay` and does nothing else; reset the approval to 0; any unspent
+  `leg.token` is refunded to the payer. Each order must have `input.token == inv.tokenOut` and only `leg.token` outputs.
+  Then the v1 aggregate check (`InsufficientOutput`) and exact payment to the merchant apply unchanged.
+- **Quotes**: requested server-side with the partner (aggregator) API key `TEXTILE_API_KEY`, `taker = router v2`,
+  exact output `buyAmount = invoice.amountOut`; `leg.amountIn = quote.takerPays`. Firm quotes live 120 s on most
+  corridors. v2 scope: a Textile leg is a single hop `leg.token → inv.tokenOut`; multi-hop and mixed splits stay Uniswap.
+- Deployment and `ROUTER_ADDRESS` switch are human-only, like v1. v1 stays on-chain (immutable); indexer and `/proof`
+  follow both routers.
