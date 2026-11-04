@@ -53,6 +53,8 @@ function errorKey(code: string | undefined): keyof Dict {
       return "no_route";
     case "over_cap":
       return "over_cap";
+    case "smart_account_unsupported":
+      return "smart_account";
     case "rate_limited":
     case "temporarily_unavailable":
     case "upstream_unavailable":

@@ -44,6 +44,14 @@ export interface ApiDeps {
   router: Address | null;
   permit2: Address;
   readPayerState(payer: Address): Promise<PayerChainState>;
+  /**
+   * EIP-7702 delegated payer (code = 0xef0100 + delegate): USD₮ / USDC / Permit2 then verify the signature through
+   * ERC-1271 on the account, so the outcome depends on the delegate. MetaMask's delegator accepts the EOA's plain
+   * signature (fork-tested); "sweeper" delegates reject it. Checked at submit, per leg, against the exact digest:
+   * `null` = not delegated (nothing to check), true/false = what the account's isValidSignature answers.
+   * Optional: absent = not checked (the relayer's simulation still catches a reject, with a generic error).
+   */
+  delegatedAccountAccepts?(payer: Address, typedData: Record<string, unknown>, signature: Hex): Promise<boolean | null>;
   getReferenceRates(): Promise<ReferenceRates>;
   /** `permit2Ready`: tokens whose Permit2 allowance already covers the payer's balance (WS2 SolverOptions). */
   solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult & { meta?: PlanMeta }>;
@@ -362,6 +370,20 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
       return apiError(400, "bad_signature", { leg: i });
     }
     if (!valid) return apiError(400, "bad_signature", { leg: i });
+    if (deps.delegatedAccountAccepts) {
+      // viem's verifyTypedData falls back to ecrecover, so a 7702 payer whose delegate rejects ERC-1271 passes above
+      // and would only fail in the relayer's simulation. Ask the account itself, as the token / Permit2 will.
+      let accepts: boolean | null;
+      try {
+        accepts = await deps.delegatedAccountAccepts(payer, s.typedData as NonNullable<typeof s.typedData>, sig as Hex);
+      } catch {
+        return apiError(502, "upstream_unavailable");
+      }
+      if (accepts === false) {
+        logEvent("submit.delegate_rejects_signature", { invoiceId: id, leg: i });
+        return apiError(422, "smart_account_unsupported");
+      }
+    }
     sigs.push(sig as Hex);
   }
 
