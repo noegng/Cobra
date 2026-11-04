@@ -9,7 +9,7 @@ import { CELO, CELO_CHAIN_ID } from "@cobra/shared";
 import { createDb, type Db } from "@cobra/db";
 import { createReferenceRateSource, createTextileClient, createUniswapQuoter, solve } from "@cobra/solver";
 import type { ApiDeps } from "./api";
-import { readPayerState, type MulticallClient } from "./balances";
+import { isEip7702Delegation, readPayerState, type MulticallClient } from "./balances";
 import { createMemoryRateLimiter } from "./rate-limit";
 
 let db: Db | null = null;
@@ -50,6 +50,7 @@ export function getApiDeps(): ApiDeps {
     textileEnabled: textileOn,
     cancelTextileRfq: textileOn ? async (id) => void (await textileClient.cancel(id)) : undefined,
     permit2: CELO.permit2.address,
+    isDelegatedAccount: async (payer) => isEip7702Delegation(await client.getCode({ address: payer })),
     readPayerState: (payer) => readPayerState(client as unknown as MulticallClient, payer, CELO.permit2.address),
     getReferenceRates: () => rates(),
     // Every verified pool is on the 0.01% tier: feeTiers [100] cuts ~30 eth_calls to ~12 per quote.

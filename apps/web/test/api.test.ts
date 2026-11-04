@@ -1,3 +1,4 @@
+import { isEip7702Delegation } from "../lib/server/balances";
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { decodeAbiParameters, getAddress, recoverTypedDataAddress, serializeSignature, type Hex } from "viem";
@@ -293,6 +294,29 @@ describe("WS7-1: self-payment (payer == invoice merchant)", () => {
     expect(await res.json()).toEqual({ error: "self_payment" });
     expect(res.status).toBe(400);
     expect(await fx.db.select().from(submissions)).toHaveLength(0);
+  });
+});
+
+describe("7702-delegated payer", () => {
+  it("quote is refused with 422 smart_account_unsupported, nothing stored", async () => {
+    const fx = await setup();
+    fx.deps.isDelegatedAccount = async () => true;
+    const { res, body } = await quote(fx);
+    expect(res.status).toBe(422);
+    expect(body.error).toBe("smart_account_unsupported");
+    expect(await fx.db.select().from(quotes)).toHaveLength(0);
+  });
+  it("a plain EOA is quoted as usual", async () => {
+    const fx = await setup();
+    fx.deps.isDelegatedAccount = async () => false;
+    const { res } = await quote(fx);
+    expect(res.status).toBe(200);
+  });
+  it("isEip7702Delegation matches only the 23-byte designator", () => {
+    expect(isEip7702Delegation("0xef010033bcd6304fc165ef0bb85bd5720bc677baae4ce7")).toBe(true);
+    expect(isEip7702Delegation("0x")).toBe(false);
+    expect(isEip7702Delegation(undefined)).toBe(false);
+    expect(isEip7702Delegation("0x6080604052")).toBe(false);
   });
 });
 

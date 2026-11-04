@@ -27,6 +27,11 @@ export class BalanceReadError extends Error {
  * Tokens the solver may route through Permit2 (WS2 `permit2Ready`): the existing Permit2 allowance covers the
  * payer's whole balance of that token, hence any amount the solver could pick from it.
  */
+/** EIP-7702 delegation designator: code is exactly 0xef0100 followed by a 20-byte address. */
+export function isEip7702Delegation(code: string | undefined | null): boolean {
+  return !!code && /^0xef0100[0-9a-fA-F]{40}$/.test(code);
+}
+
 export function permit2ReadyTokens(state: PayerChainState): Address[] {
   return state.balances.filter((b) => (state.permit2Allowances[getAddress(b.token)] ?? 0n) >= b.amount).map((b) => getAddress(b.token));
 }

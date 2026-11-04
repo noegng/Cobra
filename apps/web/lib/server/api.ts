@@ -44,6 +44,11 @@ export interface ApiDeps {
   router: Address | null;
   permit2: Address;
   readPayerState(payer: Address): Promise<PayerChainState>;
+  /**
+   * True when the payer is an EIP-7702 delegated EOA (code = 0xef0100 + address): USD₮ / USDC / Permit2 then verify
+   * signatures through ERC-1271 on the account and reject a plain (v,r,s) signature. Optional: absent = not checked.
+   */
+  isDelegatedAccount?(payer: Address): Promise<boolean>;
   getReferenceRates(): Promise<ReferenceRates>;
   /** `permit2Ready`: tokens whose Permit2 allowance already covers the payer's balance (WS2 SolverOptions). */
   solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult & { meta?: PlanMeta }>;
@@ -167,7 +172,16 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   let state: PayerChainState;
   let refRates: ReferenceRates;
   try {
-    [state, refRates] = await Promise.all([deps.readPayerState(payer), deps.getReferenceRates()]);
+    let delegated: boolean;
+    [state, refRates, delegated] = await Promise.all([
+      deps.readPayerState(payer),
+      deps.getReferenceRates(),
+      deps.isDelegatedAccount ? deps.isDelegatedAccount(payer) : false,
+    ]);
+    if (delegated) {
+      logEvent("quote.delegated_payer", { invoiceId: id });
+      return apiError(422, "smart_account_unsupported");
+    }
   } catch (e) {
     logEvent("quote.upstream_error", { invoiceId: id, kind: e instanceof Error ? e.name : "unknown" });
     return apiError(502, "upstream_unavailable");
