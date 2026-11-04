@@ -14,6 +14,8 @@ import {
   type PublicClient,
 } from "viem";
 import {
+  decodeTextileVenue,
+  isTextileVenue,
   eip3009TypedData,
   intentDigest,
   legNonce,
@@ -38,6 +40,8 @@ export interface VerifyContext {
   tokenDomain?: (token: Address) => { name: string; version: string } | null | undefined;
   /** Seconds of validity a signature must still have when we send (default 30). */
   marginSec?: bigint;
+  /** Accept Textile RFQ legs (CobraRouterV2 only). Default true; set false when the configured router is v1. */
+  allowTextile?: boolean;
 }
 
 export type VerifyResult = { ok: true } | { ok: false; reason: string };
@@ -64,6 +68,17 @@ export async function verifyLegs(ctx: VerifyContext, inv: OnchainInvoice, payer:
   for (const [i, leg] of legs.entries()) {
     if (leg.amountIn === 0n) return { ok: false, reason: `leg${i}:zero_amount_in` };
     if (leg.kind === PullKind.ALLOWANCE) return { ok: false, reason: `leg${i}:allowance_not_relayable` };
+    if (isTextileVenue(leg.path)) {
+      // Textile RFQ leg (docs/interfaces.md §7): router v2 only, single leg, well-formed orders, leg token != tokenOut.
+      if (ctx.allowTextile === false) return { ok: false, reason: `leg${i}:textile_not_enabled` };
+      if (legs.length !== 1) return { ok: false, reason: `leg${i}:textile_must_be_single_leg` };
+      if (leg.token.toLowerCase() === inv.tokenOut.toLowerCase()) return { ok: false, reason: `leg${i}:textile_bad_token` };
+      try {
+        decodeTextileVenue(leg.path);
+      } catch {
+        return { ok: false, reason: `leg${i}:bad_textile_path` };
+      }
+    }
 
     if (leg.kind === PullKind.EIP3009) {
       let validAfter: bigint, validBefore: bigint, v: number, r: Hex, s: Hex;

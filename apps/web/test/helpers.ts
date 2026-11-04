@@ -13,7 +13,7 @@ import {
 } from "@cobra/shared";
 import { invoices, merchants, type Db } from "@cobra/db";
 import { createTestDb } from "@cobra/db/testing";
-import type { ApiDeps } from "../lib/server/api";
+import type { ApiDeps, PlanMeta } from "../lib/server/api";
 import { createMemoryRateLimiter } from "../lib/server/rate-limit";
 import { hydrateTypedData, type ToSignEntry } from "../lib/wire";
 
@@ -38,7 +38,7 @@ export interface Fixture {
   merchantId: string;
   invoiceId: Hex;
   solverCalls: SolverInput[];
-  setSolver(fn: (input: SolverInput) => SolveResult): void;
+  setSolver(fn: (input: SolverInput) => SolveResult & { meta?: PlanMeta }): void;
 }
 
 export function planFor(input: SolverInput, now: number, legs?: PlannedLeg[]): PaymentPlan {
@@ -66,7 +66,7 @@ export async function setup(opts: { amountLocal?: string; settlement?: Address; 
   const db = await createTestDb();
   const clock = { now: T0 };
   const solverCalls: SolverInput[] = [];
-  let solver: (input: SolverInput) => SolveResult = (input) => ({ ok: true, plan: planFor(input, clock.now) });
+  let solver: (input: SolverInput) => SolveResult & { meta?: PlanMeta } = (input) => ({ ok: true, plan: planFor(input, clock.now) });
 
   const [m] = await db
     .insert(merchants)

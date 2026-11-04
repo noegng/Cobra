@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createWalletClient, encodeAbiParameters, getAddress, http, parseAbi, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
-import { permit2TypedData, PullKind, type Leg, type OnchainInvoice } from "@cobra/shared";
+import { TEXTILE_VENUE_MAGIC, encodeTextileVenue, permit2TypedData, PullKind, type Leg, type OnchainInvoice } from "@cobra/shared";
 import { verifyLegs } from "../src/verify";
 import { ANVIL_KEYS, hasAnvil, startAnvil, type Anvil } from "./helpers";
 import { MOCK_1271_WALLET_BYTECODE } from "./fixtures/mocks";
@@ -31,10 +31,11 @@ describe.skipIf(!hasAnvil)("verifyLegs: ERC-1271 aware signature checks", () => 
     deadline: NOW + 600n,
   };
 
-  async function check(payer: Address, signWith: typeof owner) {
+  async function check(payer: Address, signWith: typeof owner, path: Hex = "0x", extra: { allowTextile?: boolean; tokenOut?: Address } = {}) {
     const nonce = 7n;
     const deadline = NOW + 300n;
-    const base: Omit<Leg, "pullData"> = { token: TOKEN, amountIn: 1000n, kind: PullKind.PERMIT2, path: "0x" };
+    const base: Omit<Leg, "pullData"> = { token: TOKEN, amountIn: 1000n, kind: PullKind.PERMIT2, path };
+    const invoice = extra.tokenOut ? { ...inv, tokenOut: extra.tokenOut } : inv;
     const td = permit2TypedData({
       permit2: PERMIT2,
       chainId: foundry.id,
@@ -43,7 +44,7 @@ describe.skipIf(!hasAnvil)("verifyLegs: ERC-1271 aware signature checks", () => 
       router: ROUTER,
       nonce,
       deadline,
-      invoice: inv,
+      invoice,
       payer,
       legs: [base],
     });
@@ -53,8 +54,8 @@ describe.skipIf(!hasAnvil)("verifyLegs: ERC-1271 aware signature checks", () => 
       pullData: encodeAbiParameters([{ type: "uint256" }, { type: "uint256" }, { type: "bytes" }], [nonce, deadline, signature]),
     };
     return verifyLegs(
-      { publicClient: a.publicClient, router: ROUTER, chainId: foundry.id, permit2: PERMIT2, nowSec: NOW },
-      inv,
+      { publicClient: a.publicClient, router: ROUTER, chainId: foundry.id, permit2: PERMIT2, nowSec: NOW, ...(extra.allowTextile !== undefined && { allowTextile: extra.allowTextile }) },
+      invoice,
       payer,
       [leg],
     );
@@ -86,5 +87,41 @@ describe.skipIf(!hasAnvil)("verifyLegs: ERC-1271 aware signature checks", () => 
     const smart = getAddress(contractAddress!);
     expect(await check(smart, owner)).toEqual({ ok: true });
     expect(await check(smart, other)).toEqual({ ok: false, reason: "leg0:signature_not_payer" });
+  });
+
+  describe("Textile RFQ legs (router v2)", () => {
+    const path = encodeTextileVenue([{ order: "0xabcd", sig: "0x1234" }]);
+
+    it("well-formed Textile path with a valid payer signature over keccak256(path) is accepted", async () => {
+      expect(await check(owner.address, owner, path)).toEqual({ ok: true });
+    });
+
+    it("a signature made for a different path (orders swapped after signing) is rejected", async () => {
+      // the payer signed `path`; the relayer is handed other orders -> digest differs -> signature_not_payer
+      const nonce = 7n;
+      const deadline = NOW + 300n;
+      const signedLeg: Omit<Leg, "pullData"> = { token: TOKEN, amountIn: 1000n, kind: PullKind.PERMIT2, path };
+      const td = permit2TypedData({ permit2: PERMIT2, chainId: foundry.id, token: TOKEN, amount: 1000n, router: ROUTER, nonce, deadline, invoice: inv, payer: owner.address, legs: [signedLeg] });
+      const sig: Hex = await owner.signTypedData(td as never);
+      const tampered: Leg = {
+        ...signedLeg,
+        path: encodeTextileVenue([{ order: "0xdead", sig: "0x1234" }]),
+        pullData: encodeAbiParameters([{ type: "uint256" }, { type: "uint256" }, { type: "bytes" }], [nonce, deadline, sig]),
+      };
+      const res = await verifyLegs({ publicClient: a.publicClient, router: ROUTER, chainId: foundry.id, permit2: PERMIT2, nowSec: NOW }, inv, owner.address, [tampered]);
+      expect(res).toEqual({ ok: false, reason: "leg0:signature_not_payer" });
+    });
+
+    it("malformed Textile path (magic, garbage body) is rejected", async () => {
+      expect(await check(owner.address, owner, `${TEXTILE_VENUE_MAGIC}deadbeef`)).toEqual({ ok: false, reason: "leg0:bad_textile_path" });
+    });
+
+    it("Textile path is refused when the configured router is v1", async () => {
+      expect(await check(owner.address, owner, path, { allowTextile: false })).toEqual({ ok: false, reason: "leg0:textile_not_enabled" });
+    });
+
+    it("Textile leg whose token is tokenOut is refused", async () => {
+      expect(await check(owner.address, owner, path, { tokenOut: TOKEN })).toEqual({ ok: false, reason: "leg0:textile_bad_token" });
+    });
   });
 });

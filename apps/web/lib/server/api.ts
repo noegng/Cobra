@@ -17,6 +17,7 @@ import {
   type ReferenceRates,
   type SerializedPlan,
   type SolveResult,
+  isTextileVenue,
   type SolverInput,
 } from "@cobra/shared";
 import { getCaps, isKillSwitchOn, onchainInvoiceFromRow, payments, quotes, submissions, type Db } from "@cobra/db";
@@ -29,6 +30,12 @@ import { StaticInvoiceError, createStaticInvoice, effectiveStatus, loadInvoice, 
 import type { RateLimiter } from "./rate-limit";
 import { PlanValidationError, buildLegSigning, buildSignedLegs, validatePlannedLegs } from "./signing";
 
+/** Routing metadata attached to a stored plan (mirrors @cobra/solver PlanMeta; structural, no dependency). */
+export interface PlanMeta {
+  venue: "textile" | "uniswap_v3";
+  textile?: { rfqId: string; expiresAt: number; takerPays: string };
+}
+
 export interface ApiDeps {
   db: Db;
   now: () => number;
@@ -39,7 +46,11 @@ export interface ApiDeps {
   readPayerState(payer: Address): Promise<PayerChainState>;
   getReferenceRates(): Promise<ReferenceRates>;
   /** `permit2Ready`: tokens whose Permit2 allowance already covers the payer's balance (WS2 SolverOptions). */
-  solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult>;
+  solve(input: SolverInput, opts: { capUsd: number; permit2Ready: Address[] }): Promise<SolveResult & { meta?: PlanMeta }>;
+  /** Textile FX RFQ route enabled (TEXTILE_API_KEY + a v2 router configured). Default false. */
+  textileEnabled?: boolean;
+  /** Give back a Textile RFQ that will not be used (best effort, never throws). */
+  cancelTextileRfq?(rfqId: string): Promise<void>;
   /** ERC-1271/6492-aware typed-data signature check (viem publicClient.verifyTypedData); EOAs use ecrecover. */
   verifyTypedData(args: Record<string, unknown> & { address: Address; signature: Hex }): Promise<boolean>;
   rateLimiter: RateLimiter;
@@ -163,7 +174,7 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   }
   const caps = await getCaps(deps.db);
 
-  let result: SolveResult;
+  let result: SolveResult & { meta?: PlanMeta };
   try {
     result = await deps.solve(
       { invoice: { tokenOut: inv.tokenOut, amountOut: inv.amountOut, deadline: inv.deadline }, balances: state.balances, refRates },
@@ -206,7 +217,8 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
     if (getAddress(plan.tokenOut) !== inv.tokenOut || plan.minOut !== inv.amountOut) {
       throw new PlanValidationError("plan does not match invoice");
     }
-    validatePlannedLegs(plan.legs, inv.tokenOut);
+    validatePlannedLegs(plan.legs, inv.tokenOut, { allowTextile: !!deps.textileEnabled });
+    if (plan.legs.some((l) => isTextileVenue(l.path)) !== (result.meta?.venue === "textile")) throw new PlanValidationError("venue mismatch");
   } catch (e) {
     logEvent("quote.invalid_plan", { invoiceId: id, detail: e instanceof Error ? e.message : "unknown" });
     return json({ error: "no_route", directTransfer } satisfies QuoteError, 422);
@@ -214,10 +226,18 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
 
   const signing = buildLegSigning({ router: deps.router, chainId: deps.chainId, permit2: deps.permit2, invoice: inv, payer, legs: plan.legs });
   const expiresAt = Math.min(plan.expiresAt, now + QUOTE_TTL_MS, row.expiresAt.getTime());
+  // Routing metadata rides in the (jsonb) plan: the journal shows the venue, the relayer reports the tx to Textile.
+  const storedPlan = {
+    ...serializePlan(plan),
+    router: deps.router,
+    venue: result.meta?.venue ?? "uniswap_v3",
+    ...(result.meta?.textile && { textile: result.meta.textile }),
+  };
   const [quote] = await deps.db
     .insert(quotes)
-    .values({ invoiceId: row.id, payer, plan: serializePlan(plan), expiresAt: new Date(expiresAt) })
+    .values({ invoiceId: row.id, payer, plan: storedPlan, expiresAt: new Date(expiresAt) })
     .returning({ id: quotes.id });
+  if (deps.cancelTextileRfq) await supersedeTextileQuotes(deps, row.id, payer, quote!.id, now);
 
   const toSign: ToSignEntry[] = plan.legs.map((leg, i) => {
     const info = tokenByAddress(leg.token)!;
@@ -249,6 +269,28 @@ export async function handleQuote(req: Request, id: string, deps: ApiDeps): Prom
   };
   logEvent("quote.ok", { invoiceId: id, quoteId: quote!.id, legs: plan.legs.length, costBps: plan.costBps });
   return json(out);
+}
+
+/**
+ * A new quote for the same invoice and payer supersedes the previous ones: unused Textile RFQs are given back
+ * (best effort, off the request path). Quotes already referenced by a submission are left alone.
+ */
+async function supersedeTextileQuotes(deps: ApiDeps, invoiceId: string, payer: Address, keepId: string, nowMs: number): Promise<void> {
+  try {
+    const prev = await deps.db
+      .select({ id: quotes.id, plan: quotes.plan })
+      .from(quotes)
+      .where(and(eq(quotes.invoiceId, invoiceId), sql`lower(${quotes.payer}) = ${payer.toLowerCase()}`, gt(quotes.expiresAt, new Date(nowMs))));
+    for (const q of prev) {
+      const rfqId = (q.plan as { textile?: { rfqId?: unknown } } | null)?.textile?.rfqId;
+      if (q.id === keepId || typeof rfqId !== "string") continue;
+      const used = await deps.db.select({ id: submissions.id }).from(submissions).where(eq(submissions.quoteId, q.id)).limit(1);
+      if (used.length > 0) continue;
+      void deps.cancelTextileRfq!(rfqId).catch(() => undefined);
+    }
+  } catch (e) {
+    logEvent("quote.supersede_error", { invoiceId, kind: e instanceof Error ? e.name : "unknown" });
+  }
 }
 
 // ---------------------------------------------------------------- POST /api/invoices/:id/submit
@@ -286,6 +328,9 @@ export async function handleSubmit(req: Request, id: string, deps: ApiDeps): Pro
   if (status === "expired") return apiError(410, "invoice_expired");
   if (status !== "open") return apiError(409, "invoice_not_open", { status });
 
+  // A quote built for another router (v1 -> v2 switch happened since) cannot be signed/verified against this one.
+  const quotedRouter = (quote.plan as { router?: unknown }).router;
+  if (typeof quotedRouter === "string" && getAddress(quotedRouter) !== getAddress(deps.router)) return apiError(410, "quote_expired");
   const plan = deserializePlan(quote.plan as SerializedPlan);
   if (signatures.length !== plan.legs.length) return apiError(400, "invalid_signatures");
   const payer = getAddress(quote.payer);

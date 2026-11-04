@@ -1,12 +1,13 @@
 /**
  * Production wiring of ApiDeps from env (lazy singletons; nothing touches the network at build time).
- * Env (server): DATABASE_URL, RPC_URL, ROUTER_ADDRESS, QUOTER_V2_ADDRESS (optional override), KILL_SWITCH.
+ * Env (server): DATABASE_URL, RPC_URL, ROUTER_ADDRESS, QUOTER_V2_ADDRESS (optional override), KILL_SWITCH,
+ * TEXTILE_API_KEY (optional, server-only: enables the Textile RFQ route), TEXTILE_ENABLED ("false" = off).
  */
 import { createPublicClient, getAddress, http, isAddress, type Address } from "viem";
 import { celo } from "viem/chains";
 import { CELO, CELO_CHAIN_ID } from "@cobra/shared";
 import { createDb, type Db } from "@cobra/db";
-import { createReferenceRateSource, createUniswapQuoter, solve } from "@cobra/solver";
+import { createReferenceRateSource, createTextileClient, createUniswapQuoter, solve } from "@cobra/solver";
 import type { ApiDeps } from "./api";
 import { readPayerState, type MulticallClient } from "./balances";
 import { createMemoryRateLimiter } from "./rate-limit";
@@ -36,16 +37,30 @@ export function getApiDeps(): ApiDeps {
   const quoterAddress = envAddress("QUOTER_V2_ADDRESS", CELO.uniswapV3.quoterV2.address)!;
   const quoter = createUniswapQuoter(client as Parameters<typeof createUniswapQuoter>[0], quoterAddress);
   const rates = createReferenceRateSource(); // ARS = dólar cripto, BRL; cached 60 s, never throws
+  // Textile FX RFQ (CobraRouterV2): only when the partner key AND a router address are configured, and not switched
+  // off with TEXTILE_ENABLED=false. The key is server-side only (never NEXT_PUBLIC_).
+  const routerAddr = envAddress("ROUTER_ADDRESS", null);
+  const textileClient = createTextileClient({ apiKey: process.env.TEXTILE_API_KEY });
+  const textileOn = textileClient.enabled && !!routerAddr && process.env.TEXTILE_ENABLED !== "false";
   deps = {
     db: getDb(),
     now: () => Date.now(),
     chainId: CELO_CHAIN_ID,
-    router: envAddress("ROUTER_ADDRESS", null),
+    router: routerAddr,
+    textileEnabled: textileOn,
+    cancelTextileRfq: textileOn ? async (id) => void (await textileClient.cancel(id)) : undefined,
     permit2: CELO.permit2.address,
     readPayerState: (payer) => readPayerState(client as unknown as MulticallClient, payer, CELO.permit2.address),
     getReferenceRates: () => rates(),
     // Every verified pool is on the 0.01% tier: feeTiers [100] cuts ~30 eth_calls to ~12 per quote.
-    solve: (input, opts) => solve(input, { quoter, capUsd: opts.capUsd, permit2Ready: opts.permit2Ready, feeTiers: [100] }),
+    solve: (input, opts) =>
+      solve(input, {
+        quoter,
+        capUsd: opts.capUsd,
+        permit2Ready: opts.permit2Ready,
+        feeTiers: [100],
+        ...(textileOn && routerAddr && { textile: { client: textileClient, router: routerAddr } }),
+      }),
     verifyTypedData: (args) => client.verifyTypedData(args as Parameters<typeof client.verifyTypedData>[0]),
     rateLimiter: createMemoryRateLimiter(),
     env: process.env,

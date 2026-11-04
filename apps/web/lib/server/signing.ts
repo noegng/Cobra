@@ -6,6 +6,8 @@ import { getAddress, type Address, type Hex } from "viem";
 import {
   MAX_LEGS,
   decodePath,
+  decodeTextileVenue,
+  isTextileVenue,
   PullKind,
   eip3009TypedData,
   encodeEip3009PullData,
@@ -40,7 +42,7 @@ export type LegSigning =
 export class PlanValidationError extends Error {}
 
 /** Defense in depth against a buggy solver: legs must be known tokens, supported kinds and well-formed paths. */
-export function validatePlannedLegs(legs: readonly PlannedLeg[], tokenOut: Address): void {
+export function validatePlannedLegs(legs: readonly PlannedLeg[], tokenOut: Address, opts: { allowTextile?: boolean } = {}): void {
   if (legs.length < 1 || legs.length > MAX_LEGS) throw new PlanValidationError(`bad leg count ${legs.length}`);
   legs.forEach((leg, i) => {
     const info = tokenByAddress(leg.token);
@@ -50,6 +52,15 @@ export function validatePlannedLegs(legs: readonly PlannedLeg[], tokenOut: Addre
     if (leg.amountIn <= 0n) throw new PlanValidationError(`leg ${i}: amountIn must be > 0`);
     if (getAddress(leg.token) === getAddress(tokenOut)) {
       if (leg.path !== "0x") throw new PlanValidationError(`leg ${i}: path must be empty when token == tokenOut`);
+    } else if (isTextileVenue(leg.path)) {
+      // Textile RFQ leg (CobraRouterV2): single hop leg.token -> tokenOut, orders carried in the path.
+      if (!opts.allowTextile) throw new PlanValidationError(`leg ${i}: textile venue not enabled`);
+      if (legs.length !== 1) throw new PlanValidationError(`leg ${i}: textile leg must be the only leg`);
+      try {
+        decodeTextileVenue(leg.path);
+      } catch {
+        throw new PlanValidationError(`leg ${i}: invalid textile venue`);
+      }
     } else {
       const { tokens } = decodePathSafe(leg.path, i);
       if (tokens[0] !== getAddress(leg.token) || tokens[tokens.length - 1] !== getAddress(tokenOut)) {

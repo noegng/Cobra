@@ -33,6 +33,7 @@ import {
   deserializeLeg,
   deserializePlan,
   hashInvoice,
+  isTextileVenue,
   type Leg,
   type Notifier,
   type OnchainInvoice,
@@ -86,6 +87,13 @@ export interface RelayerConfig {
   alertThrottleMs?: number;
   permit2?: Address;
   tokenDomain?: (token: Address) => { name: string; version: string } | null | undefined;
+  /** Accept Textile RFQ legs in verify (CobraRouterV2). Default true; pass false while the router is v1. */
+  allowTextile?: boolean;
+  /**
+   * WS13: called (best effort, never awaited by the payment path, errors swallowed) after a Textile leg was
+   * broadcast, with the Textile RFQ id stored in the quote and the tx hash. The worker wires it to POST /v2/rfq/{id}/submit.
+   */
+  onTextileSent?: (info: { rfqId: string; txHash: Hash }) => Promise<unknown>;
   /** Gas grants for wFIAT payers without CELO (see gas-grant.ts). `false` or amountWei 0n disables. */
   gasGrant?: GasGrantConfig | false;
 }
@@ -296,6 +304,7 @@ export function createRelayer(cfg: RelayerConfig) {
         permit2,
         nowSec: BigInt(Math.floor(nowMs / 1000)),
         marginSec,
+        ...(cfg.allowTextile !== undefined && { allowTextile: cfg.allowTextile }),
         ...(cfg.tokenDomain && { tokenDomain: cfg.tokenDomain }),
       },
       inv,
@@ -334,6 +343,20 @@ export function createRelayer(cfg: RelayerConfig) {
       })
       .where(and(eq(submissions.id, row.id), eq(submissions.status, "sending"), sql`${submissions.txHash} is null`));
     log("submission_requeued_not_broadcast", { submissionId: row.id, error });
+  }
+
+  /** Best effort: tell Textile which tx consumes the RFQ. A failure here never touches the payment. */
+  async function reportTextileSent(row: SubmissionRow, legs: readonly Leg[], txHash: Hash) {
+    if (!cfg.onTextileSent || !row.quoteId || !legs.some((l) => isTextileVenue(l.path))) return;
+    try {
+      const [q] = await db.select({ plan: quotes.plan }).from(quotes).where(eq(quotes.id, row.quoteId));
+      const rfqId = (q?.plan as { textile?: { rfqId?: unknown } } | undefined)?.textile?.rfqId;
+      if (typeof rfqId !== "string") return;
+      await cfg.onTextileSent({ rfqId, txHash });
+      log("textile_submit_reported", { submissionId: row.id, rfqId });
+    } catch (e) {
+      log("textile_submit_failed", { level: "warn", submissionId: row.id, error: errMsg(e) });
+    }
   }
 
   /** Returns false when the tick should stop claiming (transient trouble). */
@@ -416,6 +439,7 @@ export function createRelayer(cfg: RelayerConfig) {
         .where(and(eq(submissions.id, row.id), eq(submissions.status, "sending")));
       inflight.set(row.id, { lastSentAt: Date.now(), ...fees });
       log("submission_sent", { submissionId: row.id, invoiceId: row.invoiceId, txHash: hash, nonce });
+      void reportTextileSent(row, v.legs, hash);
       return true;
     } catch (e) {
       const s = signed as { hash: Hash; nonce: number } | null;
