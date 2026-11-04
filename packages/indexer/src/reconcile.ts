@@ -32,6 +32,8 @@ export interface PaidLog {
   logIndex: number;
   blockNumber: bigint;
   blockTimestamp: bigint; // unix seconds
+  /** Real refund to the payer in base units of tokenOut; null/undefined = receipt unreadable (stored as NULL). */
+  refundedOut?: bigint | null;
 }
 
 export type UnmatchedReason =
@@ -158,6 +160,7 @@ async function reconcileLog(tx: Db, l: PaidLog, now: Date): Promise<{ outcome: L
     payer: getAddress(l.payer),
     tokenOut: getAddress(l.tokenOut),
     amountOut: l.amountOut.toString(),
+    refundedOut: l.refundedOut == null ? null : l.refundedOut.toString(),
     legs: submissionPaid ? sub.legs : null,
     // The plan's bps are fractional (e.g. 8.67); the payments columns are integers (frozen schema): round.
     costBps: plan?.costBps == null ? null : Math.round(plan.costBps),

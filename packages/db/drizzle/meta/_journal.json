@@ -8,6 +8,13 @@
       "when": 1793629906472,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793832913596,
+      "tag": "0001_living_wendigo",
+      "breakpoints": true
     }
   ]
 }
