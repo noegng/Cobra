@@ -15,7 +15,7 @@ import { formatDecimal, formatUnits } from "../lib/amount";
 import { DICTS, localeFor, tr, type Dict } from "../lib/i18n";
 import { hydrateTypedData, type PublicInvoice, type QuoteError, type QuoteOk, type StatusResponse } from "../lib/wire";
 import { LangSwitch } from "./lang-switch";
-import { fiatName, legsName, RECEIPT, tokenName } from "../lib/units";
+import { fiatName, legsName, payInFiatLabel, RECEIPT, tokenName } from "../lib/units";
 
 const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
 /** Native balance that covers one ERC-20 approval even at a 2x base fee (~55k gas × ~400 gwei). */
@@ -23,6 +23,8 @@ const GAS_FOR_APPROVAL_WEI = 25_000_000_000_000_000n; // 0.025 CELO
 /** How long to wait for the agent's gas grant before telling the payer CELO is missing. */
 const GAS_WAIT_MS = 90_000;
 const TERMINAL = new Set(["paid", "expired", "cancelled"]);
+/** Submission states in which a payment is on its way (see packages/db submissions.status). */
+const LIVE_SUBMISSION = new Set(["pending", "sending", "sent", "confirmed"]);
 
 type Busy = null | "quoting" | "approving" | "signing" | "submitting" | "sending";
 
@@ -107,10 +109,14 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
     const res = await fetch(`/api/invoices/${invoice.id}/status`, { cache: "no-store" }).catch(() => null);
     if (!res?.ok) return;
     const s = (await res.json()) as StatusResponse;
-    setStatus(s.status);
+    // The invoice stays "open" until the relayer picks the submission up: a live submission already means the
+    // payment is in flight, so the page must not offer "Pay" again in that window.
+    const inFlightSub = s.submission != null && LIVE_SUBMISSION.has(s.submission.status);
+    const effective = s.status === "open" && inFlightSub ? "submitted" : s.status;
+    setStatus(effective);
     if (s.txHash) setTxHash(s.txHash);
     // A payment in flight or done supersedes any earlier error on screen (e.g. a submit cut off on mobile).
-    if (s.status === "submitted" || s.status === "paid") setNotice(null);
+    if (effective === "submitted" || effective === "paid") setNotice(null);
     if (s.status === "open" && s.submission?.status === "failed") setNotice("generic_error");
   }, [invoice.id]);
   useEffect(() => {
@@ -296,7 +302,7 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
   const r = RECEIPT[lang];
   const amountIn = quote?.toSign.map((e) => `${formatUnits(BigInt(e.amountIn), e.decimals, locale, 2)} ${e.symbol}`).join(" + ");
   const symbolOf = (token: Address) => quote?.toSign.find((e) => e.token === token)?.symbol ?? "";
-  const fiatLabel = invoice.currency === "BRL" ? DICTS.pt.pay_fiat : lang === "en" ? t.pay_fiat : DICTS.es.pay_fiat;
+  const fiatLabel = payInFiatLabel(invoice.currency, lang);
 
   // The single action of the screen, derived from the state.
   function renderAction() {

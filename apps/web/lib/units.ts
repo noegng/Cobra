@@ -45,3 +45,9 @@ export const RECEIPT: Record<Language, { invoice: string; merchant_gets: string;
   pt: { invoice: "Cobrança", merchant_gets: "O comércio recebe", you_pay: "Você paga", you_pay_hint: "Calculado ao conectar sua carteira" },
   en: { invoice: "Invoice", merchant_gets: "Merchant receives", you_pay: "You pay", you_pay_hint: "Calculated when you connect your wallet" },
 };
+
+/** Label of the on-ramp button, in the page language: "Pagar en reales", "Pagar em pesos argentinos", "Pay in Brazilian reais". */
+export function payInFiatLabel(currency: string, lang: Language): string {
+  const name = fiatName(currency, lang);
+  return lang === "en" ? `Pay in ${name}` : lang === "pt" ? `Pagar em ${name}` : `Pagar en ${name}`;
+}
