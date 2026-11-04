@@ -107,3 +107,94 @@ make the signer refuse every real merchant with `cap_per_day` for 24h. The route
 Residual risk: with 500 USD per merchant and per payer, exhausting the 2000 USD global budget now needs at least four
 distinct merchant onboardings (Telegram accounts) and four distinct payer wallets, plus real circulating funds between
 them. Still sybil-able; a stronger follow-up is a lower cap for newly onboarded / unproven merchants.
+
+## CobraRouterV2: Textile FX RFQ venue (WS12, 4 Nov 2026)
+
+Scope: `src/CobraRouterV2.sol`, `src/ICobraRouterV2.sol`, `src/interfaces/IUniswapXReactor.sol`. Spec:
+`docs/interfaces.md` §7. Author self-review, **not an audit**. v1 (`CobraRouter.sol`) is unchanged and byte-identical.
+
+### What changes against v1
+
+- Constructor `(permit2, swapRouter, textileReactor)`, all immutable and non-zero. Still no owner, fee, pause, upgrade,
+  sweep or fallback. Same `pay`, structs, events, the 6 frozen errors and the same EIP-712 scheme; v1 and v2
+  signatures are separated only by `verifyingContract` (`test_crossRouter_v1SignatureRejectedByV2`,
+  `V2VectorsTest`).
+- Venue by `leg.path`: empty = direct; `> 4` bytes starting with `TXF1` = Textile (same rule as `isTextileVenue` in
+  `packages/shared`); anything else = Uniswap V3 path with the v1 rules.
+- Textile leg, all checks before any pull: `path[4:]` decodes as `SignedOrder[]` (malformed bytes revert in the ABI
+  decoder), at least one order, each `LimitOrder` has `info.reactor == TEXTILE_REACTOR`, `input.token == inv.tokenOut`
+  and every output token `== leg.token` (else `InvalidTextileOrder()`). Then: approve the reactor for the **received
+  delta** of `leg.token`, `executeBatchWithCallback(orders, "")`, approve back to 0, refund unspent `leg.token` to the
+  payer. The v1 aggregate `InsufficientOutput` check and exact merchant payout apply unchanged.
+- ABI additions: `TEXTILE_REACTOR()`, `reactorCallback(...)` (selector `0x585da628`, UniswapX `IReactorCallback`),
+  `receive()`, errors `InvalidTextileOrder()` (`0xd8e037ec`) and `UnauthorizedCallback()` (`0xf5c6c81a`). `pay` and
+  the views are ABI-identical to v1, so the frozen `packages/shared/src/abi.ts` can call v2.
+
+### Verified reactor behaviour (Celoscan source, read-only `eth_call`, 4 Nov 2026, block ~81.90M)
+
+- `0xa9aa0a64769cbed4d3b1ceb4df01cde915c235b3` is `LimitOrderReactor` (UniswapX BaseReactor vendored by Textile,
+  solc 0.8.30, not a proxy). `permit2()` = canonical Permit2. `owner()` = `0x51727A09…ECbA4` (constructor owner
+  `0x0ddf1dbb…93a7` transferred ownership). The owner's only power is `setProtocolFeeController`.
+- `feeController()` = `0x7b005466…3Ea7` (`SellFirstFeeController`, BUSL-1.1): one fee output per output token,
+  `FEE_BPS = 1` on Celo (its source comment says 5; the on-chain immutable is 1), reverts `FeeRoundsToZero` if
+  `output * FEE_BPS < 10_000` (USD₮: outputs below 0.01). The reactor caps any controller at 5 bps of the matching
+  output/input amount.
+- Flow of `executeBatchWithCallback`: resolve, then per order `_injectFees`, `validate(filler = msg.sender)`
+  (`InvalidReactor` + optional `additionalValidationContract.validate`, a `view` call), Permit2
+  `permitWitnessTransferFrom` of the maker input to the filler (maker deadline enforced by Permit2); then
+  `reactorCallback`; then `transferFrom(filler, recipient, amount)` for every output and fee; **then, if the reactor
+  holds any native balance, it sends all of it to the filler** and reverts `NativeTransferFailed()` if the filler
+  cannot receive it (`test_fork_v1RouterWouldRevertOnNativeRefund_documented`).
+- `0x10B9EbA3…58C5` is `PreferredFillerValidation` (BUSL-1.1): `abi.encode(address[] fillers, uint256 exclusiveUntil)`;
+  before `exclusiveUntil` only listed fillers may fill, **after it anyone may**.
+- Fork proof (`test/fork/CobraRouterV2Fork.t.sol`): a forge-key maker funded with `deal`, approving the real Permit2,
+  signs a LimitOrder for the real reactor (with `additionalValidationContract = 0` and with the real
+  PreferredFillerValidation naming v2); v2 fills it and the merchant receives exactly `amountOut`; the real fee
+  recipient receives exactly `floor(out * 1 / 10_000)`.
+
+### Checklist (new external calls and approvals)
+
+| # | Risk | Mitigation | Tests |
+|---|------|-----------|-------|
+| V1 | **Reactor allowance** | Only `leg.token`, only for the received delta (≤ signed `amountIn`), set right before the call and reset to 0 right after. `tokenOut` is never approved, so a fee on the maker's input token, or an output in `tokenOut`, fails closed. | `_assertRouterEmpty` (allowances to reactor and swap router) in every happy path, `invariant_v2_routerHoldsNothing`, `test_revert_textile_feeOnInputToken_failsClosed`, `test_revert_textile_outputIsTokenOut` |
+| V2 | **Order content** | reactor, input token and output tokens are checked by the router; amounts, recipients, nonces, deadlines and maker signatures by the reactor and Permit2. The payer's signature commits to `keccak256(path)`, i.e. to every order byte and maker signature. Whatever the orders say, the payer spends at most `amountIn` (allowance) and the merchant gets exactly `amountOut` or the tx reverts. | `test_revert_textile_{wrongInputToken,wrongReactor,outputWrongToken,extraOutputToken,secondOrderInvalid,noOrders,malformedEncoding,orderBytesNotALimitOrder}`, `test_tamper_{swappedOrder,malleatedMakerSignature,droppedOrder}_invalidatesPayerSignature`, `test_fork_textile_tamperedOrder_realUsdtRejects`, `testFuzz_textile_exactOrRevert` |
+| V3 | **Callback / reentrancy** | `reactorCallback` is `view` and reverts unless `msg.sender == TEXTILE_REACTOR` and the transient `_inTextileFill` flag is set (only around our own reactor call, inside `pay`). `pay` keeps the v1 transient lock, and the callback is a different function so the lock does not block it. Fee controller and validation contract are `view` calls (STATICCALL). The reactor has its own `nonReentrant`. | `test_revert_callback_{notReactor,reactorOutsidePay}`, `test_reentrancy_{payFromInsideTextileFill,callbackFromNonReactorDuringFill,reactorReentryDuringFill}_blocked`, `test_guardReleased_afterTextilePay` |
+| V4 | **Native refund by the reactor (DoS)** | Without `receive`, 1 wei sent to the reactor by anyone would make every Textile leg revert until another filler drains it. v2 accepts native only from the reactor during its own fill and forwards `balance(end) − balance(start)` to the payer as the very last step of `pay` (after the event, lock still held). All ERC-20 flows net to zero, so this stays correct on Celo where CELO is also an ERC-20. The forward ignores failure on purpose: a payer that cannot receive native must not block its own payment; the dust then stays in the router (documented exception to "holds nothing"). | `test_textile_nativeDustInReactor_forwardedToPayer`, `test_textile_nativeDust_payerRejects_paymentStillSucceeds`, `test_revert_receive_outsideFill`, `test_fork_textile_nativeDustInReactor_forwarded`, `invariant_v2_nativeDustNotRetained` |
+| V5 | **Quote expiry / exclusivity / missing fee** | All fail closed inside the reactor or Permit2 and revert the whole `pay`: nothing is pulled, the invoice stays unpaid. | `test_revert_textile_{expiredOrder,fillerRestrictedToOtherTaker,amountInBelowOutputPlusFee,makerUnderdelivers,makerOrderAlreadyFilled}`, fork equivalents |
+| V6 | **Mixed legs** | Up to `MAX_LEGS = 3`, Textile legs can be mixed with Uniswap and direct legs (also two Textile legs of the same token); the aggregate check covers the total. | `test_mixed_*`, `test_fork_textile_plus_uniswap_mixed`, `RouterV2Invariant` |
+| V7 | **Codec parity** | Solidity encodes/decodes `TXF1 ++ abi.encode(SignedOrder[])` exactly like `encodeTextileVenue` (vector generated by the frozen TS codec). | `V2VectorsTest.test_v2_textileCodecParity` |
+
+### Residual risks / open questions
+
+1. **Quote sniping.** The maker orders are public in the pending `pay` calldata. Exclusivity binds the filler to the
+   *router*, not to the payer, so anyone can copy the orders into their own `pay` (paying the maker themselves) and
+   make the original tx revert; after `exclusiveUntil`, or with no validation contract, anyone can also fill them
+   directly on the reactor. No funds are lost (the victim's pay reverts entirely), it is a liveness / griefing risk.
+   Celo L2's single FCFS sequencer (v1 open question 6) makes this harder but not impossible (not verified further).
+2. **Reactor owner.** Can swap the fee controller at any time: fee ≤ 5 bps (reactor code), a fee change between
+   quote and fill makes `pay` revert (payer protected by the allowance), a reverting controller DoSes the venue.
+3. **`FeeRoundsToZero`.** With 1 bps, any order output below 10 000 base units reverts.
+4. **Gas.** The number of orders is not capped (payer-signed; the relayer must simulate). Orders are ABI-decoded twice
+   (router check + reactor).
+5. A Uniswap path whose first token address starts with `0x54584631` would be routed to the Textile decoder and
+   revert; no registry token does.
+6. `TEXTILE_REACTOR` is immutable: if Textile moves to a new reactor, v2 must be redeployed.
+
+### Vendored test code (license)
+
+`test/vendor/textile-uniswapx/**` and `test/vendor/openzeppelin/**` are the verified Celoscan sources of the reactor
+(UniswapX: GPL-2.0-or-later; solmate: AGPL-3.0-only; Permit2 interfaces and OpenZeppelin: MIT), unmodified, with
+their SPDX headers. They are **test-only**: the deployed `CobraRouterV2` (MIT) imports none of them;
+`IUniswapXReactor.sol` holds independent ABI declarations. Textile's own BUSL-1.1 contracts (fee controller,
+PreferredFillerValidation) are not vendored; the mocks re-implement their observed behaviour.
+
+### Deployment (human only)
+
+```sh
+(cd contracts && forge build)
+pnpm deploy:router --v2              # dry run: code checks, reactor.permit2(), tagged calldata, eth_estimateGas
+# HUMAN ONLY, on the machine that holds the agent key (RELAYER_PRIVATE_KEY and RPC_URL in the environment):
+pnpm deploy:router --v2 --execute
+```
+
+Dry run on 4 Nov 2026 (forno): initcode 11 720 bytes, tagged creation 11 755 bytes, `eth_estimateGas` 2 457 221.

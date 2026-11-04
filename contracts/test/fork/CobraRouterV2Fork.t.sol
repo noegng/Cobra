@@ -251,6 +251,27 @@ contract CobraRouterV2ForkTest is TextileSigUtils {
         _assertRouterEmpty();
     }
 
+    /// wCOP has no Uniswap V3 pool on Celo (docs/research/onchain-verification.md); Textile is its only venue.
+    function test_fork_textile_usdtToWcop_noUniswapPool() public onlyFork {
+        address wcop = 0x8a1D45e102e886510e891d2Ec656a708991e2D76;
+        assertEq(IERC20F(wcop).symbol(), "wCOP");
+        deal(wcop, maker, 1_000_000e18);
+        vm.prank(maker);
+        IERC20F(wcop).approve(PERMIT2, type(uint256).max);
+        uint256 buy = 390_000e18; // ~100 USD₮
+        LimitOrder memory o = _limitOrder(REACTOR, maker, ++nonce, block.timestamp + 120, wcop, buy, USDT, OUT);
+        ICobraRouter.Invoice memory inv = _invoice(buy);
+        inv.tokenOut = wcop;
+        _pay(
+            inv,
+            _legs1(_signedLeg(o, _withFee(OUT, feeBps), ICobraRouter.PullKind.EIP3009)),
+            "gas: fork pay, 1 Textile leg USDT->wCOP"
+        );
+        assertEq(IERC20F(wcop).balanceOf(merchant), buy, "merchant exact wCOP");
+        assertEq(IERC20F(wcop).balanceOf(address(router)), 0);
+        _assertRouterEmpty();
+    }
+
     function test_fork_textile_nativeDustInReactor_forwarded() public onlyFork {
         vm.deal(REACTOR, 1 ether); // stray CELO in the real reactor: BaseReactor._fill refunds it to the filler
         uint256 before = payer.balance;
