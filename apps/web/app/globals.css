@@ -102,3 +102,6 @@ th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var
 @media (max-width: 420px) { .tg-fab span { display: none; } .tg-fab { padding: 0; width: 3.25rem; justify-content: center; } }
 @media (prefers-reduced-motion: reduce) { .tg-fab { transition: none; } }
 .wrap.wide { padding-bottom: 6rem; } /* room for the floating Telegram button */
+.brand-link { text-decoration: none; }
+.brand-link:hover { color: var(--accent); }
+.topbar-end { display: flex; align-items: center; gap: 1rem; }

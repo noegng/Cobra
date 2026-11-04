@@ -15,6 +15,8 @@ import agentCard from "../../public/.well-known/agent-registration.json";
 const AGENT_ID: number | null = (agentCard.registrations as { agentId?: number }[])[0]?.agentId ?? null;
 
 export const dynamic = "force-dynamic";
+
+const HOME = { es: "Inicio", pt: "Início", en: "Home" } as const;
 export const metadata: Metadata = { title: "Cobrá · Proof" };
 
 const envAddr = (name: string) => {
@@ -29,8 +31,13 @@ export default async function Proof() {
   return (
     <main className="wrap wide">
       <div className="topbar">
-        <span className="brand">Cobrá · {DICTS[lang].proof_title}</span>
-        <LangSwitch lang={lang} />
+        <span className="brand">
+          <a href="/" className="brand-link">Cobrá</a> · {DICTS[lang].proof_title}
+        </span>
+        <span className="topbar-end">
+          <a href="/" className="sub">← {HOME[lang]}</a>
+          <LangSwitch lang={lang} />
+        </span>
       </div>
       <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} agentId={AGENT_ID} />
       <JournalView journal={journal} lang={lang} />
