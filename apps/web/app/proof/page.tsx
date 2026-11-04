@@ -7,6 +7,7 @@ import { DICTS } from "../../lib/i18n";
 import { LangSwitch } from "../../components/lang-switch";
 import { ProofView } from "../../components/proof-view";
 import { JournalView } from "../../components/journal-view";
+import { TelegramFab } from "../../components/telegram-fab";
 import { queryJournal } from "../../lib/server/journal";
 import agentCard from "../../public/.well-known/agent-registration.json";
 
@@ -33,6 +34,7 @@ export default async function Proof() {
       </div>
       <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} agentId={AGENT_ID} />
       <JournalView journal={journal} lang={lang} />
+      <TelegramFab lang={lang} />
     </main>
   );
 }

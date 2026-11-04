@@ -41,7 +41,7 @@ export function JournalView({ journal, lang }: { journal: Journal; lang: Languag
   const s = JOURNAL[lang];
   const locale = localeFor(lang);
   return (
-    <section aria-label={s.title} data-testid="journal">
+    <section id="journal" aria-label={s.title} data-testid="journal">
       <h2>{s.title}</h2>
       <p className="small">{s.intro} <a href="/api/agent/journal">{s.json}</a></p>
       {journal.entries.length === 0 ? <p className="small" data-testid="journal-empty">{s.empty}</p> : (

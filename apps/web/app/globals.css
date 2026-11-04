@@ -91,3 +91,14 @@ th { color: var(--sub); font-weight: 500; }
 th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--line); }
 .scroll { overflow-x: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Floating Telegram button (landing + proof) */
+.tg-fab { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 50;
+  display: inline-flex; align-items: center; gap: 0.55rem; min-height: 3.25rem; padding: 0 1.15rem 0 0.95rem; border-radius: 999px;
+  background: #229ed9; color: #fff; font-weight: 650; font-size: 0.95rem; text-decoration: none;
+  box-shadow: 0 12px 28px -10px rgba(34, 158, 217, 0.75); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.tg-fab:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -10px rgba(34, 158, 217, 0.85); }
+.tg-fab:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+@media (max-width: 420px) { .tg-fab span { display: none; } .tg-fab { padding: 0; width: 3.25rem; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .tg-fab { transition: none; } }
+.wrap.wide { padding-bottom: 6rem; } /* room for the floating Telegram button */
