@@ -15,6 +15,7 @@ import { formatDecimal, formatUnits } from "../lib/amount";
 import { DICTS, localeFor, tr, type Dict } from "../lib/i18n";
 import { hydrateTypedData, type PublicInvoice, type QuoteError, type QuoteOk, type StatusResponse } from "../lib/wire";
 import { LangSwitch } from "./lang-switch";
+import { fiatName, legsName, RECEIPT, tokenName } from "../lib/units";
 
 const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
 /** Native balance that covers one ERC-20 approval even at a 2x base fee (~55k gas × ~400 gwei). */
@@ -272,6 +273,7 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
     }
   }
 
+  const r = RECEIPT[lang];
   const amountIn = quote?.toSign.map((e) => `${formatUnits(BigInt(e.amountIn), e.decimals, locale, 2)} ${e.symbol}`).join(" + ");
   const symbolOf = (token: Address) => quote?.toSign.find((e) => e.token === token)?.symbol ?? "";
   const fiatLabel = invoice.currency === "BRL" ? DICTS.pt.pay_fiat : lang === "en" ? t.pay_fiat : DICTS.es.pay_fiat;
@@ -329,6 +331,7 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
         <div className="check" aria-hidden>✓</div>
         <h1 className="title">{t.paid}</h1>
         <p className="amount">{formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span></p>
+        <p className="label">{fiatName(invoice.currency, lang)}</p>
         <p className="sub">{invoice.merchantName}</p>
         {txHash && <a className="sub" href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer">Celoscan ↗</a>}
       </main>
@@ -346,7 +349,25 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
 
       <section className="hero ticket">
         <p className="amount">{formatDecimal(invoice.amountLocal, locale)} <span className="ccy">{invoice.currency}</span></p>
+        <p className="label">{fiatName(invoice.currency, lang)}</p>
         {invoice.description && <p className="sub">{invoice.description}</p>}
+        <hr className="rule" />
+        <dl className="receipt">
+          <div>
+            <dt>{r.merchant_gets}</dt>
+            <dd>
+              {formatUnits(BigInt(invoice.amountOut), invoice.tokenOutDecimals, locale, 2)} {invoice.tokenOutSymbol}
+              <small>{tokenName(invoice.tokenOutSymbol, lang)}</small>
+            </dd>
+          </div>
+          <div className="receipt-total">
+            <dt>{r.you_pay}</dt>
+            <dd>
+              {quote && amountIn ? amountIn : "—"}
+              <small>{quote ? legsName(quote.toSign.map((e) => e.symbol), lang) : r.you_pay_hint}</small>
+            </dd>
+          </div>
+        </dl>
         <a className="sub mono" href={explorerAddress(invoice.payoutAddress)} target="_blank" rel="noopener noreferrer">→ {short(invoice.payoutAddress)}</a>
       </section>
 

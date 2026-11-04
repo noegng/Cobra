@@ -9,6 +9,7 @@ import type { Language } from "@cobra/shared";
 import { sumDecimals } from "@cobra/bot/amount";
 import { FakeQr } from "../fake-qr";
 import { DEMO } from "./demo-i18n";
+import { fiatName, RECEIPT, tokenName } from "../../lib/units";
 import {
   DEMO_BALANCE_MICRO,
   DEMO_COUNTRIES,
@@ -278,6 +279,7 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
                 <div className="check" aria-hidden>✓</div>
                 <h3>{t.payer_paid}</h3>
                 <p className="dm-amount">{fmt(inv.amount)}</p>
+                <p className="label">{fiatName(cfg.currency, lang)}</p>
                 <p className="dm-muted">{t.payer_receipt(cfg.merchant)}</p>
                 <p className="dm-sim">{t.payer_sim_tx}</p>
               </div>
@@ -289,7 +291,24 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
                 </div>
                 <div className="dm-hero">
                   <p className="dm-amount">{fmt(inv.amount)}</p>
+                  <p className="label">{fiatName(cfg.currency, lang)}</p>
                   {inv.desc && <p className="dm-muted">{inv.desc}</p>}
+                  <dl className="receipt dm-receipt">
+                    <div>
+                      <dt>{RECEIPT[lang].merchant_gets}</dt>
+                      <dd>
+                        {fmt(inv.amount).replace(/^\S+\s/, "")} {cfg.token}
+                        <small>{tokenName(cfg.token, lang)}</small>
+                      </dd>
+                    </div>
+                    <div className="receipt-total">
+                      <dt>{RECEIPT[lang].you_pay}</dt>
+                      <dd>
+                        {step === "idle" ? "—" : `${formatUsdt(quote, lang)} USD₮`}
+                        <small>{step === "idle" ? RECEIPT[lang].you_pay_hint : tokenName("USD₮", lang)}</small>
+                      </dd>
+                    </div>
+                  </dl>
                   <p className="dm-muted mono">→ 0x7a3f…c0b4</p>
                 </div>
                 {inv.status === "cancelled" ? (

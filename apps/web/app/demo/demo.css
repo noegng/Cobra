@@ -90,3 +90,4 @@
   .dm-phone { height: min(37rem, calc(100dvh - 9rem)); }
 }
 @media (prefers-reduced-motion: reduce) { .dm-msg, .dm-log li, .dm-done { animation: none; } .dm-typing i { animation: none; } }
+.dm-receipt { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px dashed var(--line-strong); font-size: 0.9rem; }

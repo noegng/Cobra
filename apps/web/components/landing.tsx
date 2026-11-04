@@ -4,7 +4,7 @@
  */
 import type { Language } from "@cobra/shared";
 import { explorerAddress } from "@cobra/shared";
-import { LangSwitch } from "./lang-switch";
+import { SiteNav } from "./site-nav";
 import { LANDING } from "./landing-i18n";
 import { TELEGRAM_BOT_URL, TelegramFab } from "./telegram-fab";
 
@@ -69,6 +69,7 @@ function PhoneMock({ t }: { t: (typeof LANDING)["es"] }) {
       <div className="lp-paycard lp-a3">
         <small>{t.mock_payer_merchant}</small>
         <span className="lp-paycard-amt">{t.mock_amount}</span>
+        <small>{t.mock_amount_unit}</small>
         <span className="lp-paycard-btn">{t.mock_payer_btn}</span>
         <small>{t.mock_payer_note}</small>
       </div>
@@ -91,25 +92,7 @@ export function Landing({
   const nf = new Intl.NumberFormat(lang === "pt" ? "pt-BR" : lang === "en" ? "en-US" : "es-AR");
   return (
     <div className="lp">
-      <header className="lp-nav">
-        <a className="lp-logo" href="/">
-          <span className="lp-mark" aria-hidden="true">C</span> Cobrá
-        </a>
-        <nav className="lp-links" aria-label="Cobrá">
-          <a href="#how">{t.nav_how}</a>
-          <a href="#merchants">{t.nav_merchants}</a>
-          <a href="#payers">{t.nav_payers}</a>
-          <a href="#trust">{t.nav_trust}</a>
-          <a href="/demo">{t.nav_demo}</a>
-          <a href="/proof">{t.nav_proof}</a>
-        </nav>
-        <div className="lp-nav-end">
-          <LangSwitch lang={lang} />
-          <a className="lp-btn lp-btn-sm" href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer">
-            {t.cta_start}
-          </a>
-        </div>
-      </header>
+      <SiteNav lang={lang} page="home" />
 
       <main>
         <section className="lp-hero">
@@ -214,7 +197,7 @@ export function Landing({
           </a>
         </section>
 
-        <section className="lp-section lp-agent">
+        <section id="agent" className="lp-section lp-agent">
           <div>
             <h2>{t.agent_title}</h2>
             <p className="lp-sub">{t.agent_sub}</p>
