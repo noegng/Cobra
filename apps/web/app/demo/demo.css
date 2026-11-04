@@ -1,0 +1,90 @@
+/* /demo only (classes prefixed dm-). Builds on globals.css and landing.css (lp-*). */
+.dm { max-width: 76rem; margin: 0 auto; padding: 0 1.25rem 4rem; }
+.dm a { color: var(--accent); font-weight: 600; }
+
+.dm-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; border-radius: 0.9rem;
+  background: color-mix(in srgb, #f5a524 16%, var(--bg)); border: 1px solid color-mix(in srgb, #f5a524 45%, var(--bg)); font-size: 0.9rem; }
+.dm-badge { font-weight: 800; font-size: 0.75rem; letter-spacing: 0.06em; padding: 0.15rem 0.5rem; border-radius: 999px; background: #f5a524; color: #1a1205; }
+
+.dm-intro { padding: 2rem 0 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.dm-intro h1 { font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.05; letter-spacing: -0.04em; font-weight: 800; }
+.dm-intro p { color: var(--sub); max-width: 46rem; line-height: 1.5; }
+.dm-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-top: 0.75rem; }
+.dm-seg { display: inline-flex; padding: 0.25rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); }
+.dm-seg button, .dm-tabs button { appearance: none; border: none; background: transparent; color: var(--sub); font: inherit; font-size: 0.9rem; font-weight: 600;
+  padding: 0.45rem 0.9rem; border-radius: 999px; cursor: pointer; }
+.dm-seg button[aria-pressed="true"], .dm-tabs button[aria-pressed="true"] { background: var(--bg); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.dm-link { appearance: none; border: none; background: none; color: var(--sub); font: inherit; font-size: 0.9rem; cursor: pointer; }
+.dm-link:hover { color: var(--fg); }
+
+.dm-tabs { display: none; }
+.dm-dot { display: inline-block; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--accent); margin-left: 0.35rem; vertical-align: middle; }
+
+.dm-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr); gap: 1.25rem; align-items: start; }
+.dm-pane { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.dm-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sub); font-weight: 700; }
+
+.dm-phone { border-radius: 1.8rem; padding: 0.55rem; background: var(--fg); box-shadow: 0 30px 60px -30px rgba(0,0,0,0.45); display: flex; flex-direction: column;
+  height: 37rem; --qr-bg: var(--bg); }
+.dm-phone > * { background: var(--bg); color: var(--fg); }
+.dm-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.9rem; border-radius: 1.35rem 1.35rem 0 0; background: var(--soft) !important; font-size: 0.9rem; }
+.dm-bar small { display: block; color: var(--sub); font-size: 0.75rem; }
+.dm-chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem; background: color-mix(in srgb, var(--accent) 9%, var(--bg)) !important; }
+.dm-msg { max-width: 86%; padding: 0.5rem 0.7rem; border-radius: 1rem; font-size: 0.88rem; line-height: 1.4; white-space: pre-line; box-shadow: 0 1px 1px rgba(0,0,0,0.06); animation: lp-in 0.25s ease both; }
+.dm-msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 0.3rem; }
+.dm-msg.bot { align-self: flex-start; background: var(--bg); border-bottom-left-radius: 0.3rem; }
+.dm-msg.paid { border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--bg)); font-weight: 600; }
+.dm-qr { display: block; width: 7rem; height: 7rem; color: var(--fg); margin-bottom: 0.4rem; border-radius: 0.3rem; }
+.dm-qr-muted { opacity: 0.25; margin: 0 auto 1rem; width: 8rem; height: 8rem; }
+.dm-kb { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; border-top: 1px solid var(--line); padding-top: 0.45rem; font-size: 0.8rem; text-align: center; }
+.dm-kb span { color: var(--sub); }
+.dm-kb button { appearance: none; border: none; background: color-mix(in srgb, var(--accent) 14%, var(--bg)); color: var(--accent); font: inherit; font-weight: 700; padding: 0.4rem; border-radius: 0.6rem; cursor: pointer; }
+.dm-typing { display: inline-flex; gap: 0.25rem; padding: 0.7rem 0.8rem; }
+.dm-typing i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--sub); animation: dm-blink 1s infinite; }
+.dm-typing i:nth-child(2) { animation-delay: 0.15s; }
+.dm-typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dm-blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.dm-chips { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.5rem 0.6rem; border-top: 1px solid var(--line); }
+.dm-chips button { flex: none; appearance: none; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: 0.8rem; padding: 0.35rem 0.7rem; border-radius: 999px; cursor: pointer; }
+.dm-chips button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.dm-input { display: flex; gap: 0.4rem; padding: 0.5rem 0.6rem 0.7rem; border-radius: 0 0 1.35rem 1.35rem; }
+.dm-input input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 999px; padding: 0.6rem 0.9rem; font: inherit; font-size: 0.9rem; background: var(--soft); color: var(--fg); }
+.dm-input input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dm-input button { appearance: none; border: none; width: 2.6rem; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 1rem; cursor: pointer; }
+.dm-input button:disabled { opacity: 0.4; cursor: default; }
+
+.dm-pay > div { flex: 1; border-radius: 1.35rem; padding: 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+.dm-empty { justify-content: center; text-align: center; color: var(--sub); line-height: 1.5; }
+.dm-top { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--sub); }
+.dm-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 0.35rem; }
+.dm-amount { font-size: 2.4rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.dm-muted { color: var(--sub); font-size: 0.9rem; }
+.dm-wallet { font-size: 0.82rem; color: var(--sub); text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dm-fine { font-size: 0.75rem; color: var(--sub); text-align: center; }
+.dm-done { justify-content: center; align-items: center; text-align: center; gap: 0.6rem !important; animation: lp-in 0.35s ease both; }
+.dm-done h3 { font-size: 1.4rem; }
+.dm-sim { font-size: 0.78rem; font-weight: 700; color: #b26b00; background: color-mix(in srgb, #f5a524 16%, var(--bg)); padding: 0.25rem 0.6rem; border-radius: 999px; }
+
+.dm-agent { padding: 1.1rem; border-radius: 1.4rem; border: 1px solid var(--line); background: var(--bg); }
+.dm-agent .dm-label { margin-bottom: 0.3rem; }
+.dm-log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.55rem; counter-reset: dm; }
+.dm-log li { position: relative; padding: 0.55rem 0.7rem 0.55rem 2.2rem; border-radius: 0.8rem; background: color-mix(in srgb, var(--accent) 8%, var(--bg)); font-size: 0.86rem; line-height: 1.4;
+  animation: lp-in 0.3s ease both; counter-increment: dm; }
+.dm-log li::before { content: counter(dm); position: absolute; left: 0.6rem; top: 0.55rem; width: 1.15rem; height: 1.15rem; border-radius: 50%; display: grid; place-items: center;
+  font-size: 0.7rem; font-weight: 800; background: var(--accent); color: var(--accent-fg); }
+.dm-log li.dm-muted { background: var(--soft); padding-left: 0.7rem; counter-increment: none; }
+.dm-log li.dm-muted::before { display: none; }
+
+@media (max-width: 1080px) {
+  .dm-stage { grid-template-columns: 1fr 1fr; }
+  .dm-agent { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .dm-tabs { display: flex; justify-content: center; gap: 0.25rem; padding: 0.25rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); margin-bottom: 1rem; position: sticky; top: 0.5rem; z-index: 5; }
+  .dm-stage { grid-template-columns: 1fr; }
+  .dm-pane { display: none; }
+  .dm-pane.is-on { display: flex; }
+  .dm-phone { height: min(37rem, calc(100dvh - 9rem)); }
+}
+@media (prefers-reduced-motion: reduce) { .dm-msg, .dm-log li, .dm-done { animation: none; } .dm-typing i { animation: none; } }

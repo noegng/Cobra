@@ -1,0 +1,343 @@
+"use client";
+
+/**
+ * /demo: the merchant's Telegram chat and the customer's phone side by side, fully simulated in the browser.
+ * No network call, no wallet, no LLM: amounts go through the bot's real parser (engine.ts).
+ */
+import { useEffect, useRef, useState } from "react";
+import type { Language } from "@cobra/shared";
+import { sumDecimals } from "@cobra/bot/amount";
+import { FakeQr } from "../fake-qr";
+import { DEMO } from "./demo-i18n";
+import {
+  DEMO_BALANCE_MICRO,
+  DEMO_COUNTRIES,
+  formatLocal,
+  formatUsdt,
+  handleMerchantText,
+  quoteMicro,
+  type DemoCountry,
+  type DemoInvoice,
+} from "./engine";
+
+type Msg = { id: number; from: "me" | "bot"; text: string; invoiceRef?: string; paid?: boolean };
+type PayerStep = "idle" | "connected" | "signing" | "paying" | "paid";
+type LogLine = { id: number; text: string };
+type Tab = "merchant" | "payer" | "agent";
+
+const TTL_MS = 10 * 60_000;
+
+export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: string }) {
+  const t = DEMO[lang];
+  const [country, setCountry] = useState<DemoCountry>(lang === "pt" ? "BR" : "AR");
+  const [msgs, setMsgs] = useState<Msg[]>([{ id: 0, from: "bot", text: t.welcome }]);
+  const [invoices, setInvoices] = useState<DemoInvoice[]>([]);
+  const [created, setCreated] = useState<Record<string, number>>({});
+  const [active, setActive] = useState<string | null>(null);
+  const [step, setStep] = useState<PayerStep>("idle");
+  const [log, setLog] = useState<LogLine[]>([]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [tab, setTab] = useState<Tab>("merchant");
+  const [now, setNow] = useState(() => Date.now());
+  const ids = useRef(1);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const chatEnd = useRef<HTMLDivElement>(null);
+
+  const cfg = DEMO_COUNTRIES[country];
+  const inv = invoices.find((i) => i.ref === active) ?? null;
+  const fmt = (amount: string) => formatLocal(amount, country, lang);
+  const nid = () => ids.current++;
+  const later = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
+  const addBot = (m: Omit<Msg, "id" | "from">) => setMsgs((xs) => [...xs, { id: nid(), from: "bot", ...m }]);
+  const addLog = (text: string) => setLog((xs) => [...xs, { id: nid(), text }]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => {
+    chatEnd.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [msgs, typing]);
+
+  function reset(next: DemoCountry = country) {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setCountry(next);
+    setMsgs([{ id: nid(), from: "bot", text: DEMO[lang].welcome }]);
+    setInvoices([]);
+    setCreated({});
+    setActive(null);
+    setStep("idle");
+    setLog([]);
+    setTyping(false);
+    setTab("merchant");
+  }
+
+  function send(raw: string) {
+    const text = raw.trim();
+    if (!text || typing) return;
+    setInput("");
+    setMsgs((xs) => [...xs, { id: nid(), from: "me", text }]);
+    const action = handleMerchantText(text, { country, lang, invoices });
+    setTyping(true);
+    later(450, () => {
+      setTyping(false);
+      switch (action.kind) {
+        case "charge": {
+          const i = action.invoice;
+          setInvoices((xs) => [...xs, i]);
+          setCreated((c) => ({ ...c, [i.ref]: Date.now() }));
+          setActive(i.ref);
+          setStep("idle");
+          addBot({ text: t.invoice_caption(i.ref, fmt(i.amount), i.desc), invoiceRef: i.ref });
+          addLog(t.agent_invoice(i.ref));
+          break;
+        }
+        case "amount_error":
+          addBot({ text: t.amount_error(action.error, action.input) });
+          break;
+        case "usage":
+          addBot({ text: t.usage });
+          break;
+        case "help":
+          addBot({ text: t.help });
+          break;
+        case "unknown":
+          addBot({ text: t.unknown });
+          break;
+        case "cancel":
+          if (!action.invoice) addBot({ text: t.cancel_none });
+          else {
+            const ref = action.invoice.ref;
+            setInvoices((xs) => xs.map((x) => (x.ref === ref ? { ...x, status: "cancelled" } : x)));
+            addBot({ text: t.cancel_ok(ref) });
+          }
+          break;
+        case "status": {
+          const i = action.invoice;
+          if (!i) addBot({ text: t.status_none });
+          else if (i.status === "paid") addBot({ text: t.status_paid(i.ref, fmt(i.amount)) });
+          else if (i.status === "cancelled") addBot({ text: t.status_cancelled(i.ref) });
+          else addBot({ text: t.status_open(i.ref, fmt(i.amount)) });
+          break;
+        }
+        case "close": {
+          const total = action.paid.length ? sumDecimals(action.paid.map((p) => p.amount)) : "0";
+          addBot({ text: t.close(fmt(total), action.paid.length, action.open) });
+          break;
+        }
+      }
+    });
+  }
+
+  const quote = inv ? quoteMicro(inv.amount, country) : 0n;
+  const insufficient = quote > DEMO_BALANCE_MICRO;
+  const remaining = inv && created[inv.ref] ? Math.max(0, created[inv.ref]! + TTL_MS - now) : 0;
+  const mm = String(Math.floor(remaining / 60_000)).padStart(2, "0");
+  const ss = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, "0");
+  const costPct = (cfg.costBps / 100).toLocaleString(lang === "en" ? "en-US" : lang === "pt" ? "pt-BR" : "es-AR", { maximumFractionDigits: 2 }) + " %";
+
+  function pay() {
+    if (!inv || insufficient || step !== "connected") return;
+    const ref = inv.ref;
+    const amount = inv.amount;
+    setStep("signing");
+    later(1100, () => {
+      addLog(t.agent_route(cfg.route, costPct));
+      addLog(t.agent_gas);
+      setStep("paying");
+    });
+    later(2500, () => {
+      addLog(t.agent_relay);
+      addLog(t.agent_settle(fmt(amount), cfg.token));
+      setInvoices((xs) => xs.map((x) => (x.ref === ref ? { ...x, status: "paid" } : x)));
+      setStep("paid");
+    });
+    later(3100, () => {
+      addBot({ text: t.paid_notice(ref, fmt(amount), cfg.token), paid: true });
+      addLog(t.agent_notify);
+    });
+  }
+
+  const chips = t.chips[country];
+
+  return (
+    <div className="dm">
+      <div className="dm-banner" role="note">
+        <span className="dm-badge">DEMO</span> {t.banner}{" "}
+        <a href="/proof">{t.banner_link} →</a>
+      </div>
+
+      <section className="dm-intro">
+        <h1>{t.title}</h1>
+        <p>{t.sub}</p>
+        <div className="dm-controls">
+          <div className="dm-seg" role="group" aria-label="Country">
+            {(Object.keys(DEMO_COUNTRIES) as DemoCountry[]).map((c) => (
+              <button key={c} type="button" aria-pressed={country === c} onClick={() => reset(c)}>
+                {t.country[c]}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="dm-link" onClick={() => reset()}>
+            ↺ {t.reset}
+          </button>
+          <a className="lp-btn lp-btn-sm" href={telegramUrl} target="_blank" rel="noopener noreferrer">
+            {t.real_bot} →
+          </a>
+        </div>
+      </section>
+
+      <nav className="dm-tabs" aria-label="Demo">
+        {(["merchant", "payer", "agent"] as Tab[]).map((k) => (
+          <button key={k} type="button" aria-pressed={tab === k} onClick={() => setTab(k)}>
+            {k === "merchant" ? t.tab_merchant : k === "payer" ? t.tab_payer : t.tab_agent}
+            {k === "payer" && inv && step !== "paid" && inv.status === "open" ? <span className="dm-dot" aria-hidden /> : null}
+          </button>
+        ))}
+      </nav>
+
+      <div className="dm-stage">
+        {/* Merchant: Telegram chat */}
+        <section className={`dm-pane ${tab === "merchant" ? "is-on" : ""}`} aria-label={t.merchant_side}>
+          <h2 className="dm-label">{t.merchant_side}</h2>
+          <div className="dm-phone">
+            <div className="dm-bar">
+              <span className="lp-avatar">C</span>
+              <span>
+                <b>Cobrá</b>
+                <small>bot · {cfg.merchant}</small>
+              </span>
+            </div>
+            <div className="dm-chat" aria-live="polite">
+              {msgs.map((m) => (
+                <div key={m.id} className={`dm-msg ${m.from === "me" ? "me" : "bot"} ${m.paid ? "paid" : ""}`}>
+                  {m.invoiceRef && <FakeQr seed={m.id * 7919 + 13} className="dm-qr" />}
+                  <p>{m.text}</p>
+                  {m.invoiceRef && (
+                    <div className="dm-kb">
+                      <span>{t.btn_share}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActive(m.invoiceRef!);
+                          setStep("idle");
+                          setTab("payer");
+                        }}
+                      >
+                        {t.btn_open_payer}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {typing && (
+                <div className="dm-msg bot dm-typing" aria-label="…">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              )}
+              <div ref={chatEnd} />
+            </div>
+            <div className="dm-chips">
+              {chips.map((c) => (
+                <button key={c} type="button" onClick={() => send(c)} disabled={typing}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <form
+              className="dm-input"
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+            >
+              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t.placeholder} aria-label={t.placeholder} maxLength={200} />
+              <button type="submit" disabled={!input.trim() || typing} aria-label={t.send}>
+                ➤
+              </button>
+            </form>
+          </div>
+        </section>
+
+        {/* Customer: pay page */}
+        <section className={`dm-pane ${tab === "payer" ? "is-on" : ""}`} aria-label={t.payer_side}>
+          <h2 className="dm-label">{t.payer_side}</h2>
+          <div className="dm-phone dm-pay">
+            {!inv ? (
+              <div className="dm-empty">
+                <FakeQr seed={99} className="dm-qr dm-qr-muted" />
+                <p>{t.payer_empty}</p>
+              </div>
+            ) : step === "paid" ? (
+              <div className="dm-done">
+                <div className="check" aria-hidden>✓</div>
+                <h3>{t.payer_paid}</h3>
+                <p className="dm-amount">{fmt(inv.amount)}</p>
+                <p className="dm-muted">{t.payer_receipt(cfg.merchant)}</p>
+                <p className="dm-sim">{t.payer_sim_tx}</p>
+              </div>
+            ) : (
+              <div className="dm-checkout">
+                <div className="dm-top">
+                  <span>{cfg.merchant}</span>
+                  {inv.status === "open" && <span className="tabular">{t.payer_expires} {mm}:{ss}</span>}
+                </div>
+                <div className="dm-hero">
+                  <p className="dm-amount">{fmt(inv.amount)}</p>
+                  {inv.desc && <p className="dm-muted">{inv.desc}</p>}
+                  <p className="dm-muted mono">→ 0x7a3f…c0b4</p>
+                </div>
+                {inv.status === "cancelled" ? (
+                  <p className="note">{t.payer_cancelled}</p>
+                ) : step === "idle" ? (
+                  <button type="button" className="btn primary" onClick={() => setStep("connected")}>
+                    {t.payer_connect}
+                  </button>
+                ) : (
+                  <div className="stack">
+                    <p className="dm-wallet">{t.payer_wallet(formatUsdt(DEMO_BALANCE_MICRO, lang))}</p>
+                    {insufficient ? (
+                      <p className="note">{t.payer_insufficient}</p>
+                    ) : (
+                      <button type="button" className="btn primary" onClick={pay} disabled={step !== "connected"}>
+                        {step === "signing" ? (
+                          <>
+                            <span className="spin" aria-hidden /> {t.payer_signing}
+                          </>
+                        ) : step === "paying" ? (
+                          <>
+                            <span className="spin" aria-hidden /> {t.payer_paying}
+                          </>
+                        ) : (
+                          t.payer_pay(formatUsdt(quote, lang))
+                        )}
+                      </button>
+                    )}
+                    <p className="note">{t.payer_note}</p>
+                    <p className="dm-fine">{t.payer_illustrative}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Agent log */}
+        <section className={`dm-pane dm-agent ${tab === "agent" ? "is-on" : ""}`} aria-label={t.agent_side}>
+          <h2 className="dm-label">{t.agent_side}</h2>
+          <ol className="dm-log" aria-live="polite">
+            {log.length === 0 ? <li className="dm-muted">{t.agent_idle}</li> : log.map((l) => <li key={l.id}>{l.text}</li>)}
+          </ol>
+          <p className="dm-fine">
+            {t.agent_footer} <a href="/proof#journal">/proof →</a>
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}

@@ -100,6 +100,7 @@ export function Landing({
           <a href="#merchants">{t.nav_merchants}</a>
           <a href="#payers">{t.nav_payers}</a>
           <a href="#trust">{t.nav_trust}</a>
+          <a href="/demo">{t.nav_demo}</a>
           <a href="/proof">{t.nav_proof}</a>
         </nav>
         <div className="lp-nav-end">
@@ -123,6 +124,9 @@ export function Landing({
             <div className="lp-ctas">
               <a className="lp-btn" href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer">
                 {t.cta_start} →
+              </a>
+              <a className="lp-btn lp-btn-ghost" href="/demo">
+                {t.cta_demo}
               </a>
               <a className="lp-btn lp-btn-ghost" href="/proof">
                 {t.cta_proof}
@@ -255,6 +259,7 @@ export function Landing({
       <footer className="lp-foot">
         <span>Cobrá · Celo mainnet</span>
         <nav aria-label="Links">
+          <a href="/demo">{t.nav_demo}</a>
           <a href="/proof">{t.nav_proof}</a>
           <a href="/api/agent/journal">{t.foot_journal}</a>
           <a href="/.well-known/agent-registration.json">{t.foot_card}</a>
