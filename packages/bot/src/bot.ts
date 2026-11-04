@@ -246,10 +246,16 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     });
   }
 
-  async function handleCharge(ctx: CobraContext, merchant: MerchantRow, amountText: string, description: string) {
+  async function handleCharge(ctx: CobraContext, merchant: MerchantRow, amountText: string, description: string, spaceAmbiguous = false) {
     const lang = merchantLang(merchant);
     if (!amountText) {
       await ctx.reply(t(lang, "usage_cobrar"));
+      return;
+    }
+    if (spaceAmbiguous) {
+      // "4 500 café": 4500 or 4? Display strings only (no arithmetic); the merchant retypes, the parser decides.
+      const [first = amountText] = amountText.split(/[ \u00a0\u202f]/);
+      await ctx.reply(t(lang, "amount_space_ambiguous", { input: amountText, joined: amountText.replace(/[ \u00a0\u202f]/g, ""), first }));
       return;
     }
     const parsed = parseAmount(amountText, amountStyleFor(merchant.country, merchant.language));
@@ -327,7 +333,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
   /** Routes free text (typed or transcribed) for an onboarded merchant: fast path first, then the agent. */
   async function routeText(ctx: CobraContext, merchant: MerchantRow, text: string) {
     const charge = matchCharge(text);
-    if (charge) return handleCharge(ctx, merchant, charge.amountText, charge.description);
+    if (charge) return handleCharge(ctx, merchant, charge.amountText, charge.description, charge.spaceAmbiguous);
     return handleAgent(ctx, merchant, text);
   }
 
@@ -343,7 +349,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     if (!merchant) return;
     const args = String(ctx.match ?? "").trim();
     const charge = matchCharge(`cobrar ${args}`);
-    if (charge) return handleCharge(ctx, merchant, charge.amountText, charge.description);
+    if (charge) return handleCharge(ctx, merchant, charge.amountText, charge.description, charge.spaceAmbiguous);
     return handleAgent(ctx, merchant, `cobrar ${args}`);
   });
 

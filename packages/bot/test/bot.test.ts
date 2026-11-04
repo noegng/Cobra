@@ -121,6 +121,12 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     expect(texts(calls).at(-1)).toMatch(/"4,500" es ambiguo/);
     await bot.handleUpdate(textUpdate(1, "cobrar US$ 10 algo"));
     expect(texts(calls).at(-1)).toMatch(/solo cobro en ARS/);
+    // "500 100 gramos": 500100 or 500 + "100 gramos"? Asked, never guessed; no invoice created.
+    await bot.handleUpdate(textUpdate(1, "cobrar 500 100 gramos de queso"));
+    expect(texts(calls).at(-1)).toMatch(/"500 100" puede leerse como 500100 o como 500/);
+    await bot.handleUpdate(textUpdate(1, "/cobrar 500 100 gramos de queso"));
+    expect(texts(calls).at(-1)).toMatch(/puede leerse como 500100/);
+    expect(await db.select().from(invoices)).toHaveLength(0);
     await bot.handleUpdate(textUpdate(1, "/cobrar 2 mil pizza"));
     const [inv] = await db.select().from(invoices);
     expect(inv!.amountLocal).toBe("2000");
