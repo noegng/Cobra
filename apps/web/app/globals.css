@@ -176,7 +176,7 @@ td { font-family: var(--font-mono); }
 /* Site header (landing, demo, proof) */
 .sn { max-width: 70rem; margin: 0 auto; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 1.25rem; border-bottom: 1px dashed var(--line-strong); }
 .sn-logo { display: inline-flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.2rem; letter-spacing: -0.03em; text-decoration: none; }
-.sn-logo img { width: 2.25rem; height: 2.25rem; border-radius: 22%; display: block; }
+.sn-logo img { width: 2.25rem; height: 2.25rem; display: block; }
 .sn-menu { position: relative; }
 .sn-trigger { appearance: none; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.6rem; border: 1px solid transparent; border-radius: var(--radius);
   background: transparent; color: var(--fg); font: inherit; font-size: 0.95rem; cursor: pointer; }
