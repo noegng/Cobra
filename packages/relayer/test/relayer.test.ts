@@ -121,6 +121,44 @@ describe.skipIf(!hasAnvil)("relayer on anvil", () => {
     expect((await sub(seed.submissionId)).status).toBe("sent");
   });
 
+  it("WS13: Textile leg is relayed and the RFQ id + tx hash are reported to Textile (best effort)", async () => {
+    const reported: { rfqId: string; txHash: Hash }[] = [];
+    const r = relayer(signer(), { onTextileSent: async (i) => void reported.push(i) });
+    const seed = await seedSubmission(db, { router, token3009, textile: { rfqId: "rfq-42" } });
+    await tick(r);
+    const row = await sub(seed.submissionId);
+    expect(row.error).toBeNull();
+    expect(row.status).toBe("sent");
+    await vi.waitFor(() => expect(reported).toEqual([{ rfqId: "rfq-42", txHash: row.txHash }]));
+  });
+
+  it("WS13: a failing Textile submit report never affects the payment", async () => {
+    const r = relayer(signer(), { onTextileSent: async () => { throw new Error("textile down"); } });
+    const seed = await seedSubmission(db, { router, token3009, textile: { rfqId: "rfq-43" } });
+    await tick(r);
+    expect((await sub(seed.submissionId)).status).toBe("sent");
+    await vi.waitFor(() => expect(logs.some((l) => l.msg === "textile_submit_failed")).toBe(true));
+  });
+
+  it("WS13: Uniswap submissions are never reported to Textile", async () => {
+    const reported: unknown[] = [];
+    const r = relayer(signer(), { onTextileSent: async (i) => void reported.push(i) });
+    await seedSubmission(db, { router, token3009 });
+    await tick(r);
+    expect(reported).toEqual([]);
+  });
+
+  it("WS13: Textile leg refused when the relayer is configured for router v1 (allowTextile=false), no tx", async () => {
+    const s = signer();
+    const r = relayer(s, { allowTextile: false });
+    const seed = await seedSubmission(db, { router, token3009, textile: { rfqId: "rfq-44" } });
+    await tick(r);
+    const row = await sub(seed.submissionId);
+    expect(row.status).toBe("failed");
+    expect(row.error).toContain("textile_not_enabled");
+    expect(await nonceOf(s.address)).toBe(0);
+  });
+
   it("Schema 2 role suffix (app + wallet) when a wallet code is configured", async () => {
     const s = signer({ walletCode: "cobra_relayer" });
     const seed = await seedSubmission(db, { router, token3009 });

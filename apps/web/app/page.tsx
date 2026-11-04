@@ -37,5 +37,7 @@ export default async function Home() {
   const lang = await requestLanguage("es");
   const env = process.env.ROUTER_ADDRESS;
   const router = env && isAddress(env, { strict: false }) ? getAddress(env) : getAddress(DEFAULT_ROUTER);
-  return <Landing lang={lang} stats={await liveStats()} agentId={AGENT_ID} routerAddress={router} />;
+  const legacyEnv = process.env.LEGACY_ROUTER_ADDRESS;
+  const legacy = legacyEnv && isAddress(legacyEnv, { strict: false }) ? getAddress(legacyEnv) : null;
+  return <Landing lang={lang} stats={await liveStats()} agentId={AGENT_ID} routerAddress={router} legacyRouterAddress={legacy} />;
 }

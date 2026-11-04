@@ -23,6 +23,7 @@ import {
   encodePath,
   encodePermit2PullData,
   eip3009TypedData,
+  encodeTextileVenue,
   intentDigest,
   legNonce,
   permit2TypedData,
@@ -147,6 +148,8 @@ export interface SeedOpts {
   kinds?: ("eip3009" | "permit2")[];
   signerKey?: Hex; // who signs the legs (default payer)
   merchant?: Address; // invoice merchant payout address (default MERCHANT)
+  /** WS13: make the (single) eip3009 leg a Textile RFQ leg and record the rfqId in the stored quote plan. */
+  textile?: { rfqId: string };
 }
 
 export async function seedSubmission(db: Db, o: SeedOpts) {
@@ -177,7 +180,12 @@ export async function seedSubmission(db: Db, o: SeedOpts) {
   const kinds = o.kinds ?? ["eip3009"];
   const planned = kinds.map((k) =>
     k === "eip3009"
-      ? { token: o.token3009, amountIn: 3_000_000n, kind: PullKind.EIP3009, path: encodePath([o.token3009, WARS], [100]) }
+      ? {
+          token: o.token3009,
+          amountIn: 3_000_000n,
+          kind: PullKind.EIP3009,
+          path: o.textile ? encodeTextileVenue([{ order: "0xabcd", sig: "0x1234" }]) : encodePath([o.token3009, WARS], [100]),
+        }
       : { token: USDT, amountIn: 1_000_000n, kind: PullKind.PERMIT2, path: encodePath([USDT, WARS], [100]) },
   );
   const digest = intentDigest(o.router, chainId, inv, payerAcc.address, planned);
@@ -234,7 +242,7 @@ export async function seedSubmission(db: Db, o: SeedOpts) {
     .values({
       invoiceId: id,
       payer: payerAcc.address,
-      plan: serializePlan(plan),
+      plan: o.textile ? { ...serializePlan(plan), venue: "textile", textile: { rfqId: o.textile.rfqId } } : serializePlan(plan),
       expiresAt: new Date(Date.now() + (o.quoteExpiresInMs ?? 60_000)),
     })
     .returning();

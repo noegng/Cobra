@@ -20,6 +20,10 @@ export interface RelayerOptions {
   log?: (msg: string, extra?: Record<string, unknown>) => void;
   /** Optional (additive): CELO gas grants for wFIAT payers without gas. Default on; `false` disables. */
   gasGrant?: GasGrantConfig | false;
+  /** WS13 (additive): accept Textile RFQ legs (router v2). Default true. */
+  allowTextile?: boolean;
+  /** WS13 (additive): best-effort report of a broadcast Textile leg (rfqId + tx hash); errors are swallowed. */
+  onTextileSent?: (info: { rfqId: string; txHash: `0x${string}` }) => Promise<unknown>;
 }
 
 export interface Stoppable {

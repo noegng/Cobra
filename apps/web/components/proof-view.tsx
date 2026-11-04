@@ -15,12 +15,15 @@ export function ProofView({
   lang,
   agentAddress,
   routerAddress,
+  legacyRouterAddress = null,
   agentId = null,
 }: {
   stats: ProofStats;
   lang: Language;
   agentAddress: string | null;
   routerAddress: string | null;
+  /** v1 router still indexed after the switch to v2 (LEGACY_ROUTER_ADDRESS). */
+  legacyRouterAddress?: string | null;
   agentId?: number | null;
 }) {
   const t = DICTS[lang];
@@ -72,6 +75,9 @@ export function ProofView({
         <h2>{t.proof_agent}</h2>
         <p className="small">{t.proof_agent_wallet}: {agentAddress ? <a href={explorerAddress(agentAddress)} target="_blank" rel="noreferrer noopener">{agentAddress}</a> : t.proof_unset}</p>
         <p className="small">{t.proof_router}: {routerAddress ? <a href={explorerAddress(routerAddress)} target="_blank" rel="noreferrer noopener">{routerAddress}</a> : t.proof_unset}</p>
+        {legacyRouterAddress && (
+          <p className="small">{t.proof_router} v1: <a href={explorerAddress(legacyRouterAddress)} target="_blank" rel="noreferrer noopener">{legacyRouterAddress}</a></p>
+        )}
         <p className="small">{agentId != null ? <a href={identityUrl(agentId)} target="_blank" rel="noreferrer noopener">{t.proof_identity} #{agentId}</a> : `${t.proof_identity}: ${t.proof_unset}`}</p>
       </section>
     </>

@@ -12,6 +12,18 @@ const hex = (n: number) => `0x${n.toString(16).padStart(64, "0")}`;
 const render = (stats: Awaited<ReturnType<typeof proofStats>>, lang: "es" | "pt" | "en" = "es", agent: string | null = AGENT) =>
   renderToStaticMarkup(createElement(ProofView, { stats, lang, agentAddress: agent, routerAddress: null, agentId: 10033 }));
 
+describe("/proof view: routers", () => {
+  it("shows both routers when a legacy one is configured", async () => {
+    const stats = await proofStats(await createTestDb());
+    const V2 = "0x00000000000000000000000000000000c0b4a002";
+    const V1 = "0x00000000000000000000000000000000c0b4a000";
+    const html = renderToStaticMarkup(createElement(ProofView, { stats, lang: "en", agentAddress: AGENT, routerAddress: V2, legacyRouterAddress: V1, agentId: 10033 }));
+    expect(html).toContain(`/address/${V2}`);
+    expect(html).toContain(`/address/${V1}`);
+    expect(render(stats)).not.toContain("v1");
+  });
+});
+
 describe("/proof view", () => {
   it("empty state", async () => {
     const html = render(await proofStats(await createTestDb()), "en", null);

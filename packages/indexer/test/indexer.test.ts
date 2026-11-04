@@ -442,3 +442,51 @@ describe("expireInvoices", () => {
     expect(await status(paidPast.id)).toBe("paid");
   });
 });
+
+describe("startIndexer — two routers (v1 legacy + v2)", () => {
+  it("follows Paid logs from both routers with one cursor; ignores a third contract", async () => {
+    const db = await freshDb();
+    const v1 = await chain.deployEmitter();
+    const v2 = await chain.deployEmitter();
+    const stranger = await chain.deployEmitter();
+    const m = await seedMerchant(db);
+    const [i1, i2, i3] = [await seedInvoice(db, m.id), await seedInvoice(db, m.id), await seedInvoice(db, m.id)];
+    const e1 = await chain.emitPaid(v1.address, { invoiceId: i1.id as Hex, amountOut: AMOUNT });
+    const e2 = await chain.emitPaid(v2.address, { invoiceId: i2.id as Hex, amountOut: AMOUNT });
+    const e3 = await chain.emitPaid(stranger.address, { invoiceId: i3.id as Hex, amountOut: AMOUNT });
+    const notifier = new RecordingNotifier();
+    const { publicClient } = makeClients(anvil.url);
+    const ix = startIndexer({
+      db,
+      publicClient,
+      router: v2.address,
+      fromBlock: v2.block,
+      legacyRouter: { address: v1.address, fromBlock: v1.block },
+      confirmations: 0,
+      pollIntervalMs: 20,
+      notifier,
+      log: () => {},
+    });
+    running.push(ix);
+    await waitCursorPast(db, e3.block);
+    expect((await invoiceOf(db, i1.id)).status).toBe("paid");
+    expect((await invoiceOf(db, i2.id)).status).toBe("paid");
+    expect((await invoiceOf(db, i3.id)).status).toBe("open");
+    const rows = await db.select().from(payments);
+    expect(rows.map((r) => r.txHash).sort()).toEqual([e1.txHash, e2.txHash].sort());
+  });
+
+  it("without legacyRouter only the configured router is followed (v1 behaviour)", async () => {
+    const db = await freshDb();
+    const v1 = await chain.deployEmitter();
+    const v2 = await chain.deployEmitter();
+    const m = await seedMerchant(db);
+    const i1 = await seedInvoice(db, m.id);
+    const e1 = await chain.emitPaid(v1.address, { invoiceId: i1.id as Hex, amountOut: AMOUNT });
+    const { publicClient } = makeClients(anvil.url);
+    const ix = startIndexer({ db, publicClient, router: v2.address, fromBlock: v1.block, confirmations: 0, pollIntervalMs: 20, log: () => {} });
+    running.push(ix);
+    await waitCursorPast(db, e1.block);
+    expect((await invoiceOf(db, i1.id)).status).toBe("open");
+  });
+});

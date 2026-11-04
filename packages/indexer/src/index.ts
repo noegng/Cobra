@@ -14,6 +14,11 @@ export interface IndexerOptions {
   router: Address;
   /** Block the router was deployed at (first scan start). */
   fromBlock: bigint;
+  /**
+   * Legacy router still followed after a router switch (v1 once v2 is `router`). Same `Paid` event, same matching
+   * rule; a single cursor starts at the earliest of the two deploy blocks on a fresh database.
+   */
+  legacyRouter?: { address: Address; fromBlock: bigint };
   confirmations?: number; // default 5 (~5 s on Celo L2, see DEFAULT_CONFIRMATIONS)
   maxBlockRange?: number; // default 2000
   pollIntervalMs?: number; // default 2000
@@ -38,6 +43,7 @@ export function startIndexer(opts: IndexerOptions): Stoppable {
     publicClient: opts.publicClient,
     router: opts.router,
     fromBlock: opts.fromBlock,
+    ...(opts.legacyRouter && { legacyRouter: opts.legacyRouter }),
     confirmations: opts.confirmations ?? DEFAULT_CONFIRMATIONS,
     maxBlockRange: opts.maxBlockRange ?? DEFAULT_MAX_BLOCK_RANGE,
     pollIntervalMs: opts.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,

@@ -45,7 +45,7 @@ export default async function Proof() {
           <h1>{HEAD[lang].h1}</h1>
           <p className="lp-sub">{HEAD[lang].sub}</p>
         </header>
-        <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} agentId={AGENT_ID} />
+        <ProofView stats={stats} lang={lang} agentAddress={envAddr("AGENT_ADDRESS")} routerAddress={envAddr("ROUTER_ADDRESS")} legacyRouterAddress={envAddr("LEGACY_ROUTER_ADDRESS")} agentId={AGENT_ID} />
         <JournalView journal={journal} lang={lang} />
       </main>
       <TelegramFab lang={lang} />

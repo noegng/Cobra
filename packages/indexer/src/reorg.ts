@@ -42,7 +42,8 @@ export interface ReorgCheckResult {
 export async function verifyRecentPayments(o: {
   db: Db;
   publicClient: PublicClient;
-  router: Address;
+  /** One router, or several (v1 + v2): a `Paid` log from any of them counts. */
+  router: Address | readonly Address[];
   head: bigint;
   window: number;
   confirmations?: number;
@@ -51,7 +52,8 @@ export async function verifyRecentPayments(o: {
   log: Log;
   now?: Date;
 }): Promise<ReorgCheckResult> {
-  const { db, publicClient, router, log } = o;
+  const { db, publicClient, log } = o;
+  const routers = new Set((Array.isArray(o.router) ? (o.router as readonly Address[]) : [o.router as Address]).map((a) => a.toLowerCase()));
   const now = o.now ?? new Date();
   const confirmations = BigInt(o.confirmations ?? 0);
   const requiredMisses = o.requiredMisses ?? DEFAULT_REQUIRED_MISSES;
@@ -65,7 +67,7 @@ export async function verifyRecentPayments(o: {
     try {
       const rcpt = await publicClient.getTransactionReceipt({ hash: p.txHash as Hex });
       const paid = parseEventLogs({ abi: cobraRouterAbi, eventName: "Paid", logs: rcpt.logs }).find(
-        (l) => l.address.toLowerCase() === router.toLowerCase() && l.args.invoiceId.toLowerCase() === p.invoiceId.toLowerCase(),
+        (l) => routers.has(l.address.toLowerCase()) && l.args.invoiceId.toLowerCase() === p.invoiceId.toLowerCase(),
       );
       verdict =
         rcpt.status === "success" && paid

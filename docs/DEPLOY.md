@@ -155,6 +155,36 @@ journalctl -u cobra-worker -f     # attendre "worker_started" avec relayer = AGE
 Le worker refuse de démarrer (code 78, pas de boucle de redémarrage) si une variable manque ou si le RPC n'est pas sur la chaîne 42220.
 ✅ `[worker] indexer cursor` PASS (mis à jour il y a moins de 10 min) et `relay queue` PASS.
 
+## Passage au routeur v2 (Textile FX RFQ)
+
+Le routeur v2 (`CobraRouterV2`, spec `docs/interfaces.md` §7) règle une jambe au prix RFQ de Textile quand il est meilleur qu'Uniswap, et garde le paiement atomique. **Tant que `TEXTILE_API_KEY` n'est pas définie, rien ne change** : le comportement v1 est inchangé. Le v1 reste on-chain (immuable) ; l'indexeur, `/proof` et la landing suivent les deux routeurs.
+
+> Le déploiement du v2 et le changement de `ROUTER_ADDRESS` sont **humains** (comme le v1) : aucun agent ne diffuse de transaction.
+
+### Nouvelles variables
+
+| Variable | Où | Rôle |
+|---|---|---|
+| `ROUTER_ADDRESS`, `ROUTER_DEPLOY_BLOCK` | Vercel + VPS | passent à l'adresse / au bloc du **v2** |
+| `LEGACY_ROUTER_ADDRESS`, `LEGACY_ROUTER_DEPLOY_BLOCK` | VPS (obligatoire si Textile) ; Vercel (adresse seule, affichage `/proof` + landing) | l'ancien routeur **v1** : l'indexeur continue à lire ses `Paid` |
+| `TEXTILE_API_KEY` | Vercel (serveur, **jamais** `NEXT_PUBLIC_`) + VPS | clé partenaire (scope aggregator) : devis RFQ côté web, `submit` du hash côté worker |
+| `TEXTILE_ENABLED` | Vercel + VPS (optionnel) | `false` coupe Textile sans retirer la clé |
+
+### Ordre des opérations
+
+1. **Prépare, ne change rien d'actif.** Déploie le v2 (même procédure que l'étape 3, tag ERC-8021 inclus), note son adresse et son bloc. Vérifie sur Celoscan que `TEXTILE_REACTOR()` renvoie `0xa9aa0a64769cbed4d3b1ceb4df01cde915c235b3`. Garde `.env.verify` à jour (adresse du v2).
+2. **Kill switch ON** (voir Exploitation) et attends que la file soit vide : `select count(*) from submissions where status in ('pending','sending','sent');` doit renvoyer 0. Un devis v1 en cours ne peut pas être signé contre le v2 (l'API répond `quote_expired`), donc on vide d'abord.
+3. **VPS** : dans `/etc/cobra/worker.env`, passe `ROUTER_ADDRESS` / `ROUTER_DEPLOY_BLOCK` au v2, ajoute `LEGACY_ROUTER_ADDRESS` / `LEGACY_ROUTER_DEPLOY_BLOCK` (= l'ancien v1 : `0xfe38683105fa36ee664acefe7e714ba93492e458`, bloc du README) et `TEXTILE_API_KEY`. `sudo git pull && sudo pnpm install && sudo systemctl restart cobra-worker`. Le worker refuse de démarrer (code 78) si `LEGACY_ROUTER_*` est incomplet ou égal à `ROUTER_ADDRESS`, si `TEXTILE_API_KEY` est posée sans routeur legacy, ou si `ROUTER_ADDRESS` n'expose pas `TEXTILE_REACTOR()` = le reactor Textile. Attends `worker_started` avec `routerV2: true`, `textile: true`, `legacyRouter: 0x…`.
+4. **Vercel** : mêmes `ROUTER_ADDRESS` / `ROUTER_DEPLOY_BLOCK`, plus `LEGACY_ROUTER_ADDRESS` et `TEXTILE_API_KEY`, puis redéploie.
+5. **Kill switch OFF.**
+6. **Contrôles** : `pnpm verify:deploy` (avec le v2 dans `.env.verify`) ; un paiement de test depuis un autre wallet ; `/api/agent/journal` doit afficher « Textile RFQ » ou « Uniswap V3 » pour ce paiement ; `[worker] indexer cursor` PASS ; un `Paid` encore émis par le v1 est toujours rapproché (indexeur double).
+
+### Retour arrière
+
+- **Couper Textile seulement** : supprime `TEXTILE_API_KEY` (ou `TEXTILE_ENABLED=false`) sur Vercel et le VPS, redéploie / `systemctl restart`. Le routeur v2 sert alors uniquement des jambes Uniswap (même ABI que le v1).
+- **Revenir au v1** : kill switch ON, file vide, `ROUTER_ADDRESS` / `ROUTER_DEPLOY_BLOCK` = v1 sur Vercel et VPS, supprime `TEXTILE_API_KEY`, puis mets `LEGACY_ROUTER_ADDRESS` / `_DEPLOY_BLOCK` = **v2** pour que l'indexeur rapproche un `Paid` v2 tardif (ou retire-les une fois la fenêtre de confirmation passée), redéploie, restart, kill switch OFF.
+- Les RFQ Textile non utilisés expirent seuls (120 s) ; aucune action nécessaire.
+
 ## 8. Vérification complète
 
 ```sh

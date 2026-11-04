@@ -36,6 +36,8 @@ export interface LoopOptions {
   db: Db;
   publicClient: PublicClient;
   router: Address;
+  /** WS13: older router whose `Paid` logs are still followed (v1 after the switch to v2). */
+  legacyRouter?: { address: Address; fromBlock: bigint };
   fromBlock: bigint;
   confirmations: number;
   maxBlockRange: number;
@@ -51,6 +53,9 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
   if (!Number.isInteger(o.confirmations) || o.confirmations < 0) throw new Error("confirmations must be an integer >= 0");
   if (!Number.isInteger(o.maxBlockRange) || o.maxBlockRange < 1) throw new Error("maxBlockRange must be an integer >= 1");
 
+  // One log stream, one cursor: `address` accepts a list. The first scan starts at the earliest deploy block.
+  const routers: Address[] = o.legacyRouter ? [o.router, o.legacyRouter.address] : [o.router];
+  const startBlock = o.legacyRouter && o.legacyRouter.fromBlock < o.fromBlock ? o.legacyRouter.fromBlock : o.fromBlock;
   let stopped = false;
   let wake: (() => void) | null = null;
   const sleep = (ms: number) =>
@@ -88,13 +93,13 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
 
     while (!stopped) {
       try {
-        cursor ??= await loadCursor(o.db, o.fromBlock);
+        cursor ??= await loadCursor(o.db, startBlock);
         await drain();
 
         const head = await o.publicClient.getBlockNumber({ cacheTime: 0 });
         if (reorgWindow > 0 && Date.now() - lastReorgCheck >= reorgEveryMs) {
           lastReorgCheck = Date.now();
-          const r = await verifyRecentPayments({ db: o.db, publicClient: o.publicClient, router: o.router, head, window: reorgWindow, confirmations: o.confirmations, ...(o.reorgMinSuspectGapMs !== undefined && { minSuspectGapMs: o.reorgMinSuspectGapMs }), log: o.log });
+          const r = await verifyRecentPayments({ db: o.db, publicClient: o.publicClient, router: routers, head, window: reorgWindow, confirmations: o.confirmations, ...(o.reorgMinSuspectGapMs !== undefined && { minSuspectGapMs: o.reorgMinSuspectGapMs }), log: o.log });
           if (r.reverted > 0) {
             cursor = null; // the cursor was rewound in the DB: re-read it and re-scan
             await drain();
@@ -111,7 +116,7 @@ export function runIndexer(o: LoopOptions): { stop(): Promise<void> } {
 
         let raw;
         try {
-          raw = await o.publicClient.getLogs({ address: o.router, event: paidEvent, fromBlock: from, toBlock: to, strict: true });
+          raw = await o.publicClient.getLogs({ address: routers.length === 1 ? routers[0]! : routers, event: paidEvent, fromBlock: from, toBlock: to, strict: true });
         } catch (e) {
           if (isRangeError(e) && range > 1) {
             range = Math.max(1, Math.floor(range / 2));

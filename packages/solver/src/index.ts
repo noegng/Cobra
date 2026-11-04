@@ -6,6 +6,7 @@ import type { Address, PublicClient } from "viem";
 import type { Currency, FeeTier, QuoteSource, SolveResult, SolverInput, TokenInfo } from "@cobra/shared";
 import { solveImpl } from "./solve";
 import { createUniswapQuoterImpl } from "./quoter";
+import { solveWithTextile, type SolveResultEx, type TextileRouteOptions } from "./textile-route";
 
 export interface SolverOptions {
   quoter: QuoteSource;
@@ -41,10 +42,22 @@ export interface SolverOptions {
   maxLegs?: number;
   /** Max concurrent quote requests. Default 8. */
   maxConcurrentQuotes?: number;
+
+  // ---- WS13 (docs/interfaces.md §7) ----
+  /** Textile FX RFQ route (CobraRouterV2). Omit => v1 behaviour, Uniswap only. */
+  textile?: TextileRouteOptions;
 }
 
-export async function solve(input: SolverInput, opts: SolverOptions): Promise<SolveResult> {
-  return solveImpl(input, opts);
+export async function solve(input: SolverInput, opts: SolverOptions): Promise<SolveResultEx> {
+  const uni = await solveImpl(input, opts);
+  if (!opts.textile) return uni;
+  try {
+    return await solveWithTextile(input, opts, uni);
+  } catch (e) {
+    // Textile must never break a payment that Uniswap can serve.
+    opts.textile.log?.("textile_error", { kind: e instanceof Error ? e.name : "unknown" });
+    return uni.ok ? { ...uni, meta: { venue: "uniswap_v3" } } : uni;
+  }
 }
 
 /** QuoteSource backed by Uniswap V3 QuoterV2 on Celo (eth_call, read-only). */
@@ -62,6 +75,24 @@ export {
   DEFAULT_SPLIT_STEPS,
   pickPullKind,
 } from "./solve";
+export {
+  solveWithTextile,
+  DEFAULT_TEXTILE_CORRIDOR_SYMBOLS,
+  TEXTILE_EXPIRY_MARGIN_MS,
+  type PlanMeta,
+  type PlanVenue,
+  type SolveResultEx,
+  type TextileRouteOptions,
+} from "./textile-route";
+export {
+  createTextileClient,
+  TEXTILE_BASE_URL,
+  type TextileClient,
+  type TextileClientOptions,
+  type TextileFirmQuote,
+  type TextilePreview,
+  type TextileResult,
+} from "./textile";
 export { quoterV2Abi, QuoteFailedError } from "./quoter";
 export { fetchReferenceRates, createReferenceRateSource, FX_BOUNDS, FX_SOURCES, type FxOptions } from "./fx";
 export { PoolSimulator, poolFromPrice, QuoteError, type SimPool } from "./simulator";
