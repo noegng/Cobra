@@ -109,6 +109,8 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
     const s = (await res.json()) as StatusResponse;
     setStatus(s.status);
     if (s.txHash) setTxHash(s.txHash);
+    // A payment in flight or done supersedes any earlier error on screen (e.g. a submit cut off on mobile).
+    if (s.status === "submitted" || s.status === "paid") setNotice(null);
     if (s.status === "open" && s.submission?.status === "failed") setNotice("generic_error");
   }, [invoice.id]);
   useEffect(() => {
@@ -227,17 +229,35 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
         signatures.push(await signTypedData.mutateAsync({ account: address, ...td } as Parameters<typeof signTypedData.mutateAsync>[0]));
       }
       setBusy("submitting");
-      const res = await fetch(`/api/invoices/${invoice.id}/submit`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ quoteId: quote.quoteId, signatures }),
-      });
-      const body = res.ok ? {} : ((await res.json().catch(() => ({}))) as { error?: string });
-      // Only "already submitted" means a payment is in flight; any other 409/429 is a "try again", not a dead end.
-      if (res.ok || (res.status === 409 && (body as { error?: string }).error === "already_submitted")) {
+      // On mobile the browser is often backgrounded while the wallet app signs, and the request can be cut off
+      // after the server already accepted it. Retry: the server answers 409 already_submitted for a live one.
+      let res: Response | null = null;
+      for (let attempt = 0; attempt < 3 && !res; attempt++) {
+        try {
+          res = await fetch(`/api/invoices/${invoice.id}/submit`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ quoteId: quote.quoteId, signatures }),
+          });
+        } catch {
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+      if (!res) {
+        void pollStatus(); // the payment may still be on its way; the status poll clears the notice if so
+        setNotice("generic_error");
+        return;
+      }
+      const body = res.ok ? {} : ((await res.json().catch(() => ({}))) as { error?: string; status?: string });
+      // A payment already in flight (or done) is success: "already_submitted", or a retry that finds the invoice
+      // no longer open because our own first request went through. Any other 409/429 is a "try again".
+      const inFlight409 =
+        res.status === 409 &&
+        (body.error === "already_submitted" || (body.error === "invoice_not_open" && (body.status === "submitted" || body.status === "paid")));
+      if (res.ok || inFlight409) {
         setStatus("submitted");
       } else {
-        setNotice(errorKey((body as { error?: string }).error));
+        setNotice(errorKey(body.error));
         setQuote(null);
       }
     } catch (e) {
