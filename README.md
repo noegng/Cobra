@@ -360,7 +360,7 @@ beyond its price guard.
 | `apps/web` | Next.js: payer pages, merchant dashboard, `/proof`, API routes, Telegram webhook |
 | `apps/worker` | VPS process: relayer, indexer, expiry, reminders (systemd unit in `apps/worker/deploy`) |
 | `scripts/agent` | Human-run CLIs: `deploy-router.ts`, `register.ts` |
-| `docs/` | [`interfaces.md`](docs/interfaces.md) (frozen contracts between packages), research, reports in `docs/reports/` |
+| `docs/` | [`interfaces.md`](docs/interfaces.md) (frozen contracts between packages), research, project status and test results in [`docs/reports/STATUS.md`](docs/reports/STATUS.md) |
 
 Full data flow: [`docs/interfaces.md`](docs/interfaces.md) §4. Invoice states: `packages/shared/src/invoice-state.ts`
 (`open → submitted → paid`, or `expired` / `cancelled`).

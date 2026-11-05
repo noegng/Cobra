@@ -20,7 +20,7 @@ import { errorMessage, isRangeError } from "./rpc-errors";
 
 /**
  * Celo is an OP-stack L2 with ~1 s blocks: 5 confirmations ≈ 5 s of extra latency for the merchant,
- * enough to ride out sequencer-level reorgs of the unsafe head. See docs/reports/WS6-2026-11-02.md.
+ * enough to ride out sequencer-level reorgs of the unsafe head. Deeper reorgs are handled by ./reorg.ts.
  */
 export const DEFAULT_CONFIRMATIONS = 5;
 export const DEFAULT_MAX_BLOCK_RANGE = 2000;

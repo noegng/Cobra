@@ -63,7 +63,9 @@ This is an author self-review. It is **not** an audit.
 3. Should `pay` reject `payer == address(0)` and `amountOut == 0`? Today it relies on tokens and Permit2 rejecting a
    zero signer (Permit2 and FiatToken do; the behaviour of USDT's implementation was not checked).
 4. EIP-7702 / ERC-1271 payers (see above): WS5 should detect `payer.code.length > 0` and either test the signature
-   with an `eth_call` or fall back to ALLOWANCE.
+   with an `eth_call` or fall back to ALLOWANCE. **Resolved (4 Nov 2026):** at submit, for a delegated payer, the API
+   calls `isValidSignature` on the account for each leg. MetaMask's delegator passes (fork-tested). A delegate that
+   rejects gets a clear `smart_account_unsupported` message, and nothing is queued.
 5. There is no sweep, so tokens sent to the router by mistake are lost for good. I accept this as the price of being
    ownerless.
 6. MEV: the per-leg `amountOutMinimum` is 0. A sandwich can take at most the payer's signed buffer
