@@ -18,13 +18,17 @@ import { sumDecimals } from "./amount";
 import type { MerchantRow } from "./merchants";
 import { nextCounter, stateKeys } from "./state";
 import { localDateTime, localDayRange } from "./time";
+import { chargeSize, type ChargeSize } from "./limits";
 import { isUsdtAddress, quoteUsdt, type RateSource } from "./usd";
 
 export const INVOICE_RATE_LIMIT = { max: 10, windowMs: 60_000 } as const;
 export const DESCRIPTION_MAX = 100;
 
-export type CreateInvoiceError = "rate_limited" | "unsupported_settlement" | "rate_unavailable";
-export type CreateInvoiceResult = { ok: true; invoice: InvoiceRow } | { ok: false; error: CreateInvoiceError };
+export type CreateInvoiceError = "rate_limited" | "unsupported_settlement" | "rate_unavailable" | "over_limit" | "needs_confirmation";
+/** `size` is the dollar check (limits.ts): set on over_limit / needs_confirmation, and on success when a rate was known. */
+export type CreateInvoiceResult =
+  | { ok: true; invoice: InvoiceRow; size: ChargeSize }
+  | { ok: false; error: CreateInvoiceError; size?: ChargeSize };
 
 export function formatReference(n: number): string {
   return `A-${String(n).padStart(4, "0")}`;
@@ -43,11 +47,13 @@ export function cleanDescription(d: string | null | undefined): string | null {
  *  - wFIAT of that currency, 1:1: amountOut = amountLocal in token base units;
  *  - USD₮: amountOut = ceil(amountLocal × 10^6 / localPerUsd) at the reference rate read now (usd.ts);
  *    no rate -> `rate_unavailable`, nothing is created.
+ * Size (limits.ts): above the per-payment cap -> `over_limit`; from half the cap -> `needs_confirmation` unless
+ * `confirmed` (the merchant pressed "yes"). Without a rate the size is unknown and does not block.
  */
 export async function createInvoice(
   db: Db,
   merchant: MerchantRow,
-  args: { amountLocal: string; description?: string | null; now: Date; source?: "chat" | "dashboard"; rates?: RateSource },
+  args: { amountLocal: string; description?: string | null; now: Date; source?: "chat" | "dashboard"; rates?: RateSource; confirmed?: boolean },
 ): Promise<CreateInvoiceResult> {
   const token = tokenByAddress(merchant.settlementToken);
   const usdt = isUsdtAddress(merchant.settlementToken);
@@ -61,6 +67,10 @@ export async function createInvoice(
     .from(invoices)
     .where(and(eq(invoices.merchantId, merchant.id), gte(invoices.createdAt, since)));
   if ((recent?.n ?? 0) >= INVOICE_RATE_LIMIT.max) return { ok: false, error: "rate_limited" };
+
+  const size = await chargeSize(db, args.amountLocal, merchant.currency, args.rates);
+  if (size.kind === "over") return { ok: false, error: "over_limit", size };
+  if (size.kind === "confirm" && !args.confirmed) return { ok: false, error: "needs_confirmation", size };
 
   let amountOut: bigint;
   if (usdt) {
@@ -89,7 +99,7 @@ export async function createInvoice(
       createdAt: args.now,
     })
     .returning();
-  return { ok: true, invoice: row! };
+  return { ok: true, invoice: row!, size };
 }
 
 /** Accepts "A-0042", "a-42", "#42", "42" or a full 0x invoice id. */

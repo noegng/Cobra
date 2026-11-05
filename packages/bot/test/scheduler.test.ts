@@ -25,7 +25,7 @@ describe("notifier", () => {
     const txHash = `0x${"cd".repeat(32)}` as Hex;
     await notifier.invoicePaid({ merchantId: m.id, invoiceId: `0x${"11".repeat(32)}`, amountLocal: "30", currency: "BRL", reference: "A-0007", txHash });
     expect(sent(calls, "sendMessage")[0]!.payload.chat_id).toBe(42);
-    expect(texts(calls)[0]).toBe(`Pagamento recebido! A-0007: R$ 30 BRL → 30 wBRL na sua carteira.\nComprovante: https://celoscan.io/tx/${txHash}`);
+    expect(texts(calls)[0]).toBe(`Pagamento recebido! A-0007: R$ 30 reais → 30 wBRL na sua carteira.\nComprovante: https://celoscan.io/tx/${txHash}`);
     await notifier.text(m.id, "hola");
     await notifier.document(m.id, { filename: "x.csv", content: "a,b\r\n" }, "cap");
     expect(sent(calls, "sendDocument")[0]!.payload.document).toBeInstanceOf(InputFile);
@@ -57,7 +57,7 @@ describe("runReminders", () => {
     await runReminders({ db, notifier, now: new Date(t8.getTime() + 30_000), publicBaseUrl: BASE_URL });
     const out = texts(calls);
     expect(out).toHaveLength(1);
-    expect(out[0]).toContain("A-0001 ($ 4.500) sigue pendiente y vence en 2 min");
+    expect(out[0]).toContain("A-0001 ($ 4.500 pesos argentinos) sigue pendiente y vence en 2 min");
     expect(out[0]).toContain(`${BASE_URL}/pay/${inv!.id}`);
     expect(out[0]).toContain("https://wa.me/?text=");
 
@@ -83,7 +83,7 @@ describe("runDailyClose", () => {
 
     await runDailyClose({ db, notifier, now: new Date("2026-11-02T23:05:00Z") }); // BR 20:05
     expect(texts(calls)).toEqual([
-      "Fechamento do dia 2026-11-02\nRecebido: R$ 0 (0 pagamentos)\nPendentes: 1 · Vencidas: 0 · Canceladas: 0\nCobranças criadas hoje: 1",
+      "Fechamento do dia 2026-11-02\nRecebido: R$ 0 reais (0 pagamentos)\nPendentes: 1 · Vencidas: 0 · Canceladas: 0\nCobranças criadas hoje: 1",
     ]);
 
     const t = new Date("2026-11-03T00:01:00Z"); // AR 21:01 on 2026-11-02
@@ -92,7 +92,7 @@ describe("runDailyClose", () => {
     const out = texts(calls);
     expect(out).toHaveLength(2);
     expect(out[1]).toBe(
-      "Cierre del día 2026-11-02\nCobrado: $ 4.500,50 (1 pagos)\nPendientes: 1 · Vencidos: 0 · Cancelados: 0\nCobros creados hoy: 2",
+      "Cierre del día 2026-11-02\nCobrado: $ 4.500,50 pesos argentinos (1 pagos)\nPendientes: 1 · Vencidos: 0 · Cancelados: 0\nCobros creados hoy: 2",
     );
     const docs = sent(calls, "sendDocument");
     expect(docs).toHaveLength(2);

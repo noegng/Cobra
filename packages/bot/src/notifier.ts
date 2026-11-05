@@ -28,7 +28,7 @@ export function createNotifierWithApi(api: Api, db: Db): BotNotifier {
     async invoicePaid({ merchantId, invoiceId, amountLocal, currency, reference, txHash }) {
       const { m, chatId } = await chatOf(merchantId);
       const lang = merchantLang(m);
-      // "$ 100" alone reads as dollars: add the currency code, and what actually landed in the wallet, read from the
+      // money() writes the currency out ("$ 100" alone reads as dollars); add what actually landed in the wallet, read from the
       // invoice's own tokenOut / amountOut (wFIAT 1:1 or USD₮ at the rate frozen at creation), never assumed.
       const [inv] = await db
         .select({ tokenOut: invoices.tokenOut, amountOut: invoices.amountOut })
@@ -47,7 +47,7 @@ export function createNotifierWithApi(api: Api, db: Db): BotNotifier {
       }
       await api.sendMessage(
         chatId,
-        t(lang, "paid", { ref: reference ?? "", amount: `${money(m, amountLocal, currency)} ${currency}`, received, url: explorerTx(txHash) }),
+        t(lang, "paid", { ref: reference ?? "", amount: money(m, amountLocal, currency), received, url: explorerTx(txHash) }),
         { link_preview_options: { is_disabled: true } },
       );
     },

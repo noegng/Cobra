@@ -13,7 +13,16 @@ export const stateKeys = {
   dailyClose: (merchantId: string, date: string) => `daily_close:${merchantId}:${date}`,
   /** `/billetera` alone: the next text message is the new payout address. */
   awaitingWallet: (merchantId: string) => `bot:awaiting_wallet:${merchantId}`,
+  /** A large charge waiting for the merchant's "yes" button (limits.ts). */
+  pendingCharge: (merchantId: string) => `bot:pending_charge:${merchantId}`,
 };
+
+export interface PendingCharge {
+  amountLocal: string; // canonical decimal string from parseAmount
+  description: string | null;
+  nonce: string;
+  expiresAt: number; // unix ms
+}
 
 export interface AwaitingWallet {
   expiresAt: number; // unix ms

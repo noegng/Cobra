@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./amount": "./src/amount.ts",
     "./fastpath": "./src/fastpath.ts",
-    "./usd": "./src/usd.ts"
+    "./usd": "./src/usd.ts",
+    "./limits": "./src/limits.ts"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",

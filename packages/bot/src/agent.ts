@@ -16,6 +16,7 @@ import { amountStyleFor, parseAmount } from "./amount";
 import { amountErrorMessage, t, LANGUAGE_LABEL } from "./i18n";
 import {
   cancelInvoice,
+  cleanDescription,
   createInvoice,
   dailySummary,
   invoiceStatus,
@@ -24,8 +25,8 @@ import {
 } from "./invoices";
 import { buildRipioOfframpLink, payUrl } from "./links";
 import { checkPayoutAddress, resolveSettlementChoice, settlementChoices, updateMerchant, type MerchantRow } from "./merchants";
-import { invoiceAmount, merchantLang, merchantName, money } from "./present";
-import { stateKeys, writeState, type PendingPayout } from "./state";
+import { createInvoiceErrorMessage, invoiceAmount, merchantLang, merchantName, money } from "./present";
+import { stateKeys, writeState, type PendingCharge, type PendingPayout } from "./state";
 import { localDate } from "./time";
 import { displaySymbol, type RateSource } from "./usd";
 
@@ -60,14 +61,33 @@ export async function proposePayout(db: Db, merchantId: string, address: string,
   return pending;
 }
 
+/** A large charge waiting for "yes": the stored state plus the dollar value shown on the buttons message. */
+export interface ChargeConfirmation {
+  pending: PendingCharge;
+  usdMicro: bigint;
+}
+
 /** Side effects the bot renders deterministically after the model finished (QRs, files, confirmation buttons). */
 export interface AgentEffects {
   invoices: InvoiceRow[];
   documents: Array<{ filename: string; content: string; caption: string }>;
   payoutConfirmation: PendingPayout | null;
+  chargeConfirmation: ChargeConfirmation | null;
 }
 
-export const newEffects = (): AgentEffects => ({ invoices: [], documents: [], payoutConfirmation: null });
+export const newEffects = (): AgentEffects => ({ invoices: [], documents: [], payoutConfirmation: null, chargeConfirmation: null });
+
+/** Stores a large charge until the merchant presses "yes" (same TTL as the payout confirmation). */
+export async function proposeCharge(db: Db, merchantId: string, amountLocal: string, description: string | null, now: Date): Promise<PendingCharge> {
+  const pending: PendingCharge = {
+    amountLocal,
+    description,
+    nonce: randomBytes(6).toString("hex"),
+    expiresAt: now.getTime() + PAYOUT_CONFIRM_TTL_MS,
+  };
+  await writeState(db, stateKeys.pendingCharge(merchantId), pending);
+  return pending;
+}
 
 const invoiceRefSchema = z
   .string()
@@ -118,8 +138,12 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
         }
         const res = await createInvoice(ctx.db, merchant, { amountLocal: parsed.value, description: description ?? null, now: ctx.now(), rates: ctx.rates });
         if (!res.ok) {
-          const key = res.error === "rate_limited" ? "rate_limited" : res.error === "rate_unavailable" ? "rate_unavailable" : "unsupported_settlement";
-          return { ok: false as const, error: res.error, message: t(lang(), key, { currency: merchant.currency }) };
+          if (res.error === "needs_confirmation" && res.size && res.size.kind !== "unknown") {
+            const pending = await proposeCharge(ctx.db, merchant.id, parsed.value, cleanDescription(description), ctx.now());
+            effects.chargeConfirmation = { pending, usdMicro: res.size.usdMicro };
+            return { ok: false as const, error: res.error, message: "Large amount: confirmation buttons were sent to the merchant. Nothing is created until they press yes." };
+          }
+          return { ok: false as const, error: res.error, message: createInvoiceErrorMessage(merchant, parsed.value, res) };
         }
         effects.invoices.push(res.invoice);
         return { ok: true as const, ...invoiceView(ctx, res.invoice), qr_and_link_sent: true };

@@ -3,7 +3,7 @@
  * descriptions can never break formatting or inject markup.
  */
 import type { CountryCode, InvoiceStatus, Language } from "@cobra/shared";
-import type { AmountError } from "./amount";
+import { currencyName, type AmountError } from "./amount";
 
 type P = Record<string, string | number>;
 const fill = (s: string, p: P = {}): string => s.replace(/\{(\w+)\}/g, (_, k: string) => String(p[k] ?? `{${k}}`));
@@ -11,7 +11,7 @@ const fill = (s: string, p: P = {}): string => s.replace(/\{(\w+)\}/g, (_, k: st
 const es = {
   welcome_new:
     "¡Hola! Soy Cobrá: cobras en pesos con un QR y recibes el dinero directo en tu billetera.\n\nPaso 1 de 2: ¿en qué país está tu negocio?",
-  welcome_back: "¡Hola de nuevo, {name}! Escribe por ejemplo: cobrar 4500 café\n/ayuda para ver todo lo que puedo hacer.",
+  welcome_back: "¡Hola de nuevo, {name}! Escribe el monto en {cur}, por ejemplo: cobrar 4500 café\n/ayuda para ver todo lo que puedo hacer.",
   choose_language: "Elige tu idioma:",
   language_set: "Listo, te hablo en español.",
   country_unavailable: "Todavía no podemos liquidar en {currency} ({country}). Elige otro país o vuelve pronto.",
@@ -25,27 +25,35 @@ const es = {
   address_secret:
     "¡Cuidado! Eso parece una clave privada o una frase semilla. NUNCA la compartas con nadie, tampoco conmigo. Borra ese mensaje y, si alguien más la vio, mueve tus fondos a una billetera nueva. Pega solo tu dirección pública (0x...).",
   onboarding_done:
-    "¡Listo, {name}! Recibirás {token} en {address}.\n\nPara cobrar escribe: cobrar 4500 café\nEste es tu QR fijo: tus clientes lo escanean e ingresan el monto.",
+    "¡Listo, {name}! Recibirás {token} en {address}.\n\nPara cobrar escribe el monto en {cur}: cobrar 4500 café\nEste es tu QR fijo: tus clientes lo escanean e ingresan el monto.",
   static_qr_caption: "Tu QR de cobro fijo: {url}",
   proof_hint: "Opcional: prueba que la billetera es tuya firmando un mensaje en {url}",
   help:
-    "Comandos:\n/cobrar 4500 café — crea un cobro con QR y link (vence en 10 min)\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV (también llega solo a las 21:00)\n/panel — enlace privado a tu panel web\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n/pais — cambiar de país\n/moneda — recibir en moneda local digital o en USD₮\n/billetera — cambiar tu dirección de cobro\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
+    "Comandos (los montos son en {cur}):\n/cobrar 4500 café — crea un cobro de 4500 {cur} con QR y link (vence en 10 min)\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV (también llega solo a las 21:00)\n/panel — enlace privado a tu panel web\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n/pais — cambiar de país\n/moneda — recibir en moneda local digital o en USD₮\n/billetera — cambiar tu dirección de cobro\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
   not_onboarded: "Primero configuremos tu cuenta: /start",
-  invoice_caption: "Cobro {ref}: {amount}{desc}\nVence en {minutes} min.\nLink de pago: {url}",
+  invoice_caption: "Cobro {ref}: {amount}{usd}{desc}\nVence en {minutes} min.\nLink de pago: {url}",
   wa_text: "{name} te envía un cobro de {amount}{desc}. Paga aquí: {url}",
   btn_whatsapp: "Compartir por WhatsApp",
   btn_open: "Abrir link de pago",
   btn_cancel: "Cancelar cobro",
-  usage_cobrar: "Escribe el monto y una descripción, por ejemplo: cobrar 4500 café",
+  usage_cobrar: "Escribe el monto en {cur} y una descripción, por ejemplo: cobrar 4500 café",
   amount_space_ambiguous: "\"{input}\" puede leerse como {joined} o como {first}. Escribe el monto sin espacios, por ejemplo: cobrar 4500 café",
-  amount_empty: "Falta el monto. Ejemplo: cobrar 4500 café",
+  amount_empty: "Falta el monto en {cur}. Ejemplo: cobrar 4500 café",
   amount_invalid: "No entendí el monto \"{input}\". Ejemplos: 4500, 4.500,50, 2 mil.",
   amount_ambiguous: "\"{input}\" es ambiguo. ¿Quisiste decir sin decimales (4.500) o con decimales (4,50)? Escríbelo de nuevo, por favor.",
   amount_negative: "El monto debe ser positivo.",
   amount_zero: "El monto debe ser mayor que cero.",
   amount_too_many_decimals: "Máximo 2 decimales.",
   amount_too_large: "Ese monto es demasiado grande.",
-  amount_foreign_currency: "Por ahora solo cobro en {currency}. Escribe el monto en tu moneda local.",
+  amount_foreign_currency: "Tus cobros son en {cur}. Escribe el monto en {cur}, por ejemplo: cobrar 4500 café. Si prefieres recibir dólares digitales, usa /moneda.",
+  usd_hint: " (≈ US$ {usd})",
+  charge_over:
+    "No creé el cobro: {amount} equivale a ≈ US$ {usd}, y por ahora el máximo por pago es US$ {max}. ¿Escribiste el monto en {cur}? Revísalo y vuelve a intentarlo.",
+  charge_confirm: "¿Confirmas este cobro?\n{amount} (≈ US$ {usd}){desc}",
+  btn_charge_yes: "Sí, cobrar",
+  btn_charge_fix: "Corregir",
+  charge_fix: "Listo, no creé nada. Escribe el monto correcto en {cur}, por ejemplo: cobrar 4500 café",
+  charge_confirm_expired: "Esta confirmación ya no es válida. Vuelve a escribir el cobro.",
   rate_limited: "Demasiados cobros seguidos. Espera un minuto e inténtalo de nuevo.",
   unsupported_settlement: "Tu moneda de liquidación no es compatible con cobros en {currency} todavía.",
   invoices_empty: "Todavía no tienes cobros.",
@@ -102,7 +110,7 @@ type Strings = Record<Key, string>;
 const pt: Strings = {
   welcome_new:
     "Olá! Eu sou o Cobrá: você cobra em reais com um QR e recebe o dinheiro direto na sua carteira.\n\nPasso 1 de 2: em qual país fica o seu negócio?",
-  welcome_back: "Olá de novo, {name}! Escreva por exemplo: cobrar 30 corte\n/ajuda para ver tudo o que eu faço.",
+  welcome_back: "Olá de novo, {name}! Escreva o valor em {cur}, por exemplo: cobrar 30 corte\n/ajuda para ver tudo o que eu faço.",
   choose_language: "Escolha seu idioma:",
   language_set: "Pronto, vou falar em português.",
   country_unavailable: "Ainda não conseguimos liquidar em {currency} ({country}). Escolha outro país ou volte em breve.",
@@ -116,27 +124,35 @@ const pt: Strings = {
   address_secret:
     "Cuidado! Isso parece uma chave privada ou frase-semente. NUNCA compartilhe com ninguém, nem comigo. Apague essa mensagem e, se alguém viu, mova seus fundos para uma carteira nova. Cole só o seu endereço público (0x...).",
   onboarding_done:
-    "Pronto, {name}! Você vai receber {token} em {address}.\n\nPara cobrar escreva: cobrar 30 corte\nEste é o seu QR fixo: o cliente escaneia e digita o valor.",
+    "Pronto, {name}! Você vai receber {token} em {address}.\n\nPara cobrar escreva o valor em {cur}: cobrar 30 corte\nEste é o seu QR fixo: o cliente escaneia e digita o valor.",
   static_qr_caption: "Seu QR de cobrança fixo: {url}",
   proof_hint: "Opcional: prove que a carteira é sua assinando uma mensagem em {url}",
   help:
-    "Comandos:\n/cobrar 30 corte — cria uma cobrança com QR e link (vence em 10 min)\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV (também chega sozinho às 21:00)\n/painel — link privado para seu painel web\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n/pais — mudar de país\n/moeda — receber em moeda local digital ou em USD₮\n/carteira — mudar seu endereço de recebimento\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
+    "Comandos (os valores são em {cur}):\n/cobrar 30 corte — cria uma cobrança de 30 {cur} com QR e link (vence em 10 min)\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV (também chega sozinho às 21:00)\n/painel — link privado para seu painel web\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n/pais — mudar de país\n/moeda — receber em moeda local digital ou em USD₮\n/carteira — mudar seu endereço de recebimento\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
   not_onboarded: "Primeiro vamos configurar sua conta: /start",
-  invoice_caption: "Cobrança {ref}: {amount}{desc}\nVence em {minutes} min.\nLink de pagamento: {url}",
+  invoice_caption: "Cobrança {ref}: {amount}{usd}{desc}\nVence em {minutes} min.\nLink de pagamento: {url}",
   wa_text: "{name} te enviou uma cobrança de {amount}{desc}. Pague aqui: {url}",
   btn_whatsapp: "Compartilhar no WhatsApp",
   btn_open: "Abrir link de pagamento",
   btn_cancel: "Cancelar cobrança",
-  usage_cobrar: "Escreva o valor e uma descrição, por exemplo: cobrar 30 corte",
+  usage_cobrar: "Escreva o valor em {cur} e uma descrição, por exemplo: cobrar 30 corte",
   amount_space_ambiguous: "\"{input}\" pode ser lido como {joined} ou como {first}. Escreva o valor sem espaços, por exemplo: cobrar 4500 corte",
-  amount_empty: "Falta o valor. Exemplo: cobrar 30 corte",
+  amount_empty: "Falta o valor em {cur}. Exemplo: cobrar 30 corte",
   amount_invalid: "Não entendi o valor \"{input}\". Exemplos: 30, 4.500,50, 2 mil.",
   amount_ambiguous: "\"{input}\" é ambíguo. Você quis dizer sem centavos (4.500) ou com centavos (4,50)? Escreva de novo, por favor.",
   amount_negative: "O valor deve ser positivo.",
   amount_zero: "O valor deve ser maior que zero.",
   amount_too_many_decimals: "No máximo 2 casas decimais.",
   amount_too_large: "Esse valor é grande demais.",
-  amount_foreign_currency: "Por enquanto só cobro em {currency}. Escreva o valor na sua moeda local.",
+  amount_foreign_currency: "Suas cobranças são em {cur}. Escreva o valor em {cur}, por exemplo: cobrar 30 corte. Se preferir receber dólares digitais, use /moeda.",
+  usd_hint: " (≈ US$ {usd})",
+  charge_over:
+    "Não criei a cobrança: {amount} equivale a ≈ US$ {usd}, e por enquanto o máximo por pagamento é US$ {max}. Você escreveu o valor em {cur}? Confira e tente de novo.",
+  charge_confirm: "Confirma esta cobrança?\n{amount} (≈ US$ {usd}){desc}",
+  btn_charge_yes: "Sim, cobrar",
+  btn_charge_fix: "Corrigir",
+  charge_fix: "Pronto, não criei nada. Escreva o valor certo em {cur}, por exemplo: cobrar 30 corte",
+  charge_confirm_expired: "Esta confirmação não é mais válida. Escreva a cobrança de novo.",
   rate_limited: "Muitas cobranças seguidas. Espere um minuto e tente de novo.",
   unsupported_settlement: "Sua moeda de liquidação ainda não é compatível com cobranças em {currency}.",
   invoices_empty: "Você ainda não tem cobranças.",
@@ -190,7 +206,7 @@ const pt: Strings = {
 const en: Strings = {
   welcome_new:
     "Hi! I'm Cobrá: charge in local currency with a QR code and get paid straight to your wallet.\n\nStep 1 of 2: which country is your business in?",
-  welcome_back: "Welcome back, {name}! Try for example: charge 4500 coffee\n/help shows everything I can do.",
+  welcome_back: "Welcome back, {name}! Type the amount in {cur}, e.g.: charge 4500 coffee\n/help shows everything I can do.",
   choose_language: "Choose your language:",
   language_set: "Done, I'll speak English.",
   country_unavailable: "We can't settle in {currency} ({country}) yet. Pick another country or come back soon.",
@@ -204,27 +220,35 @@ const en: Strings = {
   address_secret:
     "Careful! That looks like a private key or seed phrase. NEVER share it with anyone, including me. Delete that message and, if anyone else saw it, move your funds to a new wallet. Paste only your public address (0x...).",
   onboarding_done:
-    "All set, {name}! You'll receive {token} at {address}.\n\nTo charge, type: charge 4500 coffee\nThis is your fixed QR: customers scan it and enter the amount.",
+    "All set, {name}! You'll receive {token} at {address}.\n\nTo charge, type the amount in {cur}: charge 4500 coffee\nThis is your fixed QR: customers scan it and enter the amount.",
   static_qr_caption: "Your fixed checkout QR: {url}",
   proof_hint: "Optional: prove the wallet is yours by signing a message at {url}",
   help:
-    "Commands:\n/charge 4500 coffee — create a payment request with QR and link (expires in 10 min)\n/invoices — your latest requests\n/close — today's summary + CSV (also sent automatically at 21:00)\n/dashboard — private link to your web dashboard\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n/country — change country\n/currency — get paid in local digital currency or in USD₮\n/wallet — change your payout address\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
+    "Commands (amounts are in {cur}):\n/charge 4500 coffee — create a request for 4500 {cur} with QR and link (expires in 10 min)\n/invoices — your latest requests\n/close — today's summary + CSV (also sent automatically at 21:00)\n/dashboard — private link to your web dashboard\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n/country — change country\n/currency — get paid in local digital currency or in USD₮\n/wallet — change your payout address\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
   not_onboarded: "Let's set up your account first: /start",
-  invoice_caption: "Request {ref}: {amount}{desc}\nExpires in {minutes} min.\nPayment link: {url}",
+  invoice_caption: "Request {ref}: {amount}{usd}{desc}\nExpires in {minutes} min.\nPayment link: {url}",
   wa_text: "{name} sent you a payment request for {amount}{desc}. Pay here: {url}",
   btn_whatsapp: "Share on WhatsApp",
   btn_open: "Open payment link",
   btn_cancel: "Cancel request",
-  usage_cobrar: "Type the amount and a description, e.g.: charge 4500 coffee",
+  usage_cobrar: "Type the amount in {cur} and a description, e.g.: charge 4500 coffee",
   amount_space_ambiguous: "\"{input}\" could mean {joined} or {first}. Type the amount without spaces, e.g.: charge 4500 coffee",
-  amount_empty: "The amount is missing. Example: charge 4500 coffee",
+  amount_empty: "The amount in {cur} is missing. Example: charge 4500 coffee",
   amount_invalid: "I didn't understand the amount \"{input}\". Examples: 4500, 4,500.50, 2 mil.",
   amount_ambiguous: "\"{input}\" is ambiguous. Did you mean a whole number (4500) or with decimals (4.50)? Please type it again.",
   amount_negative: "The amount must be positive.",
   amount_zero: "The amount must be greater than zero.",
   amount_too_many_decimals: "At most 2 decimals.",
   amount_too_large: "That amount is too large.",
-  amount_foreign_currency: "For now I only charge in {currency}. Please type the amount in your local currency.",
+  amount_foreign_currency: "Your requests are in {cur}. Type the amount in {cur}, e.g.: charge 4500 coffee. To get paid in digital dollars instead, use /currency.",
+  usd_hint: " (≈ US$ {usd})",
+  charge_over:
+    "I didn't create the request: {amount} is about US$ {usd}, and for now the maximum per payment is US$ {max}. Did you type the amount in {cur}? Check it and try again.",
+  charge_confirm: "Confirm this request?\n{amount} (≈ US$ {usd}){desc}",
+  btn_charge_yes: "Yes, charge",
+  btn_charge_fix: "Fix it",
+  charge_fix: "OK, nothing was created. Type the right amount in {cur}, e.g.: charge 4500 coffee",
+  charge_confirm_expired: "This confirmation is no longer valid. Type the request again.",
   rate_limited: "Too many requests in a row. Wait a minute and try again.",
   unsupported_settlement: "Your settlement token doesn't support {currency} requests yet.",
   invoices_empty: "You don't have any payment requests yet.",
@@ -326,7 +350,7 @@ export function statusLabel(lang: Language, status: InvoiceStatus): string {
 }
 
 export function amountErrorMessage(lang: Language, error: AmountError, input: string, currency: string): string {
-  return t(lang, `amount_${error}` as Key, { input, currency });
+  return t(lang, `amount_${error}` as Key, { input, currency, cur: currencyName(currency, lang) });
 }
 
 export type StringKey = Key;

@@ -104,7 +104,7 @@ describe("USD₮ invoices", () => {
     await seedMerchant(db, { telegramUserId: 5n, settlementToken: USDT.address });
     const { bot, calls } = makeBot(db, { model: forbiddenModel(), now: () => NOW, rates: RATES });
     await bot.handleUpdate(textUpdate(5, "cobrar 4500 café"));
-    expect(sent(calls, "sendPhoto").at(-1)!.payload.caption).toMatch(/^Cobro A-0001: \$ 4\.500 ARS ≈ 2,73 USD₮ — café/);
+    expect(sent(calls, "sendPhoto").at(-1)!.payload.caption).toMatch(/^Cobro A-0001: \$ 4\.500 pesos argentinos ≈ 2,73 USD₮ — café/);
 
     const { bot: bot2, calls: calls2 } = makeBot(db, { model: forbiddenModel(), now: () => NOW, rates: NO_RATES });
     await bot2.handleUpdate(textUpdate(5, "cobrar 100"));
@@ -121,7 +121,7 @@ describe("USD₮ invoices", () => {
     await createNotifierWithApi(api, db).invoicePaid({
       merchantId: m.id, invoiceId: res.invoice.id as Hex, amountLocal: "4500", currency: "ARS", reference: "A-0001", txHash: `0x${"ab".repeat(32)}` as Hex,
     });
-    expect(texts(calls)[0]).toContain("$ 4.500 ARS → 2,727273 USD₮ en tu billetera");
+    expect(texts(calls)[0]).toContain("$ 4.500 pesos argentinos → 2,727273 USD₮ en tu billetera");
 
     const s = await dailySummary(db, m, "2026-11-02");
     expect(s.csv.split("\r\n")[1]).toMatch(/,4500,ARS,.*,2\.727273,USDT$/);

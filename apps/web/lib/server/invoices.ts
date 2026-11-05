@@ -8,6 +8,7 @@ import {
   tokenByAddress,
 } from "@cobra/shared";
 import { invoices, merchants, type Db, type InvoiceRow } from "@cobra/db";
+import { chargeSize } from "@cobra/bot/limits";
 import { isUsdtAddress, quoteUsdt, type RateSource } from "@cobra/bot/usd";
 import type { PublicInvoice } from "../wire";
 
@@ -49,7 +50,7 @@ export function toPublicInvoice(row: InvoiceRow, merchant: MerchantRow, now: num
 
 export class StaticInvoiceError extends Error {
   constructor(
-    public readonly code: "merchant_not_found" | "unsupported_settlement" | "rate_unavailable",
+    public readonly code: "merchant_not_found" | "unsupported_settlement" | "rate_unavailable" | "over_limit",
     message = code,
   ) {
     super(message);
@@ -60,6 +61,8 @@ export class StaticInvoiceError extends Error {
  * Same creation rules as the bot (packages/bot/src/invoices.ts): the invoice is in the merchant's local currency;
  * wFIAT settlement is 1:1 (amountOut = toBaseUnits(amountLocal, decimals)); USD₮ settlement converts at the
  * reference rate read now, rounded up (`quoteUsdt`, packages/bot/src/usd.ts), and refuses without a rate.
+ * Above the relayer's per-payment cap at the reference rate (`chargeSize`, packages/bot/src/limits.ts) -> over_limit:
+ * nobody could pay it. No rate -> not blocked here (the relayer re-checks at payment time).
  * merchantAddress frozen from the payout address; deadline = now + INVOICE_TTL_SECONDS.
  * `amountLocal` must already be validated/normalised by `parseLocalAmount`.
  */
@@ -73,6 +76,9 @@ export async function createStaticInvoice(
   const usdt = isUsdtAddress(merchant.settlementToken);
   if (!token || (!usdt && (token.kind !== "wfiat" || token.currency !== merchant.currency))) {
     throw new StaticInvoiceError("unsupported_settlement");
+  }
+  if ((await chargeSize(db, args.amountLocal, merchant.currency, args.rates)).kind === "over") {
+    throw new StaticInvoiceError("over_limit");
   }
   let amountOut: bigint;
   if (usdt) {

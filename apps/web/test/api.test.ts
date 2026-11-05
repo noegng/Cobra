@@ -506,6 +506,19 @@ describe("POST /api/m/:slug/invoice (static QR)", () => {
     expect(await fx.db.select().from(invoices)).toHaveLength(before);
   });
 
+  it("above the per-payment cap at the reference rate -> 422 over_limit, nothing created; no rate -> not blocked", async () => {
+    const fx = await setup();
+    const before = (await fx.db.select().from(invoices)).length;
+    // 1650 ARS per USD, default cap US$ 200 -> 400.000 ARS ≈ US$ 242 is refused.
+    const res = await handleCreateStaticInvoice(req("POST", { amountLocal: "400000" }, { "x-forwarded-for": "ip-big" }), "cafe-luna", fx.deps);
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe("over_limit");
+    expect(await fx.db.select().from(invoices)).toHaveLength(before);
+    const noRate = { ...fx.deps, getReferenceRates: async () => ({ USD: 1 }) };
+    const r2 = await handleCreateStaticInvoice(req("POST", { amountLocal: "400000" }, { "x-forwarded-for": "ip-big2" }), "cafe-luna", noRate);
+    expect(r2.status).toBe(201);
+  });
+
   it("refuses a USD-settled merchant (no 1:1 rule)", async () => {
     const fx = await setup({ settlement: USDC.address, slug: "usd-shop" });
     const res = await handleCreateStaticInvoice(req("POST", { amountLocal: "10" }), "usd-shop", fx.deps);

@@ -95,12 +95,12 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     expect(inv).toMatchObject({ amountLocal: "4500.5", description: "café con leche", reference: "A-0001", source: "chat" });
     const photo = sent(calls, "sendPhoto")[0]!;
     expect(photo.payload.caption).toBe(
-      `Cobro A-0001: $ 4.500,50 — café con leche\nVence en 10 min.\nLink de pago: ${BASE_URL}/pay/${inv!.id}`,
+      `Cobro A-0001: $ 4.500,50 pesos argentinos — café con leche\nVence en 10 min.\nLink de pago: ${BASE_URL}/pay/${inv!.id}`,
     );
     const buttons = photo.payload.reply_markup.inline_keyboard.flat();
     const wa = buttons.find((b: any) => String(b.url ?? "").startsWith("https://wa.me/?text="));
     expect(decodeURIComponent(wa.url.split("text=")[1])).toBe(
-      `Kiosco Ana te envía un cobro de $ 4.500,50 (café con leche). Paga aquí: ${BASE_URL}/pay/${inv!.id}`,
+      `Kiosco Ana te envía un cobro de $ 4.500,50 pesos argentinos (café con leche). Paga aquí: ${BASE_URL}/pay/${inv!.id}`,
     );
     expect(buttons.some((b: any) => b.url === `${BASE_URL}/pay/${inv!.id}`)).toBe(true);
     expect(buttons.some((b: any) => b.callback_data === "cx:A-0001")).toBe(true);
@@ -120,7 +120,7 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     await bot.handleUpdate(textUpdate(1, "/cobrar 4,500 algo"));
     expect(texts(calls).at(-1)).toMatch(/"4,500" es ambiguo/);
     await bot.handleUpdate(textUpdate(1, "cobrar US$ 10 algo"));
-    expect(texts(calls).at(-1)).toMatch(/solo cobro en ARS/);
+    expect(texts(calls).at(-1)).toMatch(/Tus cobros son en pesos argentinos/);
     // "500 100 gramos": 500100 or 500 + "100 gramos"? Asked, never guessed; no invoice created.
     await bot.handleUpdate(textUpdate(1, "cobrar 500 100 gramos de queso"));
     expect(texts(calls).at(-1)).toMatch(/"500 100" puede leerse como 500100 o como 500/);
@@ -141,10 +141,10 @@ describe("bot update handling (grammY, fake API transformer)", () => {
     await bot.handleUpdate(textUpdate(1, "cobrar 250 alfajor"));
     await db.update(invoices).set({ status: "paid", paidAt: NOW }).where(eq(invoices.reference, "A-0001"));
     await bot.handleUpdate(textUpdate(1, "/facturas"));
-    expect(texts(calls).at(-1)).toBe("Tus últimos cobros:\nA-0002 · $ 250 · pendiente · alfajor\nA-0001 · $ 100 · pagado · agua");
+    expect(texts(calls).at(-1)).toBe("Tus últimos cobros:\nA-0002 · $ 250 pesos argentinos · pendiente · alfajor\nA-0001 · $ 100 pesos argentinos · pagado · agua");
 
     await bot.handleUpdate(textUpdate(1, "/cierre"));
-    expect(texts(calls).at(-1)).toMatch(/Cierre del día 2026-11-02\nCobrado: \$ 100 \(1 pagos\)/);
+    expect(texts(calls).at(-1)).toMatch(/Cierre del día 2026-11-02\nCobrado: \$ 100 pesos argentinos \(1 pagos\)/);
     const doc = sent(calls, "sendDocument").at(-1)!;
     expect(doc.payload.document).toBeInstanceOf(InputFile);
     expect(doc.payload.caption).toBe("Detalle del día 2026-11-02 (CSV)");

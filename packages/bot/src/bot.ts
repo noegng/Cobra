@@ -8,11 +8,11 @@ import type { LanguageModel } from "ai";
 import type { Db, InvoiceRow } from "@cobra/db";
 import { COUNTRIES, countryConfig, tokenByAddress, type CountryCode, type Language } from "@cobra/shared";
 import { createReferenceRateSource } from "@cobra/solver";
-import { modelFromEnv, PAYOUT_CONFIRM_TTL_MS, proposePayout, runAgent, type ToolContext } from "./agent";
+import { modelFromEnv, PAYOUT_CONFIRM_TTL_MS, proposeCharge, proposePayout, runAgent, type ChargeConfirmation, type ToolContext } from "./agent";
 import { amountStyleFor, parseAmount } from "./amount";
 import { matchCharge } from "./fastpath";
 import { amountErrorMessage, COUNTRY_LABEL, LANGUAGE_LABEL, LANGUAGES, languageFromTelegram, settlementLabel, t } from "./i18n";
-import { cancelInvoice, createInvoice, dailySummary, listInvoices, staleOpenInvoices } from "./invoices";
+import { cancelInvoice, cleanDescription, createInvoice, dailySummary, listInvoices, staleOpenInvoices } from "./invoices";
 import { signDashboardToken } from "@cobra/shared/dashboard-token";
 import { buildRipioOfframpLink, payUrl, proofUrl, qrPng, staticPayUrl } from "./links";
 import {
@@ -26,7 +26,8 @@ import {
   updateMerchant,
   type MerchantRow,
 } from "./merchants";
-import { invoiceCaption, invoiceLine, merchantLang, merchantName, money, shareLink } from "./present";
+import { createInvoiceErrorMessage, curName, invoiceCaption, invoiceLine, merchantLang, merchantName, money, shareLink, usdDisplay } from "./present";
+import { usdValueMicro } from "./limits";
 import {
   claimUpdate,
   deleteState,
@@ -35,6 +36,7 @@ import {
   writeState,
   type AwaitingWallet,
   type OnboardingState,
+  type PendingCharge,
   type PendingPayout,
 } from "./state";
 import { localDate } from "./time";
@@ -197,7 +199,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
   bot.command(COMMANDS.start as unknown as string[], async (ctx) => {
     const { merchant, lang } = ctx.cobra;
     if (merchant) {
-      await ctx.reply(t(lang, "welcome_back", { name: merchantName(merchant) }));
+      await ctx.reply(t(lang, "welcome_back", { name: merchantName(merchant), cur: curName(merchant) }));
       return;
     }
     const state: OnboardingState = { step: "country", language: lang };
@@ -269,7 +271,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     await deleteState(db, stateKeys.onboarding(from.id));
     ctx.cobra.merchant = merchant;
     const url = staticPayUrl(opts.publicBaseUrl, merchant.staticSlug);
-    await ctx.reply(t(lang, "onboarding_done", { name: merchantName(merchant), token: tokenSymbol(merchant), address: merchant.payoutAddress }));
+    await ctx.reply(t(lang, "onboarding_done", { name: merchantName(merchant), token: tokenSymbol(merchant), address: merchant.payoutAddress, cur: curName(merchant) }));
     await setChatMenu(ctx.api, Number(merchant.telegramChatId), merchantLang(merchant), log);
     await ctx.replyWithPhoto(new InputFile(await qrPng(url), `cobra-${merchant.staticSlug}.png`), {
       caption: t(lang, "static_qr_caption", { url }),
@@ -290,7 +292,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       .row()
       .text(t(lang, "btn_cancel"), `cx:${inv.reference}`);
     await ctx.replyWithPhoto(new InputFile(await qrPng(url), `cobra-${inv.reference}.png`), {
-      caption: invoiceCaption(merchant, inv, opts.publicBaseUrl, now()),
+      caption: invoiceCaption(merchant, inv, opts.publicBaseUrl, now(), await usdValueMicro(inv.amountLocal, inv.currency, rates)),
       reply_markup: kb,
     });
   }
@@ -298,7 +300,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
   async function handleCharge(ctx: CobraContext, merchant: MerchantRow, amountText: string, description: string, spaceAmbiguous = false) {
     const lang = merchantLang(merchant);
     if (!amountText) {
-      await ctx.reply(t(lang, "usage_cobrar"));
+      await ctx.reply(t(lang, "usage_cobrar", { cur: curName(merchant) }));
       return;
     }
     if (spaceAmbiguous) {
@@ -314,11 +316,29 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     }
     const res = await createInvoice(db, merchant, { amountLocal: parsed.value, description, now: now(), rates });
     if (!res.ok) {
-      const key = res.error === "rate_limited" ? "rate_limited" : res.error === "rate_unavailable" ? "rate_unavailable" : "unsupported_settlement";
-      await ctx.reply(t(lang, key, { currency: merchant.currency }));
+      if (res.error === "needs_confirmation" && res.size && res.size.kind !== "unknown") {
+        const pending = await proposeCharge(db, merchant.id, parsed.value, cleanDescription(description), now());
+        await sendChargeConfirmation(ctx, merchant, { pending, usdMicro: res.size.usdMicro });
+        return;
+      }
+      await ctx.reply(createInvoiceErrorMessage(merchant, parsed.value, res));
       return;
     }
     await sendInvoice(ctx, merchant, res.invoice);
+  }
+
+  /** "Confirm this request? $ 180.000 pesos argentinos (≈ US$ 109)" + yes / fix buttons. */
+  async function sendChargeConfirmation(ctx: CobraContext, merchant: MerchantRow, c: ChargeConfirmation) {
+    const lang = merchantLang(merchant);
+    const kb = new InlineKeyboard().text(t(lang, "btn_charge_yes"), `cy:${c.pending.nonce}`).text(t(lang, "btn_charge_fix"), `cn:${c.pending.nonce}`);
+    await ctx.reply(
+      t(lang, "charge_confirm", {
+        amount: money(merchant, c.pending.amountLocal, merchant.currency),
+        usd: usdDisplay(merchant, c.usdMicro),
+        desc: c.pending.description ? ` — ${c.pending.description}` : "",
+      }),
+      { reply_markup: kb },
+    );
   }
 
   async function sendPayoutConfirmation(ctx: CobraContext, lang: Language, pending: PendingPayout) {
@@ -429,7 +449,9 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       // Its text is discarded (it may claim funds were sent) and any payout proposal from this turn is dropped.
       log("agent_suspicious", { merchantId: merchant.id, unknownTools: result.unknownToolCalls });
       if (result.effects.payoutConfirmation) await deleteState(db, stateKeys.pendingPayout(m.id));
+      if (result.effects.chargeConfirmation) await deleteState(db, stateKeys.pendingCharge(m.id));
       result.effects.payoutConfirmation = null;
+      result.effects.chargeConfirmation = null;
       result.text = t(outLang, "cannot_move_funds");
     }
     if (result.text) await ctx.reply(result.text, { link_preview_options: { is_disabled: true } });
@@ -438,8 +460,15 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       await ctx.replyWithDocument(new InputFile(new TextEncoder().encode(d.content), d.filename), { caption: d.caption });
     }
     if (result.effects.payoutConfirmation) await sendPayoutConfirmation(ctx, outLang, result.effects.payoutConfirmation);
-    if (!result.text && result.effects.invoices.length === 0 && result.effects.documents.length === 0 && !result.effects.payoutConfirmation) {
-      await ctx.reply(t(outLang, "help", { token: tokenSymbol(m) }));
+    if (result.effects.chargeConfirmation) await sendChargeConfirmation(ctx, m, result.effects.chargeConfirmation);
+    if (
+      !result.text &&
+      result.effects.invoices.length === 0 &&
+      result.effects.documents.length === 0 &&
+      !result.effects.payoutConfirmation &&
+      !result.effects.chargeConfirmation
+    ) {
+      await ctx.reply(t(outLang, "help", { token: tokenSymbol(m), cur: curName(m) }));
     }
   }
 
@@ -557,7 +586,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
 
   bot.command(COMMANDS.help as unknown as string[], async (ctx) => {
     const m = ctx.cobra.merchant;
-    await ctx.reply(m ? t(ctx.cobra.lang, "help", { token: tokenSymbol(m) }) : t(ctx.cobra.lang, "not_onboarded"));
+    await ctx.reply(m ? t(ctx.cobra.lang, "help", { token: tokenSymbol(m), cur: curName(m) }) : t(ctx.cobra.lang, "not_onboarded"));
   });
 
   // ---------- callbacks ----------
@@ -615,6 +644,31 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     await warnStaleInvoices(ctx, updated);
   });
 
+  // Large-charge confirmation (limits.ts). The size is re-checked on "yes": the over-limit refusal still applies.
+  bot.callbackQuery(/^c([yn]):([0-9a-f]{12})$/, async (ctx) => {
+    await ctx.answerCallbackQuery().catch(() => {});
+    const merchant = ctx.cobra.merchant;
+    if (!merchant) return;
+    const lang = merchantLang(merchant);
+    const key = stateKeys.pendingCharge(merchant.id);
+    const pending = await readState<PendingCharge>(db, key);
+    if (!pending || pending.nonce !== ctx.match[2] || pending.expiresAt < now().getTime()) {
+      await ctx.reply(t(lang, "charge_confirm_expired"));
+      return;
+    }
+    await deleteState(db, key);
+    if (ctx.match[1] === "n") {
+      await ctx.reply(t(lang, "charge_fix", { cur: curName(merchant) }));
+      return;
+    }
+    const res = await createInvoice(db, merchant, { amountLocal: pending.amountLocal, description: pending.description, now: now(), rates, confirmed: true });
+    if (!res.ok) {
+      await ctx.reply(createInvoiceErrorMessage(merchant, pending.amountLocal, res));
+      return;
+    }
+    await sendInvoice(ctx, merchant, res.invoice);
+  });
+
   bot.callbackQuery("sx:all", async (ctx) => {
     await ctx.answerCallbackQuery().catch(() => {});
     const merchant = ctx.cobra.merchant;
@@ -656,7 +710,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       return;
     }
     if (text.startsWith("/") && !matchCharge(text)) {
-      await ctx.reply(t(lang, "help", { token: tokenSymbol(merchant) }));
+      await ctx.reply(t(lang, "help", { token: tokenSymbol(merchant), cur: curName(merchant) }));
       return;
     }
     await routeText(ctx, merchant, text);

@@ -156,6 +156,30 @@ const CURRENCY_SYMBOL: Record<string, string> = {
   USD: "US$",
 };
 
+/**
+ * Currency written out, so "$ 4.500" never reads as dollars: "$" is also the peso sign in AR, MX, CO and CL.
+ * Plain words a merchant uses every day; the ISO code stays the fallback.
+ */
+const CURRENCY_NAME: Record<string, Record<"es" | "pt" | "en", string>> = {
+  ARS: { es: "pesos argentinos", pt: "pesos argentinos", en: "Argentine pesos" },
+  BRL: { es: "reales", pt: "reais", en: "Brazilian reais" },
+  MXN: { es: "pesos mexicanos", pt: "pesos mexicanos", en: "Mexican pesos" },
+  COP: { es: "pesos colombianos", pt: "pesos colombianos", en: "Colombian pesos" },
+  CLP: { es: "pesos chilenos", pt: "pesos chilenos", en: "Chilean pesos" },
+  PEN: { es: "soles", pt: "soles", en: "Peruvian soles" },
+  USD: { es: "dólares", pt: "dólares", en: "US dollars" },
+};
+
+export function currencyName(currency: string, lang: string): string {
+  const l = lang === "pt" || lang === "en" ? lang : "es";
+  return CURRENCY_NAME[currency]?.[l] ?? currency;
+}
+
+/** "4500.5" -> "$ 4.500,50 pesos argentinos": the amount as the merchant and the payer read it everywhere. */
+export function formatAmountNamed(value: string, currency: string, style: AmountStyle, lang: string): string {
+  return `${formatAmount(value, currency, style)} ${currencyName(currency, lang)}`;
+}
+
 /** Deterministic display formatting of a decimal string (no floats): "4500.5" -> "$ 4.500,50". */
 export function formatAmount(value: string, currency: string, style: AmountStyle): string {
   const [intRaw = "0", fracRaw = ""] = value.split(".");

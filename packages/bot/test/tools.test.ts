@@ -35,7 +35,7 @@ describe("agent tools (PGlite)", () => {
   it("create_invoice: deterministic parse, 1:1 wFIAT base units, frozen merchant address, TTL, sequential refs", async () => {
     const { call, effects, merchant } = await setup(db, 1n);
     const r1 = await call("create_invoice", { amount: "4.500,50", description: "café" });
-    expect(r1).toMatchObject({ ok: true, reference: "A-0001", amount_display: "$ 4.500,50", status: "open" });
+    expect(r1).toMatchObject({ ok: true, reference: "A-0001", amount_display: "$ 4.500,50 pesos argentinos", status: "open" });
     const r2 = await call("create_invoice", { amount: "2 mil" });
     expect(r2.reference).toBe("A-0002");
 
@@ -129,7 +129,7 @@ describe("agent tools (PGlite)", () => {
     await call("create_invoice", { amount: "30,25", description: "corte, barba" });
     await db.update(invoices).set({ status: "paid", paidAt: NOW }).where(eq(invoices.reference, "A-0001"));
     const s = await call("daily_summary", {});
-    expect(s).toMatchObject({ date: "2026-11-02", paid_total_display: "$ 4.500", paid_count: 1, created: 2, open: 1, csv_sent: true });
+    expect(s).toMatchObject({ date: "2026-11-02", paid_total_display: "$ 4.500 pesos argentinos", paid_count: 1, created: 2, open: 1, csv_sent: true });
     const csv = effects.documents[0]!.content;
     expect(effects.documents[0]!.filename).toBe("cobra-2026-11-02.csv");
     expect(csv.split("\r\n")[0]).toBe("reference,invoice_id,created_at,status,amount,currency,description,paid_at,tx_hash,amount_out,token_out");

@@ -162,7 +162,8 @@ export function makeBot(db: Db, deps: BotDeps = {}, transcribe?: (a: ArrayBuffer
   const logs: Array<{ msg: string; extra?: Record<string, unknown> }> = [];
   const bot = buildBot(
     { token: TOKEN, db, anthropicApiKey: "", publicBaseUrl: BASE_URL, transcribe },
-    { botInfo: BOT_INFO, model: null, env: {}, log: (msg, extra) => logs.push({ msg, extra }), ...deps },
+    // No network in tests: no reference rate by default (no dollar hint, size check "unknown"); tests that need one pass `rates`.
+    { botInfo: BOT_INFO, model: null, env: {}, log: (msg, extra) => logs.push({ msg, extra }), rates: async () => ({}), ...deps },
   );
   const calls = fakeApi(bot.api);
   return { bot, calls, logs };

@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Language } from "@cobra/shared";
 import { parseLocalAmount } from "../lib/amount";
 import { DICTS } from "../lib/i18n";
+import { fiatName } from "../lib/units";
 
 export function StaticAmountForm({ slug, currency, lang }: { slug: string; currency: string; lang: Language }) {
   const t = DICTS[lang];
@@ -34,7 +35,13 @@ export function StaticAmountForm({ slug, currency, lang }: { slug: string; curre
         return;
       }
       setError(
-        body.error === "invalid_amount" ? t.invalid_amount : body.error === "rate_unavailable" ? t.temporarily_unavailable : t.generic_error,
+        body.error === "invalid_amount"
+          ? t.invalid_amount
+          : body.error === "over_limit"
+            ? t.over_limit
+            : body.error === "rate_unavailable"
+              ? t.temporarily_unavailable
+              : t.generic_error,
       );
     } catch {
       setError(t.generic_error);
@@ -44,7 +51,8 @@ export function StaticAmountForm({ slug, currency, lang }: { slug: string; curre
 
   return (
     <form className="stack" onSubmit={submit} noValidate>
-      <label htmlFor="amount" className="sr-only">{t.enter_amount}</label>
+      {/* The unit in words, not only the code: "$" or a bare number can read as dollars. */}
+      <label htmlFor="amount" className="label">{t.enter_amount_in.replace("{cur}", fiatName(currency, lang))}</label>
       <div className="hero amount-row">
         <input
           id="amount"
