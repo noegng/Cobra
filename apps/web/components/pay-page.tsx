@@ -15,7 +15,7 @@ import { formatDecimal, formatUnits } from "../lib/amount";
 import { DICTS, localeFor, tr, type Dict } from "../lib/i18n";
 import { hydrateTypedData, type PublicInvoice, type QuoteError, type QuoteOk, type StatusResponse } from "../lib/wire";
 import { LangSwitch } from "./lang-switch";
-import { fiatName, legsName, payInFiatLabel, RECEIPT, tokenName } from "../lib/units";
+import { costLabel, effectiveRate, fiatName, legsName, payInFiatLabel, RECEIPT, tokenName } from "../lib/units";
 
 const ATTRIBUTION_CODE = process.env.NEXT_PUBLIC_ATTRIBUTION_CODE || HACKATHON_ATTRIBUTION_CODE;
 /** Native balance that covers one ERC-20 approval even at a 2x base fee (~55k gas × ~400 gwei). */
@@ -305,6 +305,8 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
   const amountIn = quote?.toSign.map((e) => `${formatUnits(BigInt(e.amountIn), e.decimals, locale, 2)} ${e.symbol}`).join(" + ");
   const symbolOf = (token: Address) => quote?.toSign.find((e) => e.token === token)?.symbol ?? "";
   const fiatLabel = payInFiatLabel(invoice.currency, lang);
+  const rate = quote ? effectiveRate(invoice.amountLocal, invoice.currency, quote.toSign, locale) : null;
+  const relayed = quote ? quote.toSign.every((e) => e.kind !== "ALLOWANCE") : false;
 
   // The single action of the screen, derived from the state.
   function renderAction() {
@@ -388,6 +390,24 @@ export function PayPage({ invoice, lang }: { invoice: PublicInvoice; lang: Langu
               <small>{tokenName(invoice.tokenOutSymbol, lang)}</small>
             </dd>
           </div>
+          {rate && (
+            <div>
+              <dt>{r.rate}</dt>
+              <dd>{rate}</dd>
+            </div>
+          )}
+          {quote && rate && (
+            <div>
+              <dt>{r.cost}</dt>
+              <dd>{costLabel(quote.plan.costBps, locale)}</dd>
+            </div>
+          )}
+          {relayed && (
+            <div>
+              <dt>{r.network_fee}</dt>
+              <dd>{r.network_fee_free}</dd>
+            </div>
+          )}
           <div className="receipt-total">
             <dt>{r.you_pay}</dt>
             <dd>

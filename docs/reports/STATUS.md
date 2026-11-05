@@ -26,6 +26,9 @@ their calldata. The agent wallet's nonce is 8, which matches these 8 transaction
 - Web app: https://cobra-beige.vercel.app. Its `/proof` page lists each payment with a Celoscan link, and the same
   agent journal is served as JSON at `/api/agent/journal`. Telegram bot: `@cobra_agent_telegram_bot`. The worker
   (relayer + indexer) runs on a VPS under systemd.
+- `pnpm verify:payments` re-checks this from the chain alone (no key, no config): it scans the `Paid` events of both
+  routers and checks status, target, sender and ERC-8021 tag for each. On 2026-11-05: 4 payments, 4 PASS, 1 merchant
+  wallet.
 - The team ran these four payments to validate each payment path on mainnet: swap, same-token Permit2, router v2,
   and the Textile RFQ venue. The next step is onboarding pilot merchants.
 
@@ -33,7 +36,7 @@ their calldata. The agent wallet's nonce is 8, which matches these 8 transaction
 
 | Suite | Result |
 |---|---|
-| `pnpm test` (TypeScript, vitest) | **584 passed**: bot 306, web 78, solver 66, relayer 66, indexer 38, shared 15, db 10, worker 5 |
+| `pnpm test` (TypeScript, vitest) | **592 passed**: bot 306, web 82, solver 66, relayer 70, indexer 38, shared 15, db 10, worker 5 |
 | `forge test` (unit, vectors, ABI parity, invariants, fork tests against real Celo contracts) | **151 passed, 0 skipped** |
 | `pnpm test:e2e` (anvil fork of mainnet, bot → API → relayer → router → indexer → Telegram) | **8 passed**, 1 `todo` (Textile flow; it is covered by the forge fork tests and by mainnet payment #8) |
 | `pnpm typecheck` | green |

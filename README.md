@@ -149,7 +149,9 @@ You need a wallet on Celo that holds **USDC, USD₮ or USAT** (or the merchant's
    use a wallet on another device. If your wallet is on another network, tap **Switch to Celo**.
 3. **Check the amount.** Cobrá reads your balances and computes the best route by itself. The button shows exactly
    what will leave your wallet, for example **Pay 3.21 USD₮**, or **Pay 2.00 USDC + 1.21 USD₮** if no single token
-   is enough. The quote refreshes by itself before it expires.
+   is enough. Above it, the receipt shows the rate you get (for example `1 USD ≈ 1 659.09 ARS`), the total cost
+   against the reference rate (for example `0.68 %`) and the network fee (free: Cobrá pays it). The quote refreshes by
+   itself before it expires.
 4. **Tap Pay and confirm in your wallet.** You sign a message (one per token used). It's a signature, not a
    transaction: no gas, nothing to approve.
 5. **Done.** The page shows *Paying…* and then **✓ Paid**, with a Celoscan link. The merchant gets notified at the same
@@ -399,6 +401,17 @@ Order: **Postgres → agent wallet → router → web (Vercel) → ERC-8004 → 
 Mainnet transactions are only ever sent by a human. AI coding agents working on this repo are read-only on mainnet.
 
 ### Deployed addresses and proof transactions
+
+Anyone can re-check every payment straight from the chain, with no key and no config:
+
+```sh
+pnpm verify:payments   # read-only: scans the routers' Paid events on Celo mainnet
+```
+
+For each `Paid` event of router v1 and v2 it checks that the transaction succeeded, called the router, was sent by the
+agent wallet and carries the ERC-8021 code `celo_502e1bea2794` in its calldata. On 2026-11-05 it reports 4 payments,
+4 PASS, 1 merchant wallet: these four payments were run by the team to validate each payment path. Pilot merchants come
+next.
 
 | Item | Value |
 | --- | --- |
