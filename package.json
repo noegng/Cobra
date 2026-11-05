@@ -16,6 +16,7 @@
     "agent:register": "tsx scripts/agent/register.ts",
     "verify:deploy": "tsx scripts/ops/verify-deploy.ts",
     "verify:payments": "tsx scripts/ops/verify-payments.ts",
+    "x402:pay": "pnpm --filter @cobra/web x402:pay",
     "dev:web": "pnpm --filter @cobra/web dev",
     "dev:worker": "pnpm --filter @cobra/worker dev",
     "bot:commands": "tsx packages/bot/scripts/register-commands.ts"
