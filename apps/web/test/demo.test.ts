@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DEMO } from "../components/demo/demo-i18n";
-import { DEMO_BALANCE_MICRO, DEMO_COUNTRIES, formatLocal, formatUsdt, handleMerchantText, quoteMicro, toCents, type DemoCountry, type DemoInvoice } from "../components/demo/engine";
+import { chargeKind, DEMO_BALANCE_MICRO, DEMO_COUNTRIES, formatLocal, formatLocalNamed, formatUsdt, handleMerchantText, quoteMicro, toCents, usdValueMicro, type DemoCountry, type DemoInvoice } from "../components/demo/engine";
 
 const ctx = (invoices: DemoInvoice[] = [], lang: "es" | "pt" | "en" = "es") => ({ country: "AR" as const, lang, invoices });
 
 describe("demo engine", () => {
   it("reads charges with the bot's real parser", () => {
     const a = handleMerchantText("cobrar 4.500,50 pizza", ctx());
-    expect(a).toEqual({ kind: "charge", invoice: { ref: "A-0001", amount: "4500.5", desc: "pizza", status: "open" } });
+    expect(a).toEqual({ kind: "charge", invoice: { ref: "A-0001", amount: "4500.5", desc: "pizza", status: "open" }, usdMicro: 2_727_576n });
     expect(handleMerchantText("cobrar 2 mil café", ctx()).kind).toBe("charge");
     expect(handleMerchantText("cobrar", ctx())).toEqual({ kind: "usage" });
     const amb = handleMerchantText("cobrar 4,500 pizza", ctx());
@@ -38,12 +38,14 @@ describe("demo engine", () => {
   it("every language has the same chips shape and fills every message", () => {
     for (const lang of ["es", "pt", "en"] as const) {
       const t = DEMO[lang];
-      expect(t.invoice_caption("A-0001", "$ 1", "x")).toContain("A-0001");
+      expect(t.invoice_caption("A-0001", "$ 1", "0,01", "x")).toContain("A-0001");
       for (const c of Object.keys(DEMO_COUNTRIES) as DemoCountry[]) {
         expect(t.chips[c].length, c).toBe(4);
         expect(t.country[c], c).toBeTruthy();
         // the first chip of each country is a charge the engine understands
         expect(handleMerchantText(t.chips[c][0]!, { country: c, lang, invoices: [] }).kind, `${lang} ${c}`).toBe("charge");
+        // the second chip is a large charge that asks for confirmation (under the cap, over half of it)
+        expect(handleMerchantText(t.chips[c][1]!, { country: c, lang, invoices: [] }).kind, `${lang} ${c} big`).toBe("confirm");
       }
       expect(t.payer_ramping("SPEI")).toContain("SPEI");
       expect(t.agent_ramp("180", "wMXN", "SPEI")).toContain("180 wMXN");
@@ -65,5 +67,20 @@ describe("demo engine", () => {
     expect(handleMerchantText("cobrar 12.000 almuerzo", { country: "CO", lang: "es", invoices: [] })).toMatchObject({ kind: "charge", invoice: { amount: "12000" } });
     expect(formatLocal("12000", "CO", "es")).toBe("$ 12.000");
     expect(formatLocal("180.5", "MX", "es")).toBe("$ 180.50");
+  });
+
+  it("writes the currency out and checks the dollar value against the per-payment cap", () => {
+    expect(formatLocalNamed("4500.5", "AR", "es")).toBe("$ 4.500,50 pesos argentinos");
+    expect(formatLocalNamed("30", "BR", "pt")).toBe("R$ 30 reais");
+    expect(formatLocalNamed("180", "MX", "en")).toBe("$ 180 Mexican pesos");
+    expect(usdValueMicro("1650", "AR")).toBe(1_000_000n);
+    expect(chargeKind(99_999_999n)).toBe("ok");
+    expect(chargeKind(100_000_000n)).toBe("confirm");
+    expect(chargeKind(200_000_000n)).toBe("confirm");
+    expect(chargeKind(200_000_001n)).toBe("over");
+    expect(handleMerchantText("cobrar 500000 tele", ctx())).toMatchObject({ kind: "over", amount: "500000" });
+    expect(handleMerchantText("cobrar 200000 heladera", ctx())).toMatchObject({ kind: "confirm", invoice: { amount: "200000" } });
+    expect(DEMO.es.charge_over("$ 500.000 pesos argentinos", "303,04", 200, "pesos argentinos")).toContain("US$ 200");
+    expect(DEMO.es.welcome("pesos argentinos", "cobrar 4500 pizza")).toContain("en pesos argentinos");
   });
 });

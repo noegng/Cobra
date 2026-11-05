@@ -2,7 +2,7 @@
  * Demo engine: deterministic and pure, no network, no wallet, no LLM. It reuses the bot's real amount parser and
  * fast path so "cobrar 4.500,50 pizza" is read exactly as in production. Everything it produces is simulated.
  */
-import { amountStyleFor, formatAmount, parseAmount, type AmountError } from "@cobra/bot/amount";
+import { amountStyleFor, currencyName, formatAmount, formatAmountNamed, parseAmount, type AmountError } from "@cobra/bot/amount";
 import { matchCharge } from "@cobra/bot/fastpath";
 import type { Language } from "@cobra/shared";
 
@@ -24,20 +24,22 @@ export interface DemoCountryConfig {
   costBps: number;
   /** Illustrative local units per USD₮, ×1000 (swap countries only). */
   rateMilli: bigint;
+  /** Illustrative reference rate, local units per USD ×1000 (every country): dollar hint and per-payment cap. */
+  refRateMilli: bigint;
   /** Local bank rail the Ripio ramp uses (ramp countries only). */
   rail?: string;
 }
 
 export const DEMO_COUNTRIES: Record<DemoCountry, DemoCountryConfig> = {
   // Illustrative rates (local units per USD₮, ×1000) and measured route costs; labelled "illustrative" in the UI.
-  AR: { currency: "ARS", token: "wARS", merchant: "Pizzería Don Luis", mode: "swap", route: "USD₮ → wARS · Uniswap V3", costBps: 10, rateMilli: 1_650_000n },
+  AR: { currency: "ARS", token: "wARS", merchant: "Pizzería Don Luis", mode: "swap", route: "USD₮ → wARS · Uniswap V3", costBps: 10, rateMilli: 1_650_000n, refRateMilli: 1_650_000n },
   // BR: live route on router v2 = Textile FX RFQ, 68 bps measured on the first real wBRL payment (2026-11-04,
   // tx 0xe7e62efe…). The Uniswap pool (~3.3 %) is only the fallback when no filler quotes.
-  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", mode: "swap", route: "USD₮ → wBRL · Textile FX RFQ", costBps: 68, rateMilli: 5_486n },
+  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", mode: "swap", route: "USD₮ → wBRL · Textile FX RFQ", costBps: 68, rateMilli: 5_486n, refRateMilli: 5_486n },
   // MX / CO: same flow as production's pay page for these tokens: no pool, Ripio ramp offered, then a direct wFIAT
   // payment (Permit2, one-time gas grant). Rails from Ripio's docs (docs/research/b1-bank-transfer-pix.md).
-  MX: { currency: "MXN", token: "wMXN", merchant: "Taquería El Güero", mode: "ramp", route: "wMXN · pago directo", costBps: 0, rateMilli: 0n, rail: "SPEI" },
-  CO: { currency: "COP", token: "wCOP", merchant: "Panadería La Esquina", mode: "ramp", route: "wCOP · pago directo", costBps: 0, rateMilli: 0n, rail: "PSE" },
+  MX: { currency: "MXN", token: "wMXN", merchant: "Taquería El Güero", mode: "ramp", route: "wMXN · pago directo", costBps: 0, rateMilli: 0n, refRateMilli: 18_500n, rail: "SPEI" },
+  CO: { currency: "COP", token: "wCOP", merchant: "Panadería La Esquina", mode: "ramp", route: "wCOP · pago directo", costBps: 0, rateMilli: 0n, refRateMilli: 4_100_000n, rail: "PSE" },
 };
 
 /** Simulated payer wallet balance, in USD₮ micro-units (6 decimals). */
@@ -50,8 +52,15 @@ export interface DemoInvoice {
   status: "open" | "paid" | "cancelled";
 }
 
+/** Same per-payment cap as production's relayer default (flags.caps.perPaymentUsd). */
+export const DEMO_MAX_USD = 200;
+
 export type MerchantAction =
-  | { kind: "charge"; invoice: DemoInvoice }
+  | { kind: "charge"; invoice: DemoInvoice; usdMicro: bigint }
+  /** From half the cap: the bot asks "yes / fix" before creating it (packages/bot/src/limits.ts). */
+  | { kind: "confirm"; invoice: DemoInvoice; usdMicro: bigint }
+  /** Above the cap: refused, with the dollar value so a unit mix-up shows. */
+  | { kind: "over"; amount: string; usdMicro: bigint }
   | { kind: "amount_error"; error: AmountError; input: string }
   | { kind: "usage" }
   | { kind: "status"; invoice: DemoInvoice | null; ref: string }
@@ -79,6 +88,18 @@ export function quoteMicro(amount: string, country: DemoCountry): bigint {
   return (num + den - 1n) / den;
 }
 
+/** Dollar value of a local amount at the illustrative reference rate, in micro-units, rounded up. */
+export function usdValueMicro(amount: string, country: DemoCountry): bigint {
+  const num = toCents(amount) * 1_000_000n * 1000n;
+  const den = 100n * DEMO_COUNTRIES[country].refRateMilli;
+  return (num + den - 1n) / den;
+}
+
+export function chargeKind(usdMicro: bigint): "ok" | "confirm" | "over" {
+  const max = BigInt(DEMO_MAX_USD) * 1_000_000n;
+  return usdMicro > max ? "over" : usdMicro * 2n >= max ? "confirm" : "ok";
+}
+
 /** 2-decimal display of USD₮ micro-units, rounded up so we never under-state what leaves the wallet. */
 export function formatUsdt(micro: bigint, lang: Language): string {
   const cents = (micro + 9_999n) / 10_000n;
@@ -92,6 +113,16 @@ export function formatLocal(amount: string, country: DemoCountry, lang: Language
   return formatAmount(amount, currency, amountStyleFor(country, lang));
 }
 
+/** "$ 4.500 pesos argentinos": the chat always writes the currency out ("$" alone reads as dollars). */
+export function formatLocalNamed(amount: string, country: DemoCountry, lang: Language): string {
+  const { currency } = DEMO_COUNTRIES[country];
+  return formatAmountNamed(amount, currency, amountStyleFor(country, lang), lang);
+}
+
+export function demoCurrencyName(country: DemoCountry, lang: Language): string {
+  return currencyName(DEMO_COUNTRIES[country].currency, lang);
+}
+
 export function handleMerchantText(text: string, ctx: { country: DemoCountry; lang: Language; invoices: DemoInvoice[] }): MerchantAction {
   const t = text.trim();
   if (!t) return { kind: "unknown" };
@@ -100,7 +131,11 @@ export function handleMerchantText(text: string, ctx: { country: DemoCountry; la
     if (!charge.amountText) return { kind: "usage" };
     const parsed = parseAmount(charge.amountText, amountStyleFor(ctx.country, ctx.lang));
     if (!parsed.ok) return { kind: "amount_error", error: parsed.error, input: charge.amountText };
-    return { kind: "charge", invoice: { ref: nextRef(ctx.invoices.length + 1), amount: parsed.value, desc: charge.description.slice(0, 60), status: "open" } };
+    const invoice: DemoInvoice = { ref: nextRef(ctx.invoices.length + 1), amount: parsed.value, desc: charge.description.slice(0, 60), status: "open" };
+    const usdMicro = usdValueMicro(parsed.value, ctx.country);
+    const kind = chargeKind(usdMicro);
+    if (kind === "over") return { kind: "over", amount: parsed.value, usdMicro };
+    return { kind: kind === "confirm" ? "confirm" : "charge", invoice, usdMicro };
   }
   if (/^\/?(ayuda|ajuda|help|start)\b/i.test(t)) return { kind: "help" };
   if (/^\/?(cierre|fechamento|close)\b/i.test(t)) {

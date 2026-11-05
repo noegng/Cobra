@@ -41,6 +41,7 @@
 .dm-kb { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; border-top: 1px solid var(--line); padding-top: 0.45rem; font-size: 0.8rem; text-align: center; }
 .dm-kb span { color: var(--sub); }
 .dm-kb button { appearance: none; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-weight: 700; padding: 0.4rem; border-radius: 0.6rem; cursor: pointer; }
+.dm-kb button:disabled { opacity: 0.45; cursor: default; }
 .dm-typing { display: inline-flex; gap: 0.25rem; padding: 0.7rem 0.8rem; }
 .dm-typing i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--sub); animation: dm-blink 1s infinite; }
 .dm-typing i:nth-child(2) { animation-delay: 0.15s; }

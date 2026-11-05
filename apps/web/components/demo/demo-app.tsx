@@ -13,15 +13,27 @@ import { fiatName, RECEIPT, tokenName } from "../../lib/units";
 import {
   DEMO_BALANCE_MICRO,
   DEMO_COUNTRIES,
+  DEMO_MAX_USD,
+  demoCurrencyName,
   formatLocal,
+  formatLocalNamed,
   formatUsdt,
   handleMerchantText,
+  nextRef,
   quoteMicro,
   type DemoCountry,
   type DemoInvoice,
 } from "./engine";
 
-type Msg = { id: number; from: "me" | "bot"; text: string; invoiceRef?: string; paid?: boolean };
+/** `confirm`: a large charge waiting for "yes / fix" (same flow as the real bot); `done` once a button was used. */
+type Msg = {
+  id: number;
+  from: "me" | "bot";
+  text: string;
+  invoiceRef?: string;
+  paid?: boolean;
+  confirm?: { invoice: DemoInvoice; usdMicro: bigint; done?: boolean };
+};
 type PayerStep = "idle" | "connected" | "ramping" | "signing" | "paying" | "paid";
 type LogLine = { id: number; text: string };
 type Tab = "merchant" | "payer" | "agent";
@@ -31,7 +43,8 @@ const TTL_MS = 10 * 60_000;
 export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: string }) {
   const t = DEMO[lang];
   const [country, setCountry] = useState<DemoCountry>(lang === "pt" ? "BR" : "AR");
-  const [msgs, setMsgs] = useState<Msg[]>([{ id: 0, from: "bot", text: t.welcome }]);
+  const welcome = (c: DemoCountry) => DEMO[lang].welcome(demoCurrencyName(c, lang), DEMO[lang].chips[c][0]!);
+  const [msgs, setMsgs] = useState<Msg[]>(() => [{ id: 0, from: "bot", text: welcome(lang === "pt" ? "BR" : "AR") }]);
   const [invoices, setInvoices] = useState<DemoInvoice[]>([]);
   const [created, setCreated] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | null>(null);
@@ -49,7 +62,11 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
 
   const cfg = DEMO_COUNTRIES[country];
   const inv = invoices.find((i) => i.ref === active) ?? null;
+  /** Payer pane: "$ 4.500" with the currency name on its own line below. */
   const fmt = (amount: string) => formatLocal(amount, country, lang);
+  /** Chat: "$ 4.500 pesos argentinos", the currency always written out. */
+  const fmtN = (amount: string) => formatLocalNamed(amount, country, lang);
+  const cur = demoCurrencyName(country, lang);
   const nid = () => ids.current++;
   const later = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
   const addBot = (m: Omit<Msg, "id" | "from">) => setMsgs((xs) => [...xs, { id: nid(), from: "bot", ...m }]);
@@ -68,7 +85,7 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setCountry(next);
-    setMsgs([{ id: nid(), from: "bot", text: DEMO[lang].welcome }]);
+    setMsgs([{ id: nid(), from: "bot", text: welcome(next) }]);
     setInvoices([]);
     setCreated({});
     setActive(null);
@@ -77,6 +94,26 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
     setLog([]);
     setTyping(false);
     setTab("merchant");
+  }
+
+  function createCharge(draft: DemoInvoice, usdMicro: bigint) {
+    const i: DemoInvoice = { ...draft, ref: nextRef(invoices.length + 1) };
+    setInvoices((xs) => [...xs, i]);
+    setCreated((c) => ({ ...c, [i.ref]: Date.now() }));
+    setActive(i.ref);
+    setStep("idle");
+    addBot({ text: t.invoice_caption(i.ref, fmtN(i.amount), formatUsdt(usdMicro, lang), i.desc), invoiceRef: i.ref });
+    addLog(t.agent_invoice(i.ref));
+  }
+
+  /** "Yes" creates the request; "fix" creates nothing. Each confirmation can be used once. */
+  function answerConfirm(msgId: number, yes: boolean) {
+    const m = msgs.find((x) => x.id === msgId);
+    if (!m?.confirm || m.confirm.done || typing) return;
+    const c = m.confirm;
+    setMsgs((xs) => xs.map((x) => (x.id === msgId && x.confirm ? { ...x, confirm: { ...x.confirm, done: true } } : x)));
+    if (yes) createCharge(c.invoice, c.usdMicro);
+    else addBot({ text: t.charge_fix(cur) });
   }
 
   function send(raw: string) {
@@ -89,24 +126,26 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
     later(450, () => {
       setTyping(false);
       switch (action.kind) {
-        case "charge": {
-          const i = action.invoice;
-          setInvoices((xs) => [...xs, i]);
-          setCreated((c) => ({ ...c, [i.ref]: Date.now() }));
-          setActive(i.ref);
-          setStep("idle");
-          addBot({ text: t.invoice_caption(i.ref, fmt(i.amount), i.desc), invoiceRef: i.ref });
-          addLog(t.agent_invoice(i.ref));
+        case "charge":
+          createCharge(action.invoice, action.usdMicro);
           break;
-        }
+        case "confirm":
+          addBot({
+            text: t.charge_confirm(fmtN(action.invoice.amount), formatUsdt(action.usdMicro, lang), action.invoice.desc),
+            confirm: { invoice: action.invoice, usdMicro: action.usdMicro },
+          });
+          break;
+        case "over":
+          addBot({ text: t.charge_over(fmtN(action.amount), formatUsdt(action.usdMicro, lang), DEMO_MAX_USD, cur) });
+          break;
         case "amount_error":
           addBot({ text: t.amount_error(action.error, action.input) });
           break;
         case "usage":
-          addBot({ text: t.usage });
+          addBot({ text: t.usage(cur) });
           break;
         case "help":
-          addBot({ text: t.help });
+          addBot({ text: t.help(cur) });
           break;
         case "unknown":
           addBot({ text: t.unknown });
@@ -122,14 +161,14 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
         case "status": {
           const i = action.invoice;
           if (!i) addBot({ text: t.status_none });
-          else if (i.status === "paid") addBot({ text: t.status_paid(i.ref, fmt(i.amount)) });
+          else if (i.status === "paid") addBot({ text: t.status_paid(i.ref, fmtN(i.amount)) });
           else if (i.status === "cancelled") addBot({ text: t.status_cancelled(i.ref) });
-          else addBot({ text: t.status_open(i.ref, fmt(i.amount)) });
+          else addBot({ text: t.status_open(i.ref, fmtN(i.amount)) });
           break;
         }
         case "close": {
           const total = action.paid.length ? sumDecimals(action.paid.map((p) => p.amount)) : "0";
-          addBot({ text: t.close(fmt(total), action.paid.length, action.open) });
+          addBot({ text: t.close(fmtN(total), action.paid.length, action.open) });
           break;
         }
       }
@@ -187,7 +226,7 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
       setStep("paid");
     });
     later(3100, () => {
-      addBot({ text: t.paid_notice(ref, fmt(amount), cfg.token), paid: true });
+      addBot({ text: t.paid_notice(ref, fmtN(amount), cfg.token), paid: true });
       addLog(t.agent_notify);
     });
   }
@@ -247,6 +286,16 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
                 <div key={m.id} className={`dm-msg ${m.from === "me" ? "me" : "bot"} ${m.paid ? "paid" : ""}`}>
                   {m.invoiceRef && <FakeQr seed={m.id * 7919 + 13} className="dm-qr" />}
                   <p>{m.text}</p>
+                  {m.confirm && (
+                    <div className="dm-kb">
+                      <button type="button" disabled={m.confirm.done || typing} onClick={() => answerConfirm(m.id, true)}>
+                        {t.btn_yes}
+                      </button>
+                      <button type="button" disabled={m.confirm.done || typing} onClick={() => answerConfirm(m.id, false)}>
+                        {t.btn_fix}
+                      </button>
+                    </div>
+                  )}
                   {m.invoiceRef && (
                     <div className="dm-kb">
                       <span>{t.btn_share}</span>

@@ -22,11 +22,18 @@ export interface DemoStrings {
   placeholder: string;
   send: string;
   chips: Record<DemoCountry, string[]>;
-  welcome: string;
-  help: string;
-  usage: string;
+  /** `example` is the first chip of the selected country, `cur` its currency written out. */
+  welcome: (cur: string, example: string) => string;
+  help: (cur: string) => string;
+  usage: (cur: string) => string;
   amount_error: (e: AmountError, input: string) => string;
-  invoice_caption: (ref: string, amount: string, desc: string) => string;
+  /** `usd`: dollar value at the illustrative rate, "2,73". */
+  invoice_caption: (ref: string, amount: string, usd: string, desc: string) => string;
+  charge_over: (amount: string, usd: string, max: number, cur: string) => string;
+  charge_confirm: (amount: string, usd: string, desc: string) => string;
+  btn_yes: string;
+  btn_fix: string;
+  charge_fix: (cur: string) => string;
   btn_share: string;
   btn_open_payer: string;
   cancel_ok: (ref: string) => string;
@@ -82,7 +89,7 @@ const ERR_ES: Record<AmountError, string> = {
   zero: "El monto debe ser mayor que cero.",
   too_many_decimals: "Máximo 2 decimales.",
   too_large: "Ese monto es demasiado grande.",
-  foreign_currency: "Solo cobro en tu moneda local.",
+  foreign_currency: "Tus cobros son en tu moneda local. Si prefieres recibir dólares digitales, en Telegram usa /moneda.",
 };
 const ERR_PT: Record<AmountError, string> = {
   empty: "Falta o valor.",
@@ -92,7 +99,7 @@ const ERR_PT: Record<AmountError, string> = {
   zero: "O valor deve ser maior que zero.",
   too_many_decimals: "No máximo 2 casas decimais.",
   too_large: "Esse valor é grande demais.",
-  foreign_currency: "Só cobro na sua moeda local.",
+  foreign_currency: "Suas cobranças são na sua moeda local. Se preferir receber dólares digitais, no Telegram use /moeda.",
 };
 const ERR_EN: Record<AmountError, string> = {
   empty: "The amount is missing.",
@@ -102,7 +109,7 @@ const ERR_EN: Record<AmountError, string> = {
   zero: "The amount must be greater than zero.",
   too_many_decimals: "At most 2 decimals.",
   too_large: "That amount is too large.",
-  foreign_currency: "I only charge in your local currency.",
+  foreign_currency: "Your requests are in your local currency. To get paid in digital dollars instead, use /currency on Telegram.",
 };
 const withInput = (map: Record<AmountError, string>) => (e: AmountError, input: string) =>
   e === "invalid" ? `${map.invalid} "${input}".` : map[e];
@@ -125,12 +132,18 @@ const es: DemoStrings = {
   agent_side: "Lo que hace el agente",
   placeholder: "Escribe un mensaje…",
   send: "Enviar",
-  chips: { AR: ["cobrar 4500 pizza", "¿me pagaron el A-0001?", "/cierre", "cancela el último cobro"], BR: ["cobrar 30 corte", "¿me pagaron el A-0001?", "/cierre", "/ayuda"], MX: ["cobrar 180 tacos", "¿me pagaron el A-0001?", "/cierre", "/ayuda"], CO: ["cobrar 12000 almuerzo", "¿me pagaron el A-0001?", "/cierre", "/ayuda"] },
-  welcome: "¡Hola! Soy Cobrá (versión demo). Escribe por ejemplo: cobrar 4500 pizza",
-  help: "En la demo entiendo:\n• cobrar 4500 pizza — crea un cobro con QR\n• ¿me pagaron el A-0001?\n• cancela el último cobro\n• /cierre — resumen del día\nEn Telegram también entiendo frases libres y notas de voz.",
-  usage: "Escribe el monto y una descripción, por ejemplo: cobrar 4500 café",
+  chips: { AR: ["cobrar 4500 pizza", "cobrar 200000 heladera", "¿me pagaron el A-0001?", "/cierre"], BR: ["cobrar 30 corte", "cobrar 800 reparación", "¿me pagaron el A-0001?", "/cierre"], MX: ["cobrar 180 tacos", "cobrar 2500 pastel", "¿me pagaron el A-0001?", "/cierre"], CO: ["cobrar 12000 almuerzo", "cobrar 500000 mercado", "¿me pagaron el A-0001?", "/cierre"] },
+  welcome: (cur, ex) => `¡Hola! Soy Cobrá (versión demo). Escribe el monto en ${cur}, por ejemplo: ${ex}`,
+  help: (cur) => `En la demo entiendo (los montos son en ${cur}):\n• cobrar 4500 pizza — crea un cobro con QR\n• ¿me pagaron el A-0001?\n• cancela el último cobro\n• /cierre — resumen del día\nEn Telegram también entiendo frases libres y notas de voz, y puedes cambiar país (/pais), moneda de cobro (/moneda) o billetera (/billetera).`,
+  usage: (cur) => `Escribe el monto en ${cur} y una descripción, por ejemplo: cobrar 4500 café`,
   amount_error: withInput(ERR_ES),
-  invoice_caption: (ref, amount, desc) => `Cobro ${ref}: ${amount}${desc ? ` · ${desc}` : ""}\nVence en 10 min.`,
+  invoice_caption: (ref, amount, usd, desc) => `Cobro ${ref}: ${amount} (≈ US$ ${usd})${desc ? ` · ${desc}` : ""}\nVence en 10 min.`,
+  charge_over: (amount, usd, max, cur) =>
+    `No creé el cobro: ${amount} equivale a ≈ US$ ${usd}, y por ahora el máximo por pago es US$ ${max}. ¿Escribiste el monto en ${cur}? Revísalo y vuelve a intentarlo.`,
+  charge_confirm: (amount, usd, desc) => `¿Confirmas este cobro?\n${amount} (≈ US$ ${usd})${desc ? ` — ${desc}` : ""}`,
+  btn_yes: "Sí, cobrar",
+  btn_fix: "Corregir",
+  charge_fix: (cur) => `Listo, no creé nada. Escribe el monto correcto en ${cur}, por ejemplo: cobrar 4500 café`,
   btn_share: "Compartir por WhatsApp",
   btn_open_payer: "Abrir en el teléfono del cliente →",
   cancel_ok: (ref) => `Cobro ${ref} cancelado.`,
@@ -195,12 +208,18 @@ const pt: DemoStrings = {
   agent_side: "O que o agente faz",
   placeholder: "Escreva uma mensagem…",
   send: "Enviar",
-  chips: { AR: ["cobrar 4500 pizza", "o A-0001 foi pago?", "/fechamento", "cancela a última cobrança"], BR: ["cobrar 30 corte", "o A-0001 foi pago?", "/fechamento", "/ajuda"], MX: ["cobrar 180 tacos", "o A-0001 foi pago?", "/fechamento", "/ajuda"], CO: ["cobrar 12000 almoço", "o A-0001 foi pago?", "/fechamento", "/ajuda"] },
-  welcome: "Olá! Eu sou a Cobrá (versão demo). Escreva por exemplo: cobrar 30 corte",
-  help: "Na demo eu entendo:\n• cobrar 30 corte — cria uma cobrança com QR\n• o A-0001 foi pago?\n• cancela a última cobrança\n• /fechamento — resumo do dia\nNo Telegram também entendo frases livres e áudios.",
-  usage: "Escreva o valor e uma descrição, por exemplo: cobrar 30 corte",
+  chips: { AR: ["cobrar 4500 pizza", "cobrar 200000 geladeira", "o A-0001 foi pago?", "/fechamento"], BR: ["cobrar 30 corte", "cobrar 800 conserto", "o A-0001 foi pago?", "/fechamento"], MX: ["cobrar 180 tacos", "cobrar 2500 bolo", "o A-0001 foi pago?", "/fechamento"], CO: ["cobrar 12000 almoço", "cobrar 500000 mercado", "o A-0001 foi pago?", "/fechamento"] },
+  welcome: (cur, ex) => `Olá! Eu sou a Cobrá (versão demo). Escreva o valor em ${cur}, por exemplo: ${ex}`,
+  help: (cur) => `Na demo eu entendo (os valores são em ${cur}):\n• cobrar 30 corte — cria uma cobrança com QR\n• o A-0001 foi pago?\n• cancela a última cobrança\n• /fechamento — resumo do dia\nNo Telegram também entendo frases livres e áudios, e você pode mudar país (/pais), moeda de recebimento (/moeda) ou carteira (/carteira).`,
+  usage: (cur) => `Escreva o valor em ${cur} e uma descrição, por exemplo: cobrar 30 corte`,
   amount_error: withInput(ERR_PT),
-  invoice_caption: (ref, amount, desc) => `Cobrança ${ref}: ${amount}${desc ? ` · ${desc}` : ""}\nVence em 10 min.`,
+  invoice_caption: (ref, amount, usd, desc) => `Cobrança ${ref}: ${amount} (≈ US$ ${usd})${desc ? ` · ${desc}` : ""}\nVence em 10 min.`,
+  charge_over: (amount, usd, max, cur) =>
+    `Não criei a cobrança: ${amount} equivale a ≈ US$ ${usd}, e por enquanto o máximo por pagamento é US$ ${max}. Você escreveu o valor em ${cur}? Confira e tente de novo.`,
+  charge_confirm: (amount, usd, desc) => `Confirma esta cobrança?\n${amount} (≈ US$ ${usd})${desc ? ` — ${desc}` : ""}`,
+  btn_yes: "Sim, cobrar",
+  btn_fix: "Corrigir",
+  charge_fix: (cur) => `Pronto, não criei nada. Escreva o valor certo em ${cur}, por exemplo: cobrar 30 corte`,
   btn_share: "Compartilhar no WhatsApp",
   btn_open_payer: "Abrir no celular do cliente →",
   cancel_ok: (ref) => `Cobrança ${ref} cancelada.`,
@@ -265,12 +284,18 @@ const en: DemoStrings = {
   agent_side: "What the agent does",
   placeholder: "Type a message…",
   send: "Send",
-  chips: { AR: ["charge 4500 pizza", "was A-0001 paid?", "/close", "cancel the last one"], BR: ["charge 30 haircut", "was A-0001 paid?", "/close", "/help"], MX: ["charge 180 tacos", "was A-0001 paid?", "/close", "/help"], CO: ["charge 12000 lunch", "was A-0001 paid?", "/close", "/help"] },
-  welcome: "Hi! I'm Cobrá (demo version). Try: charge 4500 pizza",
-  help: "In the demo I understand:\n• charge 4500 pizza — creates a request with a QR\n• was A-0001 paid?\n• cancel the last one\n• /close — today's summary\nOn Telegram I also understand free text and voice notes.",
-  usage: "Type the amount and a description, for example: charge 4500 coffee",
+  chips: { AR: ["charge 4500 pizza", "charge 200000 fridge", "was A-0001 paid?", "/close"], BR: ["charge 30 haircut", "charge 800 repair", "was A-0001 paid?", "/close"], MX: ["charge 180 tacos", "charge 2500 cake", "was A-0001 paid?", "/close"], CO: ["charge 12000 lunch", "charge 500000 groceries", "was A-0001 paid?", "/close"] },
+  welcome: (cur, ex) => `Hi! I'm Cobrá (demo version). Type the amount in ${cur}, e.g.: ${ex}`,
+  help: (cur) => `In the demo I understand (amounts are in ${cur}):\n• charge 4500 pizza — creates a request with a QR\n• was A-0001 paid?\n• cancel the last one\n• /close — today's summary\nOn Telegram I also understand free text and voice notes, and you can change country (/country), payout currency (/currency) or wallet (/wallet).`,
+  usage: (cur) => `Type the amount in ${cur} and a description, for example: charge 4500 coffee`,
   amount_error: withInput(ERR_EN),
-  invoice_caption: (ref, amount, desc) => `Request ${ref}: ${amount}${desc ? ` · ${desc}` : ""}\nExpires in 10 min.`,
+  invoice_caption: (ref, amount, usd, desc) => `Request ${ref}: ${amount} (≈ US$ ${usd})${desc ? ` · ${desc}` : ""}\nExpires in 10 min.`,
+  charge_over: (amount, usd, max, cur) =>
+    `I didn't create the request: ${amount} is about US$ ${usd}, and for now the maximum per payment is US$ ${max}. Did you type the amount in ${cur}? Check it and try again.`,
+  charge_confirm: (amount, usd, desc) => `Confirm this request?\n${amount} (≈ US$ ${usd})${desc ? ` — ${desc}` : ""}`,
+  btn_yes: "Yes, charge",
+  btn_fix: "Fix it",
+  charge_fix: (cur) => `OK, nothing was created. Type the right amount in ${cur}, e.g.: charge 4500 coffee`,
   btn_share: "Share on WhatsApp",
   btn_open_payer: "Open on the customer's phone →",
   cancel_ok: (ref) => `Request ${ref} cancelled.`,
