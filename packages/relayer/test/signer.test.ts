@@ -217,6 +217,8 @@ describe("ERC-8004 agent card", () => {
     expect(f.services.length).toBeGreaterThan(0);
     expect("endpoints" in f).toBe(false);
     expect(f.services).toContainEqual({ name: "agentWallet", endpoint: `eip155:42220:${OTHER}` });
+    expect(f.x402Support).toBe(true);
+    expect(f.services).toContainEqual({ name: "x402", endpoint: "https://cobra.example/api/x402/fx-quote", version: "2" });
     expect(f.registrations).toEqual([{ agentId: 7, agentRegistry: "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" }]);
   });
   it("register(string) calldata", () => {

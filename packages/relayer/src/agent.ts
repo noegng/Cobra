@@ -39,6 +39,8 @@ export function buildRegistrationFile(args: {
 }): AgentRegistrationFile {
   const base = args.publicBaseUrl.replace(/\/+$/, "");
   const services: AgentRegistrationFile["services"] = [{ name: "web", endpoint: `${base}/` }];
+  // Paid FX quote over x402 v2, settled by Celo's facilitator (apps/web/lib/server/x402.ts).
+  services.push({ name: "x402", endpoint: `${base}/api/x402/fx-quote`, version: "2" });
   if (args.wallet) services.push({ name: "agentWallet", endpoint: `eip155:${args.chainId ?? CELO_CHAIN_ID}:${getAddress(args.wallet)}` });
   return {
     type: REGISTRATION_TYPE,
@@ -47,10 +49,12 @@ export function buildRegistrationFile(args: {
       "Cobrá is a LatAm merchant checkout on Celo. Merchants create invoices in local currency from Telegram; payers sign " +
       "once (EIP-3009 or Permit2, bound to the full payment intent) and this agent relays CobraRouter.pay(), paying the " +
       "gas, so the merchant receives the exact wFIAT amount. It can only submit the exact signed intent (it cannot change " +
-      "merchant, amount, token, path or split), enforces per-payment and per-day USD caps, and tags every tx with ERC-8021.",
+      "merchant, amount, token, path or split), enforces per-payment and per-day USD caps, and tags every tx with ERC-8021. " +
+      "It also sells an FX quote over x402 (GET /api/x402/fx-quote?currency=ARS|BRL&amount=N, 0.001 USD₮ or USDC per call): " +
+      "what it costs to deliver an exact wARS or wBRL amount on Celo.",
     image: `${base}/icon.svg`, // served by apps/web/public/icon.svg
     services,
-    x402Support: false,
+    x402Support: true,
     active: true,
     registrations:
       args.agentId !== undefined ? [{ agentId: args.agentId, agentRegistry: agentRegistryId(args.registry, args.chainId) }] : [],

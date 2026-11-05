@@ -356,6 +356,8 @@ settled by Celo's hosted facilitator (`api.x402.celo.org`, EIP-3009, gasless for
 - Bad parameters answer `400` before any payment; the payment is settled only when the quote succeeded.
 - Indicative: the Textile FX RFQ venue is not queried (a firm request would reach fillers with no intent to trade), so
   wBRL quotes are the pool's (about 3.3 %), not what a real Cobrá payment gets (0.68 % on mainnet payment #4).
+- First real paid call: [`0x00b0e902…`](https://celoscan.io/tx/0x00b0e902503fc4efbdf53d5079c4f38e63f800cee5aa2c64bff49724c5bf7034)
+  (0.001 USD₮ to the agent wallet, settled by the facilitator). Try it yourself: `pnpm x402:pay` (see `apps/web/scripts/x402-pay-quote.ts`).
 - Settlements are sent by the facilitator's signer, not by Cobrá's agent wallet, and carry no ERC-8021 tag: they are
   not counted by `pnpm verify:payments`.
 
