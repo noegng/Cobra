@@ -1,7 +1,8 @@
 /**
  * Production wiring of ApiDeps from env (lazy singletons; nothing touches the network at build time).
  * Env (server): DATABASE_URL, RPC_URL, ROUTER_ADDRESS, QUOTER_V2_ADDRESS (optional override), KILL_SWITCH,
- * TEXTILE_API_KEY (optional, server-only: enables the Textile RFQ route), TEXTILE_ENABLED ("false" = off).
+ * TEXTILE_API_KEY (optional, server-only: enables the Textile RFQ route), TEXTILE_ENABLED ("false" = off),
+ * X402_API_KEY + X402_PAY_TO (optional, server-only: enable the paid /api/x402/fx-quote endpoint).
  */
 import { createPublicClient, getAddress, hashTypedData, http, isAddress, type Address } from "viem";
 import { celo } from "viem/chains";
@@ -11,9 +12,11 @@ import { createReferenceRateSource, createTextileClient, createUniswapQuoter, so
 import type { ApiDeps } from "./api";
 import { accountAcceptsSignature, isEip7702Delegation, readPayerState, type MulticallClient } from "./balances";
 import { createMemoryRateLimiter } from "./rate-limit";
+import { x402GateFromEnv, type FxQuoteDeps } from "./x402";
 
 let db: Db | null = null;
 let deps: ApiDeps | null = null;
+let fxDeps: FxQuoteDeps | null = null;
 
 export function getDb(): Db {
   if (!db) {
@@ -71,4 +74,21 @@ export function getApiDeps(): ApiDeps {
     env: process.env,
   };
   return deps;
+}
+
+/** Paid FX quote (x402): Uniswap only, no Textile RFQ (a firm RFQ would reach fillers with no intent to trade). */
+export function getFxQuoteDeps(): FxQuoteDeps {
+  if (fxDeps) return fxDeps;
+  const client = createPublicClient({ chain: celo, transport: http(process.env.RPC_URL || CELO.rpcUrl), batch: { multicall: true } });
+  const quoterAddress = envAddress("QUOTER_V2_ADDRESS", CELO.uniswapV3.quoterV2.address)!;
+  const quoter = createUniswapQuoter(client as Parameters<typeof createUniswapQuoter>[0], quoterAddress);
+  const rates = createReferenceRateSource();
+  fxDeps = {
+    gate: x402GateFromEnv(process.env),
+    solve: (input) => solve(input, { quoter, feeTiers: [100], maxLegs: 1, capUsd: 1_000_000 }),
+    getReferenceRates: () => rates(),
+    rateLimiter: createMemoryRateLimiter(),
+    now: () => Date.now(),
+  };
+  return fxDeps;
 }

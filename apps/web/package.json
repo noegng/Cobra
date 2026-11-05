@@ -18,6 +18,8 @@
     "@cobra/solver": "workspace:*",
     "@tanstack/react-query": "5.105.0",
     "@walletconnect/ethereum-provider": "2.26.0",
+    "@x402/core": "2.29.0",
+    "@x402/evm": "2.29.0",
     "drizzle-orm": "0.45.4",
     "grammy": "1.46.0",
     "next": "16.4.3",

@@ -346,6 +346,19 @@ beyond its price guard.
 
 ---
 
+## Paid FX quote over x402 (experimental)
+
+`GET /api/x402/fx-quote?currency=ARS&amount=4500` (ARS or BRL) tells an agent what it costs, in USD₮ and in USDC, to
+deliver exactly that amount of wARS or wBRL on Celo through Uniswap V3, with the cost against the reference rate. It
+costs **0.001 USD₮ or USDC per call**, paid over [x402](https://docs.celo.org/build-on-celo/build-with-ai/x402) and
+settled by Celo's hosted facilitator (`api.x402.celo.org`, EIP-3009, gasless for the caller).
+
+- Bad parameters answer `400` before any payment; the payment is settled only when the quote succeeded.
+- Indicative: the Textile FX RFQ venue is not queried (a firm request would reach fillers with no intent to trade), so
+  wBRL quotes are the pool's (about 3.3 %), not what a real Cobrá payment gets (0.68 % on mainnet payment #4).
+- Settlements are sent by the facilitator's signer, not by Cobrá's agent wallet, and carry no ERC-8021 tag: they are
+  not counted by `pnpm verify:payments`.
+
 ## For developers
 
 ### Repo map
