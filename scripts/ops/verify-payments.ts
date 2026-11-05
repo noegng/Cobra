@@ -6,7 +6,7 @@
  */
 import { runPaymentProofCli } from "../../packages/relayer/src/payment-proof-cli";
 
-runPaymentProofCli()
+runPaymentProofCli(process.argv.slice(2))
   .then((code) => process.exit(code))
   .catch((e) => {
     console.error(String((e as Error).message ?? e));
