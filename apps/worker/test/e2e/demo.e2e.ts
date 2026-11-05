@@ -292,7 +292,9 @@ describe.skipIf(!ready)("end-to-end on a Celo mainnet fork", () => {
     });
   });
 
-  // WS13: cannot run until WS12's CobraRouterV2 is merged (contracts/src/CobraRouterV2.sol + its deploy helper).
+  // Optional regression test, not a blocker: the Textile settlement is already proven by the v2 fork tests on the REAL
+  // reactor (contracts/test, `test_fork_textile_*`) and by a real mainnet USD₮ → wBRL Textile payment (4 Nov 2026).
+  // What this would add: the full API → relayer → indexer chain on router v2 in one run.
   it.todo(
     "Textile RFQ leg on a mainnet fork (router v2): " +
       "1) deploy CobraRouterV2 to the anvil fork with the same constructor args as v1 + TEXTILE_REACTOR_CELO (0xa9aa0a64769cbed4d3b1ceb4df01cde915c235b3); " +

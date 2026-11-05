@@ -9,7 +9,6 @@ import { LANDING } from "./landing-i18n";
 import { TELEGRAM_BOT_URL, TelegramFab } from "./telegram-fab";
 
 export const TELEGRAM_URL = TELEGRAM_BOT_URL;
-export const REPO_URL = "https://github.com/noegng/Cobra";
 
 export interface LandingStats {
   paymentCount: number;
@@ -253,7 +252,6 @@ export function Landing({
           {legacyRouterAddress && (
             <a href={explorerAddress(legacyRouterAddress)} target="_blank" rel="noopener noreferrer">CobraRouter v1</a>
           )}
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t.foot_code}</a>
         </nav>
       </footer>
       <TelegramFab lang={lang} />

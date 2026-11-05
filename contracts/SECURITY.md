@@ -179,6 +179,11 @@ Scope: `src/CobraRouterV2.sol`, `src/ICobraRouterV2.sol`, `src/interfaces/IUnisw
 5. A Uniswap path whose first token address starts with `0x54584631` would be routed to the Textile decoder and
    revert; no registry token does.
 6. `TEXTILE_REACTOR` is immutable: if Textile moves to a new reactor, v2 must be redeployed.
+7. **Native dust when the payer cannot receive native (accepted, decided 4 Nov 2026).** See V4: if the forward to the
+   payer fails, the dust stays in the router, unrecoverable. Kept on purpose over the two alternatives: reverting
+   would let anyone block a contract payer's Textile payments with 1 wei left in the reactor, and a sweep function
+   needs an owner (the router has no admin, by design). Exposure: only native that a third party left in the
+   reactor, only for payers that reject native; amounts are dust. No redeployment.
 
 ### Vendored test code (license)
 

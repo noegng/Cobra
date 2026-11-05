@@ -47,7 +47,9 @@ import {
   quotes,
   submissions,
   transitionInvoice,
+  type AgentEventCode,
   type Db,
+  type RecordAgentEvent,
   type InvoiceRow,
 } from "@cobra/db";
 import { SignerRefusedError, signerOf, type RelayerSigner } from "./signer";
@@ -56,6 +58,11 @@ import { verifyLegs } from "./verify";
 
 export type SubmissionRow = typeof submissions.$inferSelect;
 type Log = (msg: string, extra?: Record<string, unknown>) => void;
+
+const DIRECT_CODES: ReadonlySet<string> = new Set(["cap_per_payment", "cap_per_day", "cap_per_merchant_day", "cap_per_payer_day", "self_payment"]);
+export function refusalEventCode(code: string): AgentEventCode {
+  return DIRECT_CODES.has(code) ? (code as AgentEventCode) : "refused_other";
+}
 
 export interface RelayerConfig {
   db: Db;
@@ -66,6 +73,8 @@ export interface RelayerConfig {
   operatorChatId?: string;
   pollIntervalMs?: number;
   log?: Log;
+  /** WS15: structured refusal log (closed codes only), fire-and-forget. Absent = nothing recorded. */
+  recordEvent?: RecordAgentEvent;
   // ---- internals (not part of the frozen RelayerOptions; defaults are production values) ----
   signer?: RelayerSigner;
   now?: () => Date;
@@ -194,6 +203,15 @@ export function createRelayer(cfg: RelayerConfig) {
   async function getChainId() {
     chainId ??= await publicClient.getChainId();
     return chainId;
+  }
+
+  /** Closed-code refusal record; transient/internal signer refusals collapse into "refused_other". */
+  function recordRefusal(e: SignerRefusedError): void {
+    try {
+      cfg.recordEvent?.("relayer", refusalEventCode(e.code));
+    } catch {
+      /* never affects the money path */
+    }
   }
 
   /**
@@ -398,6 +416,7 @@ export function createRelayer(cfg: RelayerConfig) {
           await requeueNotBroadcast(row, e.message);
           return false;
         }
+        recordRefusal(e);
         await fail(row.id, e.message);
         return true;
       }
@@ -451,6 +470,7 @@ export function createRelayer(cfg: RelayerConfig) {
             await requeueNotBroadcast(row, e.message);
             return false;
           }
+          recordRefusal(e);
           await fail(row.id, e.message);
           return true;
         }

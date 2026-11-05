@@ -6,7 +6,7 @@
  */
 import { BaseError, createPublicClient, formatEther, getAddress, http, parseAbi, type PublicClient } from "viem";
 import { celo } from "viem/chains";
-import { createDb } from "@cobra/db";
+import { agentEventRecorder, createDb } from "@cobra/db";
 import { startIndexer, expireInvoices } from "@cobra/indexer";
 import { createTelegramNotifier, runDailyClose, runReminders, withOperatorChat } from "@cobra/bot";
 import { createRelayerSigner, startRelayer, type Stoppable } from "@cobra/relayer";
@@ -107,6 +107,7 @@ async function main() {
     ...(cfg.operatorChatId && { operatorChatId: cfg.operatorChatId }),
     pollIntervalMs: cfg.pollIntervalMs,
     log: (msg, extra) => log(msg, { svc: "relayer", ...extra }),
+    recordEvent: agentEventRecorder(db, (msg, extra) => log(msg, { svc: "relayer", ...extra })),
     gasGrant: cfg.gasGrantWei > 0n && cfg.gasGrantDailyMax > 0 ? { amountWei: cfg.gasGrantWei, dailyMax: cfg.gasGrantDailyMax } : false,
   });
 
