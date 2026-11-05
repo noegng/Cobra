@@ -27,7 +27,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const header = (
     <header className="sn">
       <a className="sn-logo" href="/" aria-label="Cobrá">
-        <img src="/logo-192.png" alt="" width={36} height={36} />
+        <img src="/logo-192.png" alt="Cobrá" width={36} height={36} />
         <span>Cobrá</span>
       </a>
       <span className="db-crumb">{t.dashboard}</span>

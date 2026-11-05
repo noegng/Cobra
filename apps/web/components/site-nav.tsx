@@ -47,7 +47,7 @@ export function SiteNav({ lang, page }: { lang: Language; page: Page }) {
   return (
     <header className="sn">
       <a className="sn-logo" href="/" aria-label={`Cobrá · ${t.home}`}>
-        <img src="/logo-192.png" alt="" width={36} height={36} />
+        <img src="/logo-192.png" alt="Cobrá" width={36} height={36} />
         <span>Cobrá</span>
       </a>
 

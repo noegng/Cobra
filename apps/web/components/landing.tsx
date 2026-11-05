@@ -49,7 +49,7 @@ function PhoneMock({ t }: { t: (typeof LANDING)["es"] }) {
     <div className="lp-visual" aria-hidden="true">
       <div className="lp-phone">
         <div className="lp-phone-bar">
-          <img className="lp-avatar" src="/logo-192.png" alt="" width={30} height={30} />
+          <img className="lp-avatar" src="/logo-192.png" alt="Cobrá" width={30} height={30} />
           <span>
             <b>Cobrá</b>
             <small>bot</small>
@@ -126,6 +126,20 @@ export function Landing({
           <PhoneMock t={t} />
         </section>
 
+        <section id="how" className="lp-section">
+          <h2>{t.how_title}</h2>
+          <ol className="lp-steps">
+            {t.how.map(([title, body], i) => (
+              <li key={title}>
+                <span className="lp-num">{i + 1}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Live counters sit after "how it works", not under the hero: the numbers back the story, they do not lead it. */}
         {stats && stats.paymentCount > 0 && (
           <section className="lp-stats" aria-label={t.nav_proof}>
             <div>
@@ -143,19 +157,6 @@ export function Landing({
             <a href="/proof">{t.stats_link} →</a>
           </section>
         )}
-
-        <section id="how" className="lp-section">
-          <h2>{t.how_title}</h2>
-          <ol className="lp-steps">
-            {t.how.map(([title, body], i) => (
-              <li key={title}>
-                <span className="lp-num">{i + 1}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
 
         <section id="merchants" className="lp-section">
           <h2>{t.merchants_title}</h2>

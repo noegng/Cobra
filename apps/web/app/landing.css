@@ -26,7 +26,8 @@
 .lp-pills li + li::before { content: "·"; margin: 0 0.6rem; color: var(--line-strong); }
 
 /* Hero visual: phone + receipt */
-.lp-visual { position: relative; display: flex; justify-content: center; padding: 0.5rem 0 3.5rem; }
+/* The pay card hangs below the phone like a receipt: its bottom padding keeps it clear of the chat bubbles. */
+.lp-visual { position: relative; display: flex; justify-content: center; padding: 0.5rem 0 10.5rem; }
 .lp-phone { width: min(19.5rem, 86vw); border-radius: 2rem; padding: 0.55rem; background: var(--fg); }
 .lp-phone-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 0.9rem; border-radius: 1.5rem 1.5rem 0 0; background: var(--card); color: var(--fg);
   font-size: 0.88rem; border-bottom: 1px solid var(--line); }
@@ -42,7 +43,7 @@
 /* Ink on paper in both themes, like a real QR on a phone screen (a light-on-dark QR reads as inverted). */
 .lp-qr { display: block; width: 7rem; height: 7rem; color: #111311; --qr-bg: #fffdf8; border-radius: 4px; }
 .lp-paid { border-color: var(--accent); font-weight: 600; }
-.lp-paycard { position: absolute; right: max(0rem, calc(50% - 15.5rem)); bottom: 0.5rem; width: 11.5rem; display: flex; flex-direction: column; gap: 0.35rem;
+.lp-paycard { position: absolute; right: max(0rem, calc(50% - 15.5rem)); bottom: 0.5rem; width: 11rem; display: flex; flex-direction: column; gap: 0.35rem;
   padding: 0.9rem 0.9rem 1rem; background: var(--card); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; }
 .lp-paycard::after { content: ""; position: absolute; left: -1px; right: -1px; bottom: -8px; height: 8px;
   background: linear-gradient(-45deg, transparent 5.5px, var(--card) 0) 0 0 / 11px 8px repeat-x, linear-gradient(45deg, transparent 5.5px, var(--card) 0) 0 0 / 11px 8px repeat-x; }
@@ -61,7 +62,7 @@
 
 /* Live strip: a receipt total line */
 .lp-stats { max-width: var(--lp-max); margin: 0 auto; padding: 1rem 1.25rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem 2.5rem;
-  border-top: 1px dashed var(--line-strong); border-bottom: 1px dashed var(--line-strong); font-family: var(--font-mono); }
+  margin-top: 3rem; border-top: 1px dashed var(--line-strong); border-bottom: 1px dashed var(--line-strong); font-family: var(--font-mono); }
 .lp-stats div { display: flex; align-items: baseline; gap: 0.5rem; }
 .lp-stats b { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.03em; }
 .lp-stats span { color: var(--sub); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -140,6 +141,7 @@
   .lp-steps, .lp-grid, .lp-grid-4 { grid-template-columns: 1fr; }
   .lp-steps li, .lp-steps li + li { padding: 1.2rem 0; border-left: none; border-bottom: 1px dashed var(--line-strong); }
   .lp-grid .lp-card, .lp-grid-4 .lp-card { padding-left: 0 !important; border-left: none !important; }
+  .lp-visual { padding-bottom: 11.5rem; }
   .lp-paycard { right: 0; width: 10rem; }
   .lp-dark { border-radius: 0; padding: 2.5rem 1.25rem 2rem; }
   .lp-stats a { margin-left: 0; }
