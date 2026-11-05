@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEMO } from "../components/demo/demo-i18n";
-import { DEMO_BALANCE_MICRO, formatLocal, formatUsdt, handleMerchantText, quoteMicro, toCents, type DemoInvoice } from "../components/demo/engine";
+import { DEMO_BALANCE_MICRO, DEMO_COUNTRIES, formatLocal, formatUsdt, handleMerchantText, quoteMicro, toCents, type DemoCountry, type DemoInvoice } from "../components/demo/engine";
 
 const ctx = (invoices: DemoInvoice[] = [], lang: "es" | "pt" | "en" = "es") => ({ country: "AR" as const, lang, invoices });
 
@@ -38,12 +38,32 @@ describe("demo engine", () => {
   it("every language has the same chips shape and fills every message", () => {
     for (const lang of ["es", "pt", "en"] as const) {
       const t = DEMO[lang];
-      expect(t.chips.AR.length).toBe(4);
-      expect(t.chips.BR.length).toBe(4);
       expect(t.invoice_caption("A-0001", "$ 1", "x")).toContain("A-0001");
-      // the first chip of each country is a charge the engine understands
-      expect(handleMerchantText(t.chips.AR[0]!, ctx([], lang)).kind).toBe("charge");
-      expect(handleMerchantText(t.chips.BR[0]!, { country: "BR", lang, invoices: [] }).kind).toBe("charge");
+      for (const c of Object.keys(DEMO_COUNTRIES) as DemoCountry[]) {
+        expect(t.chips[c].length, c).toBe(4);
+        expect(t.country[c], c).toBeTruthy();
+        // the first chip of each country is a charge the engine understands
+        expect(handleMerchantText(t.chips[c][0]!, { country: c, lang, invoices: [] }).kind, `${lang} ${c}`).toBe("charge");
+      }
+      expect(t.payer_ramping("SPEI")).toContain("SPEI");
+      expect(t.agent_ramp("180", "wMXN", "SPEI")).toContain("180 wMXN");
     }
+  });
+
+  it("Mexico and Colombia: no USD₮ route, Ripio ramp then a direct wFIAT payment", () => {
+    for (const c of ["MX", "CO"] as const) {
+      const cfg = DEMO_COUNTRIES[c];
+      expect(cfg.mode).toBe("ramp");
+      expect(cfg.rail).toBeTruthy();
+      expect(cfg.costBps).toBe(0);
+      expect(() => quoteMicro("100", c)).toThrow(/ramp/);
+    }
+    expect(DEMO_COUNTRIES.AR.mode).toBe("swap");
+    expect(DEMO_COUNTRIES.BR.mode).toBe("swap");
+    // amounts use each country's own convention: dot decimals in MX, comma in CO
+    expect(handleMerchantText("cobrar 180.50 tacos", { country: "MX", lang: "es", invoices: [] })).toMatchObject({ kind: "charge", invoice: { amount: "180.5" } });
+    expect(handleMerchantText("cobrar 12.000 almuerzo", { country: "CO", lang: "es", invoices: [] })).toMatchObject({ kind: "charge", invoice: { amount: "12000" } });
+    expect(formatLocal("12000", "CO", "es")).toBe("$ 12.000");
+    expect(formatLocal("180.5", "MX", "es")).toBe("$ 180.50");
   });
 });

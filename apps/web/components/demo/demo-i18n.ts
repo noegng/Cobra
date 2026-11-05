@@ -60,6 +60,18 @@ export interface DemoStrings {
   agent_settle: (amount: string, token: string) => string;
   agent_notify: string;
   agent_footer: string;
+  // Ramp countries (MX, CO): no conversion route on Celo, the payer buys the wFIAT through Ripio first.
+  payer_wallet_ramp: (usdt: string, held: string, token: string) => string;
+  payer_no_route: (token: string) => string;
+  payer_ramp_btn: (amount: string, token: string) => string;
+  payer_ramping: (rail: string) => string;
+  payer_ramp_done: (amount: string, token: string) => string;
+  payer_pay_token: (amount: string, token: string) => string;
+  payer_ramp_note: string;
+  agent_no_route: (token: string) => string;
+  agent_ramp: (amount: string, token: string, rail: string) => string;
+  agent_direct: (token: string) => string;
+  agent_gas_grant: string;
 }
 
 const ERR_ES: Record<AmountError, string> = {
@@ -102,7 +114,7 @@ const es: DemoStrings = {
   banner_link: "Ver pagos reales en Celo",
   title: "Prueba Cobrá en 30 segundos",
   sub: "A la izquierda, el chat del comercio en Telegram. A la derecha, el teléfono del cliente. Escribe un cobro y págalo.",
-  country: { AR: "Argentina · wARS", BR: "Brasil · wBRL" },
+  country: { AR: "Argentina · wARS", BR: "Brasil · wBRL", MX: "México · wMXN", CO: "Colombia · wCOP" },
   tab_merchant: "Comercio",
   tab_payer: "Cliente",
   tab_agent: "Agente",
@@ -113,7 +125,7 @@ const es: DemoStrings = {
   agent_side: "Lo que hace el agente",
   placeholder: "Escribe un mensaje…",
   send: "Enviar",
-  chips: { AR: ["cobrar 4500 pizza", "¿me pagaron el A-0001?", "/cierre", "cancela el último cobro"], BR: ["cobrar 30 corte", "¿me pagaron el A-0001?", "/cierre", "/ayuda"] },
+  chips: { AR: ["cobrar 4500 pizza", "¿me pagaron el A-0001?", "/cierre", "cancela el último cobro"], BR: ["cobrar 30 corte", "¿me pagaron el A-0001?", "/cierre", "/ayuda"], MX: ["cobrar 180 tacos", "¿me pagaron el A-0001?", "/cierre", "/ayuda"], CO: ["cobrar 12000 almuerzo", "¿me pagaron el A-0001?", "/cierre", "/ayuda"] },
   welcome: "¡Hola! Soy Cobrá (versión demo). Escribe por ejemplo: cobrar 4500 pizza",
   help: "En la demo entiendo:\n• cobrar 4500 pizza — crea un cobro con QR\n• ¿me pagaron el A-0001?\n• cancela el último cobro\n• /cierre — resumen del día\nEn Telegram también entiendo frases libres y notas de voz.",
   usage: "Escribe el monto y una descripción, por ejemplo: cobrar 4500 café",
@@ -152,6 +164,17 @@ const es: DemoStrings = {
   agent_settle: (amount, token) => `El contrato pagó exactamente ${amount} en ${token} al comercio`,
   agent_notify: "Comercio avisado en Telegram",
   agent_footer: "En producción, cada paso queda en el diario público del agente.",
+  payer_wallet_ramp: (u, held, tok) => `Billetera demo · ${u} USD₮ · ${held} ${tok} · 0 CELO`,
+  payer_no_route: (tok) => `Todavía no hay ruta de conversión de dólares a ${tok} en Celo: este cobro se paga en ${tok}.`,
+  payer_ramp_btn: (a, tok) => `Comprar ${a} ${tok} en pesos con Ripio`,
+  payer_ramping: (rail) => `Ripio · transferencia ${rail} en curso…`,
+  payer_ramp_done: (a, tok) => `Ripio acreditó ${a} ${tok} en tu billetera.`,
+  payer_pay_token: (a, tok) => `Pagar ${a} ${tok}`,
+  payer_ramp_note: "Rampa Ripio simulada: en la app real se abre Ripio (cuenta y verificación de identidad en Ripio).",
+  agent_no_route: (tok) => `Sin ruta de conversión hacia ${tok} en Celo: el agente propone pagar en ${tok} y abre la rampa Ripio`,
+  agent_ramp: (a, tok, rail) => `Rampa Ripio (fuera de Cobrá): el cliente compró ${a} ${tok} con pesos por ${rail}`,
+  agent_direct: (tok) => `Sin swap: el cliente paga directamente en ${tok} · costo 0 % (solo la red, pagada por el agente)`,
+  agent_gas_grant: "Primer pago en este token: el agente envía 0,05 CELO para la autorización Permit2 (una sola vez)",
 };
 
 const pt: DemoStrings = {
@@ -161,7 +184,7 @@ const pt: DemoStrings = {
   banner_link: "Ver pagamentos reais na Celo",
   title: "Teste a Cobrá em 30 segundos",
   sub: "À esquerda, o chat do comércio no Telegram. À direita, o celular do cliente. Escreva uma cobrança e pague.",
-  country: { AR: "Argentina · wARS", BR: "Brasil · wBRL" },
+  country: { AR: "Argentina · wARS", BR: "Brasil · wBRL", MX: "México · wMXN", CO: "Colombia · wCOP" },
   tab_merchant: "Comércio",
   tab_payer: "Cliente",
   tab_agent: "Agente",
@@ -172,7 +195,7 @@ const pt: DemoStrings = {
   agent_side: "O que o agente faz",
   placeholder: "Escreva uma mensagem…",
   send: "Enviar",
-  chips: { AR: ["cobrar 4500 pizza", "o A-0001 foi pago?", "/fechamento", "cancela a última cobrança"], BR: ["cobrar 30 corte", "o A-0001 foi pago?", "/fechamento", "/ajuda"] },
+  chips: { AR: ["cobrar 4500 pizza", "o A-0001 foi pago?", "/fechamento", "cancela a última cobrança"], BR: ["cobrar 30 corte", "o A-0001 foi pago?", "/fechamento", "/ajuda"], MX: ["cobrar 180 tacos", "o A-0001 foi pago?", "/fechamento", "/ajuda"], CO: ["cobrar 12000 almoço", "o A-0001 foi pago?", "/fechamento", "/ajuda"] },
   welcome: "Olá! Eu sou a Cobrá (versão demo). Escreva por exemplo: cobrar 30 corte",
   help: "Na demo eu entendo:\n• cobrar 30 corte — cria uma cobrança com QR\n• o A-0001 foi pago?\n• cancela a última cobrança\n• /fechamento — resumo do dia\nNo Telegram também entendo frases livres e áudios.",
   usage: "Escreva o valor e uma descrição, por exemplo: cobrar 30 corte",
@@ -211,6 +234,17 @@ const pt: DemoStrings = {
   agent_settle: (amount, token) => `O contrato pagou exatamente ${amount} em ${token} ao comércio`,
   agent_notify: "Comércio avisado no Telegram",
   agent_footer: "Em produção, cada passo fica no diário público do agente.",
+  payer_wallet_ramp: (u, held, tok) => `Carteira demo · ${u} USD₮ · ${held} ${tok} · 0 CELO`,
+  payer_no_route: (tok) => `Ainda não há rota de conversão de dólares para ${tok} na Celo: esta cobrança é paga em ${tok}.`,
+  payer_ramp_btn: (a, tok) => `Comprar ${a} ${tok} em pesos com a Ripio`,
+  payer_ramping: (rail) => `Ripio · transferência ${rail} em andamento…`,
+  payer_ramp_done: (a, tok) => `A Ripio creditou ${a} ${tok} na sua carteira.`,
+  payer_pay_token: (a, tok) => `Pagar ${a} ${tok}`,
+  payer_ramp_note: "Rampa Ripio simulada: no app real a Ripio abre (conta e verificação de identidade na Ripio).",
+  agent_no_route: (tok) => `Sem rota de conversão para ${tok} na Celo: o agente propõe pagar em ${tok} e abre a rampa Ripio`,
+  agent_ramp: (a, tok, rail) => `Rampa Ripio (fora da Cobrá): o cliente comprou ${a} ${tok} com pesos via ${rail}`,
+  agent_direct: (tok) => `Sem swap: o cliente paga direto em ${tok} · custo 0 % (só a rede, paga pelo agente)`,
+  agent_gas_grant: "Primeiro pagamento neste token: o agente envia 0,05 CELO para a autorização Permit2 (uma única vez)",
 };
 
 const en: DemoStrings = {
@@ -220,7 +254,7 @@ const en: DemoStrings = {
   banner_link: "See real payments on Celo",
   title: "Try Cobrá in 30 seconds",
   sub: "On the left, the merchant's Telegram chat. On the right, the customer's phone. Type a charge and pay it.",
-  country: { AR: "Argentina · wARS", BR: "Brazil · wBRL" },
+  country: { AR: "Argentina · wARS", BR: "Brazil · wBRL", MX: "Mexico · wMXN", CO: "Colombia · wCOP" },
   tab_merchant: "Merchant",
   tab_payer: "Customer",
   tab_agent: "Agent",
@@ -231,7 +265,7 @@ const en: DemoStrings = {
   agent_side: "What the agent does",
   placeholder: "Type a message…",
   send: "Send",
-  chips: { AR: ["charge 4500 pizza", "was A-0001 paid?", "/close", "cancel the last one"], BR: ["charge 30 haircut", "was A-0001 paid?", "/close", "/help"] },
+  chips: { AR: ["charge 4500 pizza", "was A-0001 paid?", "/close", "cancel the last one"], BR: ["charge 30 haircut", "was A-0001 paid?", "/close", "/help"], MX: ["charge 180 tacos", "was A-0001 paid?", "/close", "/help"], CO: ["charge 12000 lunch", "was A-0001 paid?", "/close", "/help"] },
   welcome: "Hi! I'm Cobrá (demo version). Try: charge 4500 pizza",
   help: "In the demo I understand:\n• charge 4500 pizza — creates a request with a QR\n• was A-0001 paid?\n• cancel the last one\n• /close — today's summary\nOn Telegram I also understand free text and voice notes.",
   usage: "Type the amount and a description, for example: charge 4500 coffee",
@@ -270,6 +304,17 @@ const en: DemoStrings = {
   agent_settle: (amount, token) => `The contract paid exactly ${amount} in ${token} to the merchant`,
   agent_notify: "Merchant notified on Telegram",
   agent_footer: "In production, every step lands in the agent's public journal.",
+  payer_wallet_ramp: (u, held, tok) => `Demo wallet · ${u} USD₮ · ${held} ${tok} · 0 CELO`,
+  payer_no_route: (tok) => `There is no dollar-to-${tok} conversion route on Celo yet: this request is paid in ${tok}.`,
+  payer_ramp_btn: (a, tok) => `Buy ${a} ${tok} in pesos with Ripio`,
+  payer_ramping: (rail) => `Ripio · ${rail} transfer in progress…`,
+  payer_ramp_done: (a, tok) => `Ripio credited ${a} ${tok} to your wallet.`,
+  payer_pay_token: (a, tok) => `Pay ${a} ${tok}`,
+  payer_ramp_note: "Simulated Ripio ramp: the real app opens Ripio (Ripio account and identity check).",
+  agent_no_route: (tok) => `No conversion route to ${tok} on Celo: the agent offers to pay in ${tok} and opens the Ripio ramp`,
+  agent_ramp: (a, tok, rail) => `Ripio ramp (outside Cobrá): the customer bought ${a} ${tok} with pesos over ${rail}`,
+  agent_direct: (tok) => `No swap: the customer pays in ${tok} directly · 0 % cost (network only, paid by the agent)`,
+  agent_gas_grant: "First payment in this token: the agent sends 0.05 CELO for the one-time Permit2 approval",
 };
 
 export const DEMO: Record<Language, DemoStrings> = { es, pt, en };

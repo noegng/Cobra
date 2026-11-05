@@ -6,14 +6,38 @@ import { amountStyleFor, formatAmount, parseAmount, type AmountError } from "@co
 import { matchCharge } from "@cobra/bot/fastpath";
 import type { Language } from "@cobra/shared";
 
-export type DemoCountry = "AR" | "BR";
+export type DemoCountry = "AR" | "BR" | "MX" | "CO";
 
-export const DEMO_COUNTRIES: Record<DemoCountry, { currency: "ARS" | "BRL"; token: "wARS" | "wBRL"; merchant: string; route: string; costBps: number; rateMilli: bigint }> = {
+/**
+ * "swap": the payer's USD₮ is converted on-chain (Uniswap V3 or Textile FX) into the merchant's wFIAT.
+ * "ramp": no conversion route exists on Celo for this wFIAT yet (wMXN, wCOP have no pool), so the payer buys it in
+ * local currency through Ripio's on-ramp, outside Cobrá, then pays in that same wFIAT (no swap, network fee only).
+ */
+export type DemoMode = "swap" | "ramp";
+
+export interface DemoCountryConfig {
+  currency: "ARS" | "BRL" | "MXN" | "COP";
+  token: "wARS" | "wBRL" | "wMXN" | "wCOP";
+  merchant: string;
+  mode: DemoMode;
+  route: string;
+  costBps: number;
+  /** Illustrative local units per USD₮, ×1000 (swap countries only). */
+  rateMilli: bigint;
+  /** Local bank rail the Ripio ramp uses (ramp countries only). */
+  rail?: string;
+}
+
+export const DEMO_COUNTRIES: Record<DemoCountry, DemoCountryConfig> = {
   // Illustrative rates (local units per USD₮, ×1000) and measured route costs; labelled "illustrative" in the UI.
-  AR: { currency: "ARS", token: "wARS", merchant: "Pizzería Don Luis", route: "USD₮ → wARS · Uniswap V3", costBps: 10, rateMilli: 1_650_000n },
+  AR: { currency: "ARS", token: "wARS", merchant: "Pizzería Don Luis", mode: "swap", route: "USD₮ → wARS · Uniswap V3", costBps: 10, rateMilli: 1_650_000n },
   // BR: live route on router v2 = Textile FX RFQ, 68 bps measured on the first real wBRL payment (2026-11-04,
   // tx 0xe7e62efe…). The Uniswap pool (~3.3 %) is only the fallback when no filler quotes.
-  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", route: "USD₮ → wBRL · Textile FX RFQ", costBps: 68, rateMilli: 5_486n },
+  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", mode: "swap", route: "USD₮ → wBRL · Textile FX RFQ", costBps: 68, rateMilli: 5_486n },
+  // MX / CO: same flow as production's pay page for these tokens: no pool, Ripio ramp offered, then a direct wFIAT
+  // payment (Permit2, one-time gas grant). Rails from Ripio's docs (docs/research/b1-bank-transfer-pix.md).
+  MX: { currency: "MXN", token: "wMXN", merchant: "Taquería El Güero", mode: "ramp", route: "wMXN · pago directo", costBps: 0, rateMilli: 0n, rail: "SPEI" },
+  CO: { currency: "COP", token: "wCOP", merchant: "Panadería La Esquina", mode: "ramp", route: "wCOP · pago directo", costBps: 0, rateMilli: 0n, rail: "PSE" },
 };
 
 /** Simulated payer wallet balance, in USD₮ micro-units (6 decimals). */
@@ -48,7 +72,8 @@ export function toCents(amount: string): bigint {
 
 /** What the payer signs, in USD₮ micro-units: amount / rate, plus the route cost, rounded up. */
 export function quoteMicro(amount: string, country: DemoCountry): bigint {
-  const { rateMilli, costBps } = DEMO_COUNTRIES[country];
+  const { rateMilli, costBps, mode } = DEMO_COUNTRIES[country];
+  if (mode !== "swap") throw new Error(`quoteMicro: ${country} has no USD₮ route (ramp country)`);
   const num = toCents(amount) * 1_000_000n * 1000n * BigInt(10_000 + costBps);
   const den = 100n * rateMilli * 10_000n;
   return (num + den - 1n) / den;

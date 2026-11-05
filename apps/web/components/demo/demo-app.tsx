@@ -22,7 +22,7 @@ import {
 } from "./engine";
 
 type Msg = { id: number; from: "me" | "bot"; text: string; invoiceRef?: string; paid?: boolean };
-type PayerStep = "idle" | "connected" | "signing" | "paying" | "paid";
+type PayerStep = "idle" | "connected" | "ramping" | "signing" | "paying" | "paid";
 type LogLine = { id: number; text: string };
 type Tab = "merchant" | "payer" | "agent";
 
@@ -36,6 +36,8 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
   const [created, setCreated] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | null>(null);
   const [step, setStep] = useState<PayerStep>("idle");
+  /** Ramp countries: invoices whose wFIAT the payer already bought through the (simulated) Ripio ramp. */
+  const [ramped, setRamped] = useState<Record<string, boolean>>({});
   const [log, setLog] = useState<LogLine[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -71,6 +73,7 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
     setCreated({});
     setActive(null);
     setStep("idle");
+    setRamped({});
     setLog([]);
     setTyping(false);
     setTab("merchant");
@@ -133,21 +136,48 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
     });
   }
 
-  const quote = inv ? quoteMicro(inv.amount, country) : 0n;
-  const insufficient = quote > DEMO_BALANCE_MICRO;
+  const isRamp = cfg.mode === "ramp";
+  const quote = inv && !isRamp ? quoteMicro(inv.amount, country) : 0n;
+  const insufficient = !isRamp && quote > DEMO_BALANCE_MICRO;
+  const hasToken = !!inv && !!ramped[inv.ref];
+  /** "4.500,50" without the currency symbol, for wFIAT amounts. */
+  const tokAmt = (amount: string) => fmt(amount).replace(/^\S+\s/, "");
   const remaining = inv && created[inv.ref] ? Math.max(0, created[inv.ref]! + TTL_MS - now) : 0;
   const mm = String(Math.floor(remaining / 60_000)).padStart(2, "0");
   const ss = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, "0");
   const costPct = (cfg.costBps / 100).toLocaleString(lang === "en" ? "en-US" : lang === "pt" ? "pt-BR" : "es-AR", { maximumFractionDigits: 2 }) + " %";
 
+  function connect() {
+    setStep("connected");
+    if (isRamp && inv && !ramped[inv.ref]) addLog(t.agent_no_route(cfg.token));
+  }
+
+  /** Simulated Ripio on-ramp: the payer buys exactly the invoice amount of wFIAT in local currency. */
+  function ramp() {
+    if (!inv || !isRamp || step !== "connected") return;
+    const ref = inv.ref;
+    const amount = inv.amount;
+    setStep("ramping");
+    later(1800, () => {
+      setRamped((r) => ({ ...r, [ref]: true }));
+      addLog(t.agent_ramp(tokAmt(amount), cfg.token, cfg.rail ?? ""));
+      setStep("connected");
+    });
+  }
+
   function pay() {
-    if (!inv || insufficient || step !== "connected") return;
+    if (!inv || insufficient || step !== "connected" || (isRamp && !ramped[inv.ref])) return;
     const ref = inv.ref;
     const amount = inv.amount;
     setStep("signing");
     later(1100, () => {
-      addLog(t.agent_route(cfg.route, costPct));
-      addLog(t.agent_gas);
+      if (isRamp) {
+        addLog(t.agent_direct(cfg.token));
+        addLog(t.agent_gas_grant);
+      } else {
+        addLog(t.agent_route(cfg.route, costPct));
+        addLog(t.agent_gas);
+      }
       setStep("paying");
     });
     later(2500, () => {
@@ -304,8 +334,8 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
                     <div className="receipt-total">
                       <dt>{RECEIPT[lang].you_pay}</dt>
                       <dd>
-                        {step === "idle" ? "—" : `${formatUsdt(quote, lang)} USD₮`}
-                        <small>{step === "idle" ? RECEIPT[lang].you_pay_hint : tokenName("USD₮", lang)}</small>
+                        {step === "idle" ? "—" : isRamp ? `${tokAmt(inv.amount)} ${cfg.token}` : `${formatUsdt(quote, lang)} USD₮`}
+                        <small>{step === "idle" ? RECEIPT[lang].you_pay_hint : tokenName(isRamp ? cfg.token : "USD₮", lang)}</small>
                       </dd>
                     </div>
                   </dl>
@@ -314,9 +344,46 @@ export function DemoApp({ lang, telegramUrl }: { lang: Language; telegramUrl: st
                 {inv.status === "cancelled" ? (
                   <p className="note">{t.payer_cancelled}</p>
                 ) : step === "idle" ? (
-                  <button type="button" className="btn primary" onClick={() => setStep("connected")}>
+                  <button type="button" className="btn primary" onClick={connect}>
                     {t.payer_connect}
                   </button>
+                ) : isRamp ? (
+                  <div className="stack">
+                    <p className="dm-wallet">{t.payer_wallet_ramp(formatUsdt(DEMO_BALANCE_MICRO, lang), hasToken ? tokAmt(inv.amount) : "0", cfg.token)}</p>
+                    {!hasToken ? (
+                      <>
+                        <p className="note">{t.payer_no_route(cfg.token)}</p>
+                        <button type="button" className="btn primary" onClick={ramp} disabled={step !== "connected"}>
+                          {step === "ramping" ? (
+                            <>
+                              <span className="spin" aria-hidden /> {t.payer_ramping(cfg.rail ?? "")}
+                            </>
+                          ) : (
+                            t.payer_ramp_btn(tokAmt(inv.amount), cfg.token)
+                          )}
+                        </button>
+                        <p className="dm-fine">{t.payer_ramp_note}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="note">{t.payer_ramp_done(tokAmt(inv.amount), cfg.token)}</p>
+                        <button type="button" className="btn primary" onClick={pay} disabled={step !== "connected"}>
+                          {step === "signing" ? (
+                            <>
+                              <span className="spin" aria-hidden /> {t.payer_signing}
+                            </>
+                          ) : step === "paying" ? (
+                            <>
+                              <span className="spin" aria-hidden /> {t.payer_paying}
+                            </>
+                          ) : (
+                            t.payer_pay_token(tokAmt(inv.amount), cfg.token)
+                          )}
+                        </button>
+                        <p className="note">{t.payer_note}</p>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <div className="stack">
                     <p className="dm-wallet">{t.payer_wallet(formatUsdt(DEMO_BALANCE_MICRO, lang))}</p>
