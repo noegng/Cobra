@@ -88,7 +88,6 @@ const es = {
   final_sub: "Necesitas Telegram y una dirección en Celo (MiniPay, Valora o MetaMask). Nunca te pediremos claves.",
   foot_journal: "Diario del agente (JSON)",
   foot_card: "Ficha del agente",
-  foot_code: "Código abierto",
 } as const;
 
 type Strings = { [K in keyof typeof es]: (typeof es)[K] extends string ? string : (typeof es)[K] extends readonly string[] ? readonly string[] : readonly (readonly string[])[] };
@@ -180,7 +179,6 @@ const pt: Strings = {
   final_sub: "Você precisa do Telegram e de um endereço na Celo (MiniPay, Valora ou MetaMask). Nunca vamos pedir chaves.",
   foot_journal: "Diário do agente (JSON)",
   foot_card: "Ficha do agente",
-  foot_code: "Código aberto",
 };
 
 const en: Strings = {
@@ -270,7 +268,6 @@ const en: Strings = {
   final_sub: "You need Telegram and a Celo address (MiniPay, Valora or MetaMask). We will never ask for keys.",
   foot_journal: "Agent journal (JSON)",
   foot_card: "Agent card",
-  foot_code: "Open source",
 };
 
 export const LANDING: Record<Language, Strings> = { es, pt, en };
