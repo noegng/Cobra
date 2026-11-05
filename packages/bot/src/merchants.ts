@@ -13,6 +13,7 @@ import {
   type TokenInfo,
 } from "@cobra/shared";
 import { TIMEZONE_BY_COUNTRY } from "./time";
+import { isUsdtAddress, usdtToken } from "./usd";
 
 export type MerchantRow = typeof merchants.$inferSelect;
 
@@ -137,8 +138,43 @@ export async function createMerchant(
 export async function updateMerchant(
   db: Db,
   merchantId: string,
-  patch: Partial<Pick<MerchantRow, "language" | "settlementToken" | "payoutAddress" | "payoutAddressProven">>,
+  patch: Partial<
+    Pick<MerchantRow, "language" | "settlementToken" | "payoutAddress" | "payoutAddressProven" | "country" | "currency" | "timezone">
+  >,
 ): Promise<MerchantRow | null> {
   const [m] = await db.update(merchants).set(patch).where(eq(merchants.id, merchantId)).returning();
   return m ?? null;
+}
+
+/**
+ * The only two settlement choices of a merchant: the verified local wFIAT of its country, or the verified USD₮.
+ * Anything else (another country's wFIAT, USDC, unknown symbols) is refused.
+ */
+export function settlementChoices(country: CountryCode): { local: TokenInfo | null; usd: TokenInfo | null } {
+  return { local: settlementTokenFor(country), usd: usdtToken() };
+}
+
+/** Resolves a settlement choice by symbol ("wARS", "USDT", "USD₮", "USD"), case-insensitive. Null = not allowed. */
+export function resolveSettlementChoice(country: CountryCode, input: string): TokenInfo | null {
+  const s = input.trim().toUpperCase();
+  const { local, usd } = settlementChoices(country);
+  if (usd && (s === "USDT" || s === "USD₮" || s === "USD")) return usd;
+  if (local && s === local.symbol.toUpperCase()) return local;
+  return null;
+}
+
+/**
+ * Country change: country, currency, timezone and the local wFIAT follow the new country; a merchant settled in
+ * USD₮ stays in USD₮. The payout address is kept. Null if the new country has no verified wFIAT.
+ */
+export async function changeMerchantCountry(db: Db, merchant: MerchantRow, country: CountryCode): Promise<MerchantRow | null> {
+  const local = settlementTokenFor(country);
+  if (!local) return null;
+  const keepUsd = isUsdtAddress(merchant.settlementToken) && usdtToken();
+  return updateMerchant(db, merchant.id, {
+    country,
+    currency: countryConfig(country).currency,
+    timezone: TIMEZONE_BY_COUNTRY[country] ?? merchant.timezone,
+    settlementToken: keepUsd ? merchant.settlementToken : local.address,
+  });
 }

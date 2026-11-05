@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./amount": "./src/amount.ts",
-    "./fastpath": "./src/fastpath.ts"
+    "./fastpath": "./src/fastpath.ts",
+    "./usd": "./src/usd.ts"
   },
   "scripts": {
     "test": "vitest run --passWithNoTests",
@@ -16,6 +17,7 @@
     "@ai-sdk/anthropic": "4.0.94",
     "@cobra/db": "workspace:*",
     "@cobra/shared": "workspace:*",
+    "@cobra/solver": "workspace:*",
     "ai": "7.0.159",
     "drizzle-orm": "0.45.4",
     "grammy": "1.46.0",

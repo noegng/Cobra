@@ -472,11 +472,13 @@ export async function handleCreateStaticInvoice(req: Request, slug: string, deps
   const parsed = parseLocalAmount(body?.amountLocal);
   if (!parsed.ok) return apiError(400, "invalid_amount", { reason: parsed.reason });
   try {
-    const { id } = await createStaticInvoice(deps.db, { slug, amountLocal: parsed.value, now: deps.now() });
+    const { id } = await createStaticInvoice(deps.db, { slug, amountLocal: parsed.value, now: deps.now(), rates: deps.getReferenceRates });
     logEvent("static_invoice.created", { invoiceId: id });
     return json({ id, url: `/pay/${id}` }, 201);
   } catch (e) {
-    if (e instanceof StaticInvoiceError) return apiError(e.code === "merchant_not_found" ? 404 : 422, e.code);
+    if (e instanceof StaticInvoiceError) {
+      return apiError(e.code === "merchant_not_found" ? 404 : e.code === "rate_unavailable" ? 503 : 422, e.code);
+    }
     throw e;
   }
 }

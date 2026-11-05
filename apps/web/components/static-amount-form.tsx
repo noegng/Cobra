@@ -33,7 +33,9 @@ export function StaticAmountForm({ slug, currency, lang }: { slug: string; curre
         router.push(`/pay/${body.id}`);
         return;
       }
-      setError(body.error === "invalid_amount" ? t.invalid_amount : t.generic_error);
+      setError(
+        body.error === "invalid_amount" ? t.invalid_amount : body.error === "rate_unavailable" ? t.temporarily_unavailable : t.generic_error,
+      );
     } catch {
       setError(t.generic_error);
     }

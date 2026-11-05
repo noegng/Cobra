@@ -11,7 +11,13 @@ export const stateKeys = {
   pendingPayout: (merchantId: string) => `bot:pending_payout:${merchantId}`,
   refSeq: (merchantId: string) => `bot:ref_seq:${merchantId}`,
   dailyClose: (merchantId: string, date: string) => `daily_close:${merchantId}:${date}`,
+  /** `/billetera` alone: the next text message is the new payout address. */
+  awaitingWallet: (merchantId: string) => `bot:awaiting_wallet:${merchantId}`,
 };
+
+export interface AwaitingWallet {
+  expiresAt: number; // unix ms
+}
 
 export interface OnboardingState {
   step: "country" | "address";

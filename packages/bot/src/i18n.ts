@@ -29,7 +29,7 @@ const es = {
   static_qr_caption: "Tu QR de cobro fijo: {url}",
   proof_hint: "Opcional: prueba que la billetera es tuya firmando un mensaje en {url}",
   help:
-    "Comandos:\n/cobrar 4500 café — crea un cobro con QR y link (vence en 10 min)\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV (también llega solo a las 21:00)\n/panel — enlace privado a tu panel web\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
+    "Comandos:\n/cobrar 4500 café — crea un cobro con QR y link (vence en 10 min)\n/facturas — tus últimos cobros\n/cierre — resumen del día + CSV (también llega solo a las 21:00)\n/panel — enlace privado a tu panel web\n/retirar — cómo pasar tus {token} a tu banco\n/idioma — cambiar idioma\n/pais — cambiar de país\n/moneda — recibir en moneda local digital o en USD₮\n/billetera — cambiar tu dirección de cobro\n\nTambién puedes escribirme normal: \"¿me pagaron el A-0042?\", \"cancela el último cobro\".",
   not_onboarded: "Primero configuremos tu cuenta: /start",
   invoice_caption: "Cobro {ref}: {amount}{desc}\nVence en {minutes} min.\nLink de pago: {url}",
   wa_text: "{name} te envía un cobro de {amount}{desc}. Paga aquí: {url}",
@@ -75,6 +75,16 @@ const es = {
   payout_updated: "Dirección de cobro actualizada: {address}",
   payout_expired: "Esta confirmación ya no es válida. Vuelve a pedir el cambio.",
   payout_rejected: "Cambio descartado. Tu dirección sigue igual.",
+  choose_country: "¿En qué país está tu negocio? Ahora: {country} ({currency}).",
+  country_changed: "Listo: {country}. Cobras en {currency} y recibes {token} en {address}.",
+  choose_currency: "¿Cómo quieres recibir tus pagos? Tus cobros siguen en {currency}; en USD₮ se convierten al tipo de cambio de referencia al crear cada cobro.\nAhora: {token}",
+  currency_set: "Listo: recibirás {token}. Tus cobros siguen en {currency}.",
+  currency_unavailable: "Esa opción no está disponible para tu país.",
+  rate_unavailable: "No pude obtener el tipo de cambio {currency}/USD₮ ahora. No se creó el cobro: inténtalo de nuevo en unos minutos.",
+  ask_wallet: "Pega la nueva dirección de tu billetera en Celo (empieza con 0x). Nunca te pediremos claves privadas ni frases semilla.",
+  stale_open: "{n} cobro(s) abierto(s) todavía pagan a la dirección o moneda anterior.",
+  btn_cancel_stale: "Cancelarlos todos",
+  stale_cancelled: "{n} cobro(s) cancelado(s).",
   voice_unsupported: "Por ahora no puedo escuchar audios. Escríbeme el cobro, por ejemplo: cobrar 4500 café",
   voice_too_long: "El audio es muy largo (máximo 60 s).",
   voice_heard: "Entendí: \"{text}\"",
@@ -110,7 +120,7 @@ const pt: Strings = {
   static_qr_caption: "Seu QR de cobrança fixo: {url}",
   proof_hint: "Opcional: prove que a carteira é sua assinando uma mensagem em {url}",
   help:
-    "Comandos:\n/cobrar 30 corte — cria uma cobrança com QR e link (vence em 10 min)\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV (também chega sozinho às 21:00)\n/painel — link privado para seu painel web\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
+    "Comandos:\n/cobrar 30 corte — cria uma cobrança com QR e link (vence em 10 min)\n/faturas — suas últimas cobranças\n/fechamento — resumo do dia + CSV (também chega sozinho às 21:00)\n/painel — link privado para seu painel web\n/sacar — como levar seus {token} para o banco\n/idioma — mudar idioma\n/pais — mudar de país\n/moeda — receber em moeda local digital ou em USD₮\n/carteira — mudar seu endereço de recebimento\n\nVocê também pode escrever normalmente: \"o A-0042 foi pago?\", \"cancela a última cobrança\".",
   not_onboarded: "Primeiro vamos configurar sua conta: /start",
   invoice_caption: "Cobrança {ref}: {amount}{desc}\nVence em {minutes} min.\nLink de pagamento: {url}",
   wa_text: "{name} te enviou uma cobrança de {amount}{desc}. Pague aqui: {url}",
@@ -156,6 +166,16 @@ const pt: Strings = {
   payout_updated: "Endereço de recebimento atualizado: {address}",
   payout_expired: "Esta confirmação não é mais válida. Peça a alteração de novo.",
   payout_rejected: "Alteração descartada. Seu endereço continua o mesmo.",
+  choose_country: "Em que país fica seu negócio? Agora: {country} ({currency}).",
+  country_changed: "Pronto: {country}. Você cobra em {currency} e recebe {token} em {address}.",
+  choose_currency: "Como você quer receber seus pagamentos? Suas cobranças continuam em {currency}; em USD₮ elas são convertidas pela cotação de referência ao criar cada cobrança.\nAgora: {token}",
+  currency_set: "Pronto: você vai receber {token}. Suas cobranças continuam em {currency}.",
+  currency_unavailable: "Essa opção não está disponível para o seu país.",
+  rate_unavailable: "Não consegui obter a cotação {currency}/USD₮ agora. A cobrança não foi criada: tente de novo em alguns minutos.",
+  ask_wallet: "Cole o novo endereço da sua carteira na Celo (começa com 0x). Nunca vamos pedir chaves privadas nem frases semente.",
+  stale_open: "{n} cobrança(s) aberta(s) ainda paga(m) no endereço ou moeda anterior.",
+  btn_cancel_stale: "Cancelar todas",
+  stale_cancelled: "{n} cobrança(s) cancelada(s).",
   voice_unsupported: "Por enquanto não consigo ouvir áudios. Escreva a cobrança, por exemplo: cobrar 30 corte",
   voice_too_long: "O áudio é muito longo (máximo 60 s).",
   voice_heard: "Entendi: \"{text}\"",
@@ -188,7 +208,7 @@ const en: Strings = {
   static_qr_caption: "Your fixed checkout QR: {url}",
   proof_hint: "Optional: prove the wallet is yours by signing a message at {url}",
   help:
-    "Commands:\n/charge 4500 coffee — create a payment request with QR and link (expires in 10 min)\n/invoices — your latest requests\n/close — today's summary + CSV (also sent automatically at 21:00)\n/dashboard — private link to your web dashboard\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
+    "Commands:\n/charge 4500 coffee — create a payment request with QR and link (expires in 10 min)\n/invoices — your latest requests\n/close — today's summary + CSV (also sent automatically at 21:00)\n/dashboard — private link to your web dashboard\n/withdraw — how to cash out your {token} to your bank\n/language — change language\n/country — change country\n/currency — get paid in local digital currency or in USD₮\n/wallet — change your payout address\n\nYou can also just write: \"was A-0042 paid?\", \"cancel the last one\".",
   not_onboarded: "Let's set up your account first: /start",
   invoice_caption: "Request {ref}: {amount}{desc}\nExpires in {minutes} min.\nPayment link: {url}",
   wa_text: "{name} sent you a payment request for {amount}{desc}. Pay here: {url}",
@@ -234,6 +254,16 @@ const en: Strings = {
   payout_updated: "Payout address updated: {address}",
   payout_expired: "This confirmation is no longer valid. Ask for the change again.",
   payout_rejected: "Change discarded. Your address is unchanged.",
+  choose_country: "Which country is your business in? Now: {country} ({currency}).",
+  country_changed: "Done: {country}. You charge in {currency} and receive {token} at {address}.",
+  choose_currency: "How do you want to get paid? Your requests stay in {currency}; with USD₮ they are converted at the reference rate when each request is created.\nNow: {token}",
+  currency_set: "Done: you will receive {token}. Your requests stay in {currency}.",
+  currency_unavailable: "That option is not available for your country.",
+  rate_unavailable: "I couldn't get the {currency}/USD₮ rate right now. No request was created: try again in a few minutes.",
+  ask_wallet: "Paste your new Celo wallet address (starts with 0x). We will never ask for private keys or seed phrases.",
+  stale_open: "{n} open request(s) still pay the previous address or currency.",
+  btn_cancel_stale: "Cancel them all",
+  stale_cancelled: "{n} request(s) cancelled.",
   voice_unsupported: "I can't listen to voice notes yet. Type the request, e.g.: charge 4500 coffee",
   voice_too_long: "The voice note is too long (60 s max).",
   voice_heard: "I heard: \"{text}\"",
@@ -273,6 +303,23 @@ export const COUNTRY_LABEL: Record<CountryCode, Record<Language, string>> = {
   CL: { es: "Chile", pt: "Chile", en: "Chile" },
   PE: { es: "Perú", pt: "Peru", en: "Peru" },
 };
+
+const FIAT_PLURAL: Record<string, Record<Language, string>> = {
+  ARS: { es: "pesos", pt: "pesos", en: "pesos" },
+  MXN: { es: "pesos", pt: "pesos", en: "pesos" },
+  COP: { es: "pesos", pt: "pesos", en: "pesos" },
+  CLP: { es: "pesos", pt: "pesos", en: "pesos" },
+  BRL: { es: "reales", pt: "reais", en: "reais" },
+  PEN: { es: "soles", pt: "soles", en: "soles" },
+  USD: { es: "dólares", pt: "dólares", en: "dollars" },
+};
+
+/** Settlement button label: "wARS · pesos digitales", "USD₮ · dólares digitales". */
+export function settlementLabel(lang: Language, symbol: string, currency: string): string {
+  const name = FIAT_PLURAL[currency]?.[lang] ?? currency;
+  const desc = lang === "en" ? `digital ${name}` : `${name} ${lang === "pt" ? "digitais" : "digitales"}`;
+  return `${symbol} · ${desc}`;
+}
 
 export function statusLabel(lang: Language, status: InvoiceStatus): string {
   return t(lang, `status_${status}` as Key);

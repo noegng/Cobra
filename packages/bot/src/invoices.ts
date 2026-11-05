@@ -8,6 +8,7 @@ import { invoices, payments, transitionInvoice, type Db, type InvoiceRow } from 
 import {
   INVOICE_TTL_SECONDS,
   explorerTx,
+  fromBaseUnits,
   randomInvoiceId,
   toBaseUnits,
   tokenByAddress,
@@ -17,11 +18,12 @@ import { sumDecimals } from "./amount";
 import type { MerchantRow } from "./merchants";
 import { nextCounter, stateKeys } from "./state";
 import { localDateTime, localDayRange } from "./time";
+import { isUsdtAddress, quoteUsdt, type RateSource } from "./usd";
 
 export const INVOICE_RATE_LIMIT = { max: 10, windowMs: 60_000 } as const;
 export const DESCRIPTION_MAX = 100;
 
-export type CreateInvoiceError = "rate_limited" | "unsupported_settlement";
+export type CreateInvoiceError = "rate_limited" | "unsupported_settlement" | "rate_unavailable";
 export type CreateInvoiceResult = { ok: true; invoice: InvoiceRow } | { ok: false; error: CreateInvoiceError };
 
 export function formatReference(n: number): string {
@@ -36,16 +38,20 @@ export function cleanDescription(d: string | null | undefined): string | null {
 }
 
 /**
- * Creates an invoice for an already-parsed local amount (decimal string, see amount.ts).
- * v1 only supports settlement in the wFIAT of the invoice currency, 1:1: amountOut = amountLocal in token base units.
+ * Creates an invoice for an already-parsed local amount (decimal string, see amount.ts). The invoice currency is
+ * always the merchant's local currency. Settlement:
+ *  - wFIAT of that currency, 1:1: amountOut = amountLocal in token base units;
+ *  - USD₮: amountOut = ceil(amountLocal × 10^6 / localPerUsd) at the reference rate read now (usd.ts);
+ *    no rate -> `rate_unavailable`, nothing is created.
  */
 export async function createInvoice(
   db: Db,
   merchant: MerchantRow,
-  args: { amountLocal: string; description?: string | null; now: Date; source?: "chat" | "dashboard" },
+  args: { amountLocal: string; description?: string | null; now: Date; source?: "chat" | "dashboard"; rates?: RateSource },
 ): Promise<CreateInvoiceResult> {
   const token = tokenByAddress(merchant.settlementToken);
-  if (!token || token.kind !== "wfiat" || token.currency !== merchant.currency) {
+  const usdt = isUsdtAddress(merchant.settlementToken);
+  if (!token || (!usdt && (token.kind !== "wfiat" || token.currency !== merchant.currency))) {
     return { ok: false, error: "unsupported_settlement" };
   }
 
@@ -56,7 +62,14 @@ export async function createInvoice(
     .where(and(eq(invoices.merchantId, merchant.id), gte(invoices.createdAt, since)));
   if ((recent?.n ?? 0) >= INVOICE_RATE_LIMIT.max) return { ok: false, error: "rate_limited" };
 
-  const amountOut = toBaseUnits(args.amountLocal, token.decimals);
+  let amountOut: bigint;
+  if (usdt) {
+    const q = await quoteUsdt(args.amountLocal, merchant.currency, args.rates);
+    if (!q.ok) return { ok: false, error: q.error };
+    amountOut = q.amountOut;
+  } else {
+    amountOut = toBaseUnits(args.amountLocal, token.decimals);
+  }
   const reference = formatReference(await nextCounter(db, stateKeys.refSeq(merchant.id)));
   const [row] = await db
     .insert(invoices)
@@ -163,7 +176,13 @@ export interface DailySummary {
   csv: string;
 }
 
-const CSV_HEADER = ["reference", "invoice_id", "created_at", "status", "amount", "currency", "description", "paid_at", "tx_hash"];
+const CSV_HEADER = ["reference", "invoice_id", "created_at", "status", "amount", "currency", "description", "paid_at", "tx_hash", "amount_out", "token_out"];
+
+/** What the merchant receives, in token units (exact decimal string; no wFIAT 1:1 assumption). */
+function outAmount(amountOut: string, tokenOut: string): string {
+  const t = tokenByAddress(tokenOut);
+  return t ? fromBaseUnits(BigInt(amountOut), t.decimals) : amountOut;
+}
 
 /** RFC 4180 quoting + spreadsheet formula-injection guard for merchant-provided text. */
 export function csvCell(v: string | null | undefined): string {
@@ -210,6 +229,8 @@ export async function dailySummary(db: Db, merchant: MerchantRow, date: string):
         r.description,
         r.paidAt ? localDateTime(r.paidAt, tz) : "",
         r.txHash,
+        outAmount(r.amountOut, r.tokenOut),
+        tokenByAddress(r.tokenOut)?.symbol ?? r.tokenOut,
       ]
         .map(csvCell)
         .join(","),
@@ -257,4 +278,20 @@ export async function markReminded(db: Db, invoiceId: string, now: Date): Promis
     .where(and(eq(invoices.id, invoiceId), isNull(invoices.lastReminderAt), eq(invoices.status, "open")))
     .returning({ id: invoices.id });
   return rows.length === 1;
+}
+
+/**
+ * OPEN, unexpired invoices that no longer match the merchant's current payout address, settlement token or
+ * currency (after a wallet / currency / country change): paying them would still go to the previous one.
+ */
+export async function staleOpenInvoices(db: Db, merchant: MerchantRow, now: Date): Promise<InvoiceRow[]> {
+  const rows = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.merchantId, merchant.id), eq(invoices.status, "open"), gte(invoices.expiresAt, now)));
+  const addr = merchant.payoutAddress.toLowerCase();
+  const tok = merchant.settlementToken.toLowerCase();
+  return rows.filter(
+    (r) => r.merchantAddress.toLowerCase() !== addr || r.tokenOut.toLowerCase() !== tok || r.currency !== merchant.currency,
+  );
 }

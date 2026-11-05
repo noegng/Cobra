@@ -275,6 +275,9 @@ importers:
       '@cobra/shared':
         specifier: workspace:*
         version: link:../shared
+      '@cobra/solver':
+        specifier: workspace:*
+        version: link:../solver
       ai:
         specifier: 7.0.159
         version: 7.0.159(zod@4.6.7)

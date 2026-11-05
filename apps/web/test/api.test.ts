@@ -17,7 +17,7 @@ import { handleCreateStaticInvoice, handleGetInvoice, handleQuote, handleStatus,
 import type { QuoteError, QuoteOk, StatusResponse } from "../lib/wire";
 import { privateKeyToAccount } from "viem/accounts";
 import { buildLegSigning } from "../lib/server/signing";
-import { deserializePlan, type SerializedPlan } from "@cobra/shared";
+import { deserializePlan, tokenBySymbol, type SerializedPlan } from "@cobra/shared";
 import { MERCHANT_PAYOUT, ROUTER, T0, USDC, WARS, other, payer, planFor, req, setup, signAll } from "./helpers";
 
 async function quote(fx: Awaited<ReturnType<typeof setup>>, who = payer.address) {
@@ -487,6 +487,23 @@ describe("POST /api/m/:slug/invoice (static QR)", () => {
       expect(res.status, String(bad)).toBe(400);
     }
     expect((await handleCreateStaticInvoice(req("POST", { amountLocal: "10" }), "nobody", fx.deps)).status).toBe(404);
+  });
+
+  it("USD₮-settled merchant: local amount kept, amountOut = ceil(amountLocal × 10^6 / ARS per USD); no rate -> 503, nothing created", async () => {
+    const usdt = tokenBySymbol("USDT")!;
+    const fx = await setup({ settlement: usdt.address, slug: "usdt-shop" });
+    const res = await handleCreateStaticInvoice(req("POST", { amountLocal: "4500" }), "usdt-shop", fx.deps);
+    expect(res.status).toBe(201);
+    const { id } = await res.json();
+    const [row] = await fx.db.select().from(invoices).where(eq(invoices.id, id));
+    expect(row).toMatchObject({ amountLocal: "4500", currency: "ARS", tokenOut: usdt.address, amountOut: "2727273", source: "static_qr" });
+
+    const before = (await fx.db.select().from(invoices)).length;
+    const noRate = { ...fx.deps, getReferenceRates: async () => ({ USD: 1 }) };
+    const r2 = await handleCreateStaticInvoice(req("POST", { amountLocal: "10" }, { "x-forwarded-for": "ip-norate" }), "usdt-shop", noRate);
+    expect(r2.status).toBe(503);
+    expect((await r2.json()).error).toBe("rate_unavailable");
+    expect(await fx.db.select().from(invoices)).toHaveLength(before);
   });
 
   it("refuses a USD-settled merchant (no 1:1 rule)", async () => {

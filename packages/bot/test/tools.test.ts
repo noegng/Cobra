@@ -132,7 +132,7 @@ describe("agent tools (PGlite)", () => {
     expect(s).toMatchObject({ date: "2026-11-02", paid_total_display: "$ 4.500", paid_count: 1, created: 2, open: 1, csv_sent: true });
     const csv = effects.documents[0]!.content;
     expect(effects.documents[0]!.filename).toBe("cobra-2026-11-02.csv");
-    expect(csv.split("\r\n")[0]).toBe("reference,invoice_id,created_at,status,amount,currency,description,paid_at,tx_hash");
+    expect(csv.split("\r\n")[0]).toBe("reference,invoice_id,created_at,status,amount,currency,description,paid_at,tx_hash,amount_out,token_out");
     expect(csv).toContain(`"'=HYPERLINK(""x"")"`);
     expect(csv).toContain(`"corte, barba"`);
     expect(csv).toContain("2026-11-02 12:00:00"); // local time (Buenos Aires)

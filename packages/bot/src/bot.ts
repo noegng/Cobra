@@ -7,25 +7,42 @@ import type { UserFromGetMe } from "grammy/types";
 import type { LanguageModel } from "ai";
 import type { Db, InvoiceRow } from "@cobra/db";
 import { COUNTRIES, countryConfig, tokenByAddress, type CountryCode, type Language } from "@cobra/shared";
-import { modelFromEnv, runAgent, type ToolContext } from "./agent";
+import { createReferenceRateSource } from "@cobra/solver";
+import { modelFromEnv, PAYOUT_CONFIRM_TTL_MS, proposePayout, runAgent, type ToolContext } from "./agent";
 import { amountStyleFor, parseAmount } from "./amount";
 import { matchCharge } from "./fastpath";
-import { amountErrorMessage, COUNTRY_LABEL, LANGUAGE_LABEL, LANGUAGES, languageFromTelegram, t } from "./i18n";
-import { cancelInvoice, createInvoice, dailySummary, listInvoices } from "./invoices";
+import { amountErrorMessage, COUNTRY_LABEL, LANGUAGE_LABEL, LANGUAGES, languageFromTelegram, settlementLabel, t } from "./i18n";
+import { cancelInvoice, createInvoice, dailySummary, listInvoices, staleOpenInvoices } from "./invoices";
 import { signDashboardToken } from "@cobra/shared/dashboard-token";
 import { buildRipioOfframpLink, payUrl, proofUrl, qrPng, staticPayUrl } from "./links";
 import {
+  changeMerchantCountry,
   checkPayoutAddress,
   createMerchant,
   findMerchantByTelegramId,
   looksLikeSecret,
+  settlementChoices,
   settlementTokenFor,
   updateMerchant,
   type MerchantRow,
 } from "./merchants";
 import { invoiceCaption, invoiceLine, merchantLang, merchantName, money, shareLink } from "./present";
-import { claimUpdate, deleteState, readState, stateKeys, writeState, type OnboardingState, type PendingPayout } from "./state";
+import {
+  claimUpdate,
+  deleteState,
+  readState,
+  stateKeys,
+  writeState,
+  type AwaitingWallet,
+  type OnboardingState,
+  type PendingPayout,
+} from "./state";
 import { localDate } from "./time";
+import { displaySymbol, USDT_DISPLAY, type RateSource } from "./usd";
+
+/** Production reference rates (ARS = dólar cripto; cached 60 s, stale values dropped after 10 min, never throws). */
+let defaultRates: RateSource | null = null;
+const productionRates: RateSource = () => (defaultRates ??= createReferenceRateSource())();
 
 export interface BotOptions {
   token: string;
@@ -50,6 +67,8 @@ export interface BotDeps {
   /** Max LLM calls per merchant per minute (in-memory, best effort). Default 15. */
   llmPerMinute?: number;
   log?: (msg: string, extra?: Record<string, unknown>) => void;
+  /** Reference FX rates for USD₮-settled invoices. Default: @cobra/solver reference source. */
+  rates?: RateSource;
 }
 
 export interface CobraFlavor {
@@ -68,19 +87,46 @@ export const COMMANDS = {
   withdraw: ["retirar", "sacar", "withdraw"],
   panel: ["panel", "painel", "dashboard"],
   language: ["idioma", "language"],
+  // Telegram commands are [a-z0-9_]: "/país" is matched as text in the message handler (COMMAND_TEXT_ALIASES).
+  country: ["pais", "country"],
+  currency: ["moneda", "moeda", "currency"],
+  wallet: ["billetera", "carteira", "wallet"],
   help: ["ayuda", "ajuda", "help"],
 } as const;
 
-/** Command menus per language, for `setMyCommands` (run once at deploy: `registerBotCommands(new Api(token))`). */
+/** Accented aliases Telegram does not parse as commands. */
+const COMMAND_TEXT_ALIASES: Record<string, "country"> = { "/país": "country" };
+
+/** Command menus per language (one table for the global menus and the per-chat menu). */
+export const COMMAND_MENUS: Record<Language, ReadonlyArray<readonly [string, string]>> = {
+    es: [["cobrar", "Crear un cobro"], ["facturas", "Últimos cobros"], ["cierre", "Cierre del día"], ["panel", "Tu panel web"], ["retirar", "Pasar a tu banco"], ["idioma", "Idioma"], ["pais", "Cambiar de país"], ["moneda", "Recibir en moneda local o USD₮"], ["billetera", "Cambiar billetera de cobro"], ["ayuda", "Ayuda"]],
+    pt: [["cobrar", "Criar cobrança"], ["faturas", "Últimas cobranças"], ["fechamento", "Fechamento do dia"], ["painel", "Seu painel web"], ["sacar", "Levar para o banco"], ["idioma", "Idioma"], ["pais", "Mudar de país"], ["moeda", "Receber em moeda local ou USD₮"], ["carteira", "Mudar carteira de recebimento"], ["ajuda", "Ajuda"]],
+    en: [["charge", "Create a payment request"], ["invoices", "Latest requests"], ["close", "Daily close"], ["dashboard", "Your web dashboard"], ["withdraw", "Cash out"], ["language", "Language"], ["country", "Change country"], ["currency", "Get paid in local currency or USD₮"], ["wallet", "Change payout wallet"], ["help", "Help"]],
+};
+
+const menuCommands = (lang: Language) => COMMAND_MENUS[lang].map(([command, description]) => ({ command, description }));
+
+/** Global menus per Telegram app `language_code` (run once at deploy: `registerBotCommands(new Api(token))`). */
 export async function registerBotCommands(api: Api): Promise<void> {
-  const menus: Record<Language, Array<[string, string]>> = {
-    es: [["cobrar", "Crear un cobro"], ["facturas", "Últimos cobros"], ["cierre", "Cierre del día"], ["panel", "Tu panel web"], ["retirar", "Pasar a tu banco"], ["idioma", "Idioma"], ["ayuda", "Ayuda"]],
-    pt: [["cobrar", "Criar cobrança"], ["faturas", "Últimas cobranças"], ["fechamento", "Fechamento do dia"], ["painel", "Seu painel web"], ["sacar", "Levar para o banco"], ["idioma", "Idioma"], ["ajuda", "Ajuda"]],
-    en: [["charge", "Create a payment request"], ["invoices", "Latest requests"], ["close", "Daily close"], ["dashboard", "Your web dashboard"], ["withdraw", "Cash out"], ["language", "Language"], ["help", "Help"]],
-  };
   for (const lang of LANGUAGES) {
-    const commands = menus[lang].map(([command, description]) => ({ command, description }));
-    await api.setMyCommands(commands, lang === "es" ? {} : { language_code: lang });
+    await api.setMyCommands(menuCommands(lang), lang === "es" ? {} : { language_code: lang });
+  }
+}
+
+/**
+ * Per-chat menu in the merchant's chosen language (a private-chat scope overrides the language_code menus).
+ * Best effort: a failure is logged and never breaks the reply.
+ */
+export async function setChatMenu(
+  api: Api,
+  chatId: number,
+  lang: Language,
+  log: (msg: string, extra?: Record<string, unknown>) => void = () => {},
+): Promise<void> {
+  try {
+    await api.setMyCommands(menuCommands(lang), { scope: { type: "chat", chat_id: chatId } });
+  } catch (e) {
+    log("chat_menu_error", { chatId, lang, error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -98,6 +144,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       if (!res.ok) throw new Error(`file download failed: HTTP ${res.status}`);
       return res.arrayBuffer();
     });
+  const rates = deps.rates ?? productionRates;
   const llmPerMinute = deps.llmPerMinute ?? 15;
   const llmCalls = new Map<string, number[]>();
 
@@ -127,7 +174,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     await next();
   });
 
-  const tokenSymbol = (m: MerchantRow) => tokenByAddress(m.settlementToken)?.symbol ?? "wFIAT";
+  const tokenSymbol = (m: MerchantRow) => displaySymbol(m.settlementToken);
 
   // ---------- onboarding ----------
   function countryKeyboard(lang: Language): InlineKeyboard {
@@ -161,8 +208,8 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
   bot.callbackQuery(/^country:(AR|BR|MX|CO|CL|PE)$/, async (ctx) => {
     await ctx.answerCallbackQuery().catch(() => {});
     const { merchant, lang } = ctx.cobra;
-    if (merchant) return;
     const country = ctx.match[1] as CountryCode;
+    if (merchant) return handleCountryChange(ctx, merchant, country);
     const cfg = countryConfig(country);
     const token = settlementTokenFor(country);
     if (!token) {
@@ -189,6 +236,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     }
     ctx.cobra.lang = lang;
     await ctx.reply(t(lang, "language_set"));
+    if (merchant) await setChatMenu(ctx.api, Number(merchant.telegramChatId), lang, log);
     if (!merchant && (onboarding?.step ?? "country") === "country") {
       await ctx.reply(t(lang, "welcome_new"), { reply_markup: countryKeyboard(lang) });
     }
@@ -222,6 +270,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     ctx.cobra.merchant = merchant;
     const url = staticPayUrl(opts.publicBaseUrl, merchant.staticSlug);
     await ctx.reply(t(lang, "onboarding_done", { name: merchantName(merchant), token: tokenSymbol(merchant), address: merchant.payoutAddress }));
+    await setChatMenu(ctx.api, Number(merchant.telegramChatId), merchantLang(merchant), log);
     await ctx.replyWithPhoto(new InputFile(await qrPng(url), `cobra-${merchant.staticSlug}.png`), {
       caption: t(lang, "static_qr_caption", { url }),
     });
@@ -263,9 +312,10 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       await ctx.reply(amountErrorMessage(lang, parsed.error, amountText, merchant.currency));
       return;
     }
-    const res = await createInvoice(db, merchant, { amountLocal: parsed.value, description, now: now() });
+    const res = await createInvoice(db, merchant, { amountLocal: parsed.value, description, now: now(), rates });
     if (!res.ok) {
-      await ctx.reply(t(lang, res.error === "rate_limited" ? "rate_limited" : "unsupported_settlement", { currency: merchant.currency }));
+      const key = res.error === "rate_limited" ? "rate_limited" : res.error === "rate_unavailable" ? "rate_unavailable" : "unsupported_settlement";
+      await ctx.reply(t(lang, key, { currency: merchant.currency }));
       return;
     }
     await sendInvoice(ctx, merchant, res.invoice);
@@ -274,6 +324,68 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
   async function sendPayoutConfirmation(ctx: CobraContext, lang: Language, pending: PendingPayout) {
     const kb = new InlineKeyboard().text(t(lang, "btn_confirm"), `po:${pending.nonce}`).text(t(lang, "btn_reject"), `pn:${pending.nonce}`);
     await ctx.reply(t(lang, "payout_confirm", { address: pending.address }), { reply_markup: kb });
+  }
+
+  // ---------- settings: country, settlement currency, payout wallet ----------
+  /** After a wallet / currency / country change: open requests that still pay the previous one, with a cancel-all button. */
+  async function warnStaleInvoices(ctx: CobraContext, merchant: MerchantRow) {
+    const stale = await staleOpenInvoices(db, merchant, now());
+    if (stale.length === 0) return;
+    const lang = merchantLang(merchant);
+    await ctx.reply(t(lang, "stale_open", { n: stale.length }), {
+      reply_markup: new InlineKeyboard().text(t(lang, "btn_cancel_stale"), "sx:all"),
+    });
+  }
+
+  async function showCountryChoice(ctx: CobraContext, merchant: MerchantRow) {
+    const lang = merchantLang(merchant);
+    const country = merchant.country as CountryCode;
+    await ctx.reply(t(lang, "choose_country", { country: COUNTRY_LABEL[country]?.[lang] ?? country, currency: merchant.currency }), {
+      reply_markup: countryKeyboard(lang),
+    });
+  }
+
+  async function handleCountryChange(ctx: CobraContext, merchant: MerchantRow, country: CountryCode) {
+    const lang = merchantLang(merchant);
+    const cfg = countryConfig(country);
+    const updated = await changeMerchantCountry(db, merchant, country);
+    if (!updated) {
+      await ctx.reply(t(lang, "country_unavailable", { country: COUNTRY_LABEL[country][lang], currency: cfg.currency }), {
+        reply_markup: countryKeyboard(lang),
+      });
+      return;
+    }
+    ctx.cobra.merchant = updated;
+    await ctx.reply(
+      t(lang, "country_changed", { country: COUNTRY_LABEL[country][lang], currency: updated.currency, token: tokenSymbol(updated), address: updated.payoutAddress }),
+    );
+    const local = settlementTokenFor(country);
+    if (!cfg.conversion && local && updated.settlementToken === local.address) {
+      await ctx.reply(t(lang, "country_no_conversion", { country: COUNTRY_LABEL[country][lang], token: local.symbol }));
+    }
+    await warnStaleInvoices(ctx, updated);
+  }
+
+  function currencyKeyboard(merchant: MerchantRow): InlineKeyboard {
+    const lang = merchantLang(merchant);
+    const { local, usd } = settlementChoices(merchant.country as CountryCode);
+    const kb = new InlineKeyboard();
+    if (local) kb.text(settlementLabel(lang, local.symbol, merchant.currency), "cur:local").row();
+    if (usd) kb.text(settlementLabel(lang, USDT_DISPLAY, "USD"), "cur:usd");
+    return kb;
+  }
+
+  async function startWalletChange(ctx: CobraContext, merchant: MerchantRow, input: string) {
+    const lang = merchantLang(merchant);
+    const check = checkPayoutAddress(input);
+    if (!check.ok) {
+      const key = check.error === "secret" ? "address_secret" : check.error === "checksum" ? "address_checksum" : check.error === "forbidden" ? "address_forbidden" : "address_invalid";
+      await ctx.reply(t(lang, key));
+      return false;
+    }
+    await deleteState(db, stateKeys.awaitingWallet(merchant.id));
+    await sendPayoutConfirmation(ctx, lang, await proposePayout(db, merchant.id, check.address, now()));
+    return true;
   }
 
   function llmAllowed(merchantId: string): boolean {
@@ -299,7 +411,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       return;
     }
     await ctx.replyWithChatAction("typing").catch(() => {});
-    const toolCtx: ToolContext = { db, merchant, publicBaseUrl: opts.publicBaseUrl, now, env };
+    const toolCtx: ToolContext = { db, merchant, publicBaseUrl: opts.publicBaseUrl, now, env, rates };
     let result;
     try {
       result = await runAgent({ model, ctx: toolCtx, text: text.slice(0, 1000) });
@@ -311,6 +423,7 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     log("agent_ok", { merchantId: merchant.id, tools: result.toolCalls });
     const m = toolCtx.merchant; // may have changed language
     const outLang = merchantLang(m);
+    if (outLang !== lang) await setChatMenu(ctx.api, Number(m.telegramChatId), outLang, log);
     if (result.unknownToolCalls.length > 0) {
       // The model tried to call a tool that does not exist (e.g. "transfer_funds"): treat the turn as injected.
       // Its text is discarded (it may claim funds were sent) and any payout proposal from this turn is dropped.
@@ -395,9 +508,34 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     const merchant = await requireMerchant(ctx);
     if (!merchant) return;
     const lang = merchantLang(merchant);
-    const token = tokenSymbol(merchant);
-    const url = buildRipioOfframpLink(token);
-    await ctx.reply(t(lang, "withdraw_link", { token, url, address: merchant.payoutAddress }));
+    const url = buildRipioOfframpLink(tokenByAddress(merchant.settlementToken)?.symbol ?? "wFIAT");
+    await ctx.reply(t(lang, "withdraw_link", { token: tokenSymbol(merchant), url, address: merchant.payoutAddress }));
+  });
+
+  bot.command(COMMANDS.country as unknown as string[], async (ctx) => {
+    const merchant = await requireMerchant(ctx);
+    if (merchant) await showCountryChoice(ctx, merchant);
+  });
+
+  bot.command(COMMANDS.currency as unknown as string[], async (ctx) => {
+    const merchant = await requireMerchant(ctx);
+    if (!merchant) return;
+    const lang = merchantLang(merchant);
+    await ctx.reply(t(lang, "choose_currency", { currency: merchant.currency, token: tokenSymbol(merchant) }), {
+      reply_markup: currencyKeyboard(merchant),
+    });
+  });
+
+  bot.command(COMMANDS.wallet as unknown as string[], async (ctx) => {
+    const merchant = await requireMerchant(ctx);
+    if (!merchant) return;
+    const arg = String(ctx.match ?? "").trim();
+    if (arg) {
+      await startWalletChange(ctx, merchant, arg);
+      return;
+    }
+    await writeState(db, stateKeys.awaitingWallet(merchant.id), { expiresAt: now().getTime() + PAYOUT_CONFIRM_TTL_MS } satisfies AwaitingWallet);
+    await ctx.reply(t(merchantLang(merchant), "ask_wallet"));
   });
 
   bot.command(COMMANDS.panel as unknown as string[], async (ctx) => {
@@ -455,8 +593,37 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
       await ctx.reply(t(lang, "address_invalid"));
       return;
     }
-    await updateMerchant(db, merchant.id, { payoutAddress: check.address, payoutAddressProven: 0 });
+    const updated = await updateMerchant(db, merchant.id, { payoutAddress: check.address, payoutAddressProven: 0 });
     await ctx.reply(t(lang, "payout_updated", { address: check.address }));
+    if (updated) await warnStaleInvoices(ctx, updated);
+  });
+
+  bot.callbackQuery(/^cur:(local|usd)$/, async (ctx) => {
+    await ctx.answerCallbackQuery().catch(() => {});
+    const merchant = ctx.cobra.merchant;
+    if (!merchant) return;
+    const lang = merchantLang(merchant);
+    const { local, usd } = settlementChoices(merchant.country as CountryCode);
+    const tok = ctx.match[1] === "usd" ? usd : local;
+    if (!tok) {
+      await ctx.reply(t(lang, "currency_unavailable"));
+      return;
+    }
+    const updated = await updateMerchant(db, merchant.id, { settlementToken: tok.address });
+    if (!updated) return;
+    await ctx.reply(t(lang, "currency_set", { token: tokenSymbol(updated), currency: updated.currency }));
+    await warnStaleInvoices(ctx, updated);
+  });
+
+  bot.callbackQuery("sx:all", async (ctx) => {
+    await ctx.answerCallbackQuery().catch(() => {});
+    const merchant = ctx.cobra.merchant;
+    if (!merchant) return;
+    let n = 0;
+    for (const inv of await staleOpenInvoices(db, merchant, now())) {
+      if ((await cancelInvoice(db, merchant.id, inv.id)).ok) n++;
+    }
+    await ctx.reply(t(merchantLang(merchant), "stale_cancelled", { n }));
   });
 
   bot.on("callback_query:data", async (ctx) => {
@@ -468,6 +635,17 @@ export function buildBot(opts: BotOptions, deps: BotDeps = {}): CobraBot {
     const text = ctx.message.text;
     const { merchant, onboarding, lang } = ctx.cobra;
     if (!merchant && onboarding?.step === "address" && onboarding.country) return handleAddress(ctx, text, onboarding);
+    if (merchant) {
+      // `/billetera` alone: this message is the new address (a pasted secret is refused by checkPayoutAddress).
+      const key = stateKeys.awaitingWallet(merchant.id);
+      const awaiting = await readState<AwaitingWallet>(db, key);
+      if (awaiting && awaiting.expiresAt >= now().getTime() && !matchCharge(text)) {
+        await startWalletChange(ctx, merchant, text);
+        return;
+      }
+      if (awaiting) await deleteState(db, key);
+      if (COMMAND_TEXT_ALIASES[text.trim().split(/\s/)[0]!.toLowerCase()] === "country") return showCountryChoice(ctx, merchant);
+    }
     // A pasted private key / seed phrase is never forwarded to the LLM (or anywhere else).
     if (looksLikeSecret(text)) {
       await ctx.reply(t(lang, "address_secret"));

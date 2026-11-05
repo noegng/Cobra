@@ -11,7 +11,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, isStepCount, tool, type LanguageModel } from "ai";
 import { z } from "zod";
 import type { Db, InvoiceRow } from "@cobra/db";
-import { tokenByAddress, tokenBySymbol, type InvoiceStatus } from "@cobra/shared";
+import { tokenByAddress, type CountryCode, type InvoiceStatus } from "@cobra/shared";
 import { amountStyleFor, parseAmount } from "./amount";
 import { amountErrorMessage, t, LANGUAGE_LABEL } from "./i18n";
 import {
@@ -23,10 +23,11 @@ import {
   listInvoices,
 } from "./invoices";
 import { buildRipioOfframpLink, payUrl } from "./links";
-import { checkPayoutAddress, updateMerchant, type MerchantRow } from "./merchants";
-import { merchantLang, merchantName, money } from "./present";
+import { checkPayoutAddress, resolveSettlementChoice, settlementChoices, updateMerchant, type MerchantRow } from "./merchants";
+import { invoiceAmount, merchantLang, merchantName, money } from "./present";
 import { stateKeys, writeState, type PendingPayout } from "./state";
 import { localDate } from "./time";
+import { displaySymbol, type RateSource } from "./usd";
 
 export const DEFAULT_MODEL = "claude-haiku-5-5";
 export const ALTERNATIVE_MODEL = "claude-sonnet-5-5";
@@ -44,6 +45,19 @@ export interface ToolContext {
   publicBaseUrl: string;
   now: () => Date;
   env?: Record<string, string | undefined>;
+  /** Reference FX rates for USD₮-settled invoices (tests inject a fixed rate). */
+  rates?: RateSource;
+}
+
+/** Stores a payout-address proposal; it only applies when the merchant taps the `po:` button (bot.ts). */
+export async function proposePayout(db: Db, merchantId: string, address: string, now: Date): Promise<PendingPayout> {
+  const pending: PendingPayout = {
+    address,
+    nonce: randomBytes(6).toString("hex"),
+    expiresAt: now.getTime() + PAYOUT_CONFIRM_TTL_MS,
+  };
+  await writeState(db, stateKeys.pendingPayout(merchantId), pending);
+  return pending;
 }
 
 /** Side effects the bot renders deterministically after the model finished (QRs, files, confirmation buttons). */
@@ -71,7 +85,7 @@ function invoiceView(ctx: ToolContext, inv: InvoiceRow) {
   return {
     reference: inv.reference,
     status: inv.status,
-    amount_display: money(ctx.merchant, inv.amountLocal, inv.currency),
+    amount_display: invoiceAmount(ctx.merchant, inv),
     description: inv.description,
     created_at: inv.createdAt.toISOString(),
     expires_at: inv.expiresAt.toISOString(),
@@ -102,9 +116,9 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
         if (!parsed.ok) {
           return { ok: false as const, error: parsed.error, message: amountErrorMessage(lang(), parsed.error, amount, merchant.currency) };
         }
-        const res = await createInvoice(ctx.db, merchant, { amountLocal: parsed.value, description: description ?? null, now: ctx.now() });
+        const res = await createInvoice(ctx.db, merchant, { amountLocal: parsed.value, description: description ?? null, now: ctx.now(), rates: ctx.rates });
         if (!res.ok) {
-          const key = res.error === "rate_limited" ? "rate_limited" : "unsupported_settlement";
+          const key = res.error === "rate_limited" ? "rate_limited" : res.error === "rate_unavailable" ? "rate_unavailable" : "unsupported_settlement";
           return { ok: false as const, error: res.error, message: t(lang(), key, { currency: merchant.currency }) };
         }
         effects.invoices.push(res.invoice);
@@ -200,7 +214,11 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
         "Change merchant preferences: reply language, settlement token, payout address. A payout address change is only proposed: the merchant must tap a confirmation button.",
       inputSchema: z.object({
         language: z.enum(["es", "pt", "en"]).optional(),
-        settlement_token: z.string().max(10).optional().describe('Token symbol, e.g. "wARS".'),
+        settlement_token: z
+          .string()
+          .max(10)
+          .optional()
+          .describe('Only two choices: the local digital currency of the merchant\'s country (e.g. "wARS") or "USDT" (digital dollars). Invoices stay in local currency.'),
         payout_address: z.string().max(200).optional().describe("New payout address (0x...)."),
       }),
       execute: async ({ language, settlement_token, payout_address }) => {
@@ -211,9 +229,11 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
           out.language = { ok: true, value: language };
         }
         if (settlement_token) {
-          const tok = tokenBySymbol(settlement_token);
-          if (!tok || tok.kind !== "wfiat" || tok.currency !== m().currency || !tok.verified) {
-            out.settlement_token = { ok: false, error: "unsupported", supported: tokenByAddress(m().settlementToken)?.symbol ?? null };
+          const country = m().country as CountryCode;
+          const tok = resolveSettlementChoice(country, settlement_token);
+          if (!tok) {
+            const c = settlementChoices(country);
+            out.settlement_token = { ok: false, error: "unsupported", supported: [c.local?.symbol, c.usd?.symbol].filter(Boolean) };
           } else {
             const updated = await updateMerchant(ctx.db, m().id, { settlementToken: tok.address });
             if (updated) ctx.merchant = updated;
@@ -225,13 +245,7 @@ export function buildTools(ctx: ToolContext, effects: AgentEffects) {
           if (!check.ok) {
             out.payout_address = { ok: false, error: check.error };
           } else {
-            const pending: PendingPayout = {
-              address: check.address,
-              nonce: randomBytes(6).toString("hex"),
-              expiresAt: ctx.now().getTime() + PAYOUT_CONFIRM_TTL_MS,
-            };
-            await writeState(ctx.db, stateKeys.pendingPayout(m().id), pending);
-            effects.payoutConfirmation = pending;
+            effects.payoutConfirmation = await proposePayout(ctx.db, m().id, check.address, ctx.now());
             out.payout_address = { ok: true, status: "awaiting_merchant_confirmation_button" };
           }
         }
@@ -255,7 +269,7 @@ export const TOOL_NAMES = [
 export function systemPrompt(ctx: ToolContext): string {
   const merchant = ctx.merchant;
   const lang = merchantLang(merchant);
-  const token = tokenByAddress(merchant.settlementToken)?.symbol ?? "wFIAT";
+  const token = displaySymbol(merchant.settlementToken);
   return [
     "You are the assistant of Cobrá, a Telegram bot that lets small merchants in Latin America (kiosks, salons, restaurants) charge customers with a QR code and payment link, settled in stablecoins on Celo.",
     "",

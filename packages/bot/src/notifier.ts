@@ -1,10 +1,12 @@
 import { Api, InputFile } from "grammy";
-import type { Db } from "@cobra/db";
-import { explorerTx, tokenByAddress, type Notifier } from "@cobra/shared";
+import { and, eq } from "drizzle-orm";
+import { invoices, type Db } from "@cobra/db";
+import { explorerTx, fromBaseUnits, tokenByAddress, type Notifier } from "@cobra/shared";
 import { amountStyleFor, formatAmount } from "./amount";
 import { t } from "./i18n";
 import { getMerchant } from "./merchants";
 import { merchantLang, money } from "./present";
+import { displaySymbol } from "./usd";
 
 /** Notifier + file sending (used for the daily-close CSV). Still assignable to the frozen `Notifier`. */
 export interface BotNotifier extends Notifier {
@@ -23,15 +25,26 @@ export function createNotifierWithApi(api: Api, db: Db): BotNotifier {
     return { m, chatId: Number(m.telegramChatId) };
   }
   return {
-    async invoicePaid({ merchantId, amountLocal, currency, reference, txHash }) {
+    async invoicePaid({ merchantId, invoiceId, amountLocal, currency, reference, txHash }) {
       const { m, chatId } = await chatOf(merchantId);
       const lang = merchantLang(m);
-      // "$ 100" alone reads as dollars: add the currency code, and what actually landed in the wallet (wFIAT is 1:1).
-      const token = tokenByAddress(m.settlementToken);
-      const received =
-        token && token.currency === currency
-          ? t(lang, "paid_received", { amount: formatAmount(amountLocal, "", amountStyleFor(m.country, m.language)).trim(), token: token.symbol })
-          : "";
+      // "$ 100" alone reads as dollars: add the currency code, and what actually landed in the wallet, read from the
+      // invoice's own tokenOut / amountOut (wFIAT 1:1 or USD₮ at the rate frozen at creation), never assumed.
+      const [inv] = await db
+        .select({ tokenOut: invoices.tokenOut, amountOut: invoices.amountOut })
+        .from(invoices)
+        .where(and(eq(invoices.id, invoiceId), eq(invoices.merchantId, merchantId)));
+      const style = amountStyleFor(m.country, m.language);
+      let received = "";
+      const token = inv ? tokenByAddress(inv.tokenOut) : tokenByAddress(m.settlementToken);
+      if (inv && token) {
+        received = t(lang, "paid_received", {
+          amount: formatAmount(fromBaseUnits(BigInt(inv.amountOut), token.decimals), "", style).trim(),
+          token: displaySymbol(inv.tokenOut),
+        });
+      } else if (token && token.currency === currency) {
+        received = t(lang, "paid_received", { amount: formatAmount(amountLocal, "", style).trim(), token: token.symbol });
+      }
       await api.sendMessage(
         chatId,
         t(lang, "paid", { ref: reference ?? "", amount: `${money(m, amountLocal, currency)} ${currency}`, received, url: explorerTx(txHash) }),
