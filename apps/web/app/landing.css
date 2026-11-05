@@ -39,7 +39,8 @@
 .lp-bot { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 0.2rem; }
 .lp-pre { white-space: pre-line; margin-top: 0.45rem !important; }
 .lp-kb { display: block; margin-top: 0.5rem; text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--accent); border-top: 1px dashed var(--line-strong); padding-top: 0.45rem; }
-.lp-qr { display: block; width: 7rem; height: 7rem; color: var(--fg); --qr-bg: var(--card); }
+/* Ink on paper in both themes, like a real QR on a phone screen (a light-on-dark QR reads as inverted). */
+.lp-qr { display: block; width: 7rem; height: 7rem; color: #111311; --qr-bg: #fffdf8; border-radius: 4px; }
 .lp-paid { border-color: var(--accent); font-weight: 600; }
 .lp-paycard { position: absolute; right: max(0rem, calc(50% - 15.5rem)); bottom: 0.5rem; width: 11.5rem; display: flex; flex-direction: column; gap: 0.35rem;
   padding: 0.9rem 0.9rem 1rem; background: var(--card); border: 1px solid var(--line); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; }

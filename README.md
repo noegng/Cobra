@@ -11,7 +11,7 @@ wallet a few seconds later.
 | --- | --- |
 | Telegram bot (merchant) | [@cobra_agent_telegram_bot](https://t.me/cobra_agent_telegram_bot) |
 | Web app (payer pages, live proof of payments) | https://cobra-beige.vercel.app |
-| Payment router (immutable contract) | [`0xfe38…e458`](https://celoscan.io/address/0xfe38683105fa36ee664acefe7e714ba93492e458) |
+| Payment router (immutable contract, Uniswap V3 + Textile FX RFQ) | [`0x5658…7069`](https://celoscan.io/address/0x5658505fc0632269e024893a7448a3b5070d7069) (v2, live) · [`0xfe38…e458`](https://celoscan.io/address/0xfe38683105fa36ee664acefe7e714ba93492e458) (v1, still indexed) |
 | Agent identity (ERC-8004) | [agent #10033 on 8004scan](https://8004scan.io/agents/celo/10033), wallet [`0x9E82…ccd5`](https://celoscan.io/address/0x9E828B877EFCdb79B507fF6234d841A8265Cccd5) |
 
 ---
@@ -70,7 +70,7 @@ Setup takes about one minute. You need two things:
    | Country | You receive | Your customers can pay with |
    | --- | --- | --- |
    | 🇦🇷 Argentina | **wARS** (1 wARS = 1 peso) | USD₮, USDC, USAT, wARS |
-   | 🇧🇷 Brazil | **wBRL** (1 wBRL = 1 real) | USD₮, USDC, USAT, wBRL (≈ 3.3 % conversion cost, see [fees](#coverage-and-fees-measured)) |
+   | 🇧🇷 Brazil | **wBRL** (1 wBRL = 1 real) | USD₮, USDC, USAT, wBRL (≈ 0.7 % through Textile FX, ≈ 3.3 % when only Uniswap quotes; see [fees](#coverage-and-fees-measured)) |
    | 🇲🇽 Mexico, 🇨🇴 Colombia | wMXN, wCOP | the same wFIAT only; the payment page offers to buy it in pesos through Ripio |
    | 🇨🇱 Chile, 🇵🇪 Peru | wCLP, wPEN | the same wFIAT only |
 
@@ -332,7 +332,8 @@ Read-only measurements on Celo mainnet, 2026-11-03. Data: `docs/research/plan3/c
 | --- | --- | --- | --- | --- |
 | Argentina | wARS | USD₮ → wARS (Uniswap V3, 0.01 %) | 0.19 / 0.08 / 0.09 / 0.36 % | Supported |
 | Argentina | wARS | USDC → USD₮ → wARS | 0.23 / 0.09 / 0.10 / 0.38 % | Supported |
-| Brazil | wBRL | USD₮ → wBRL | 3.40 / 3.30 / 3.40 % / refused above 500 USD | Limited (pool priced ~3.3 % above market) |
+| Brazil | wBRL | USD₮ → wBRL (Textile FX RFQ, router v2) | 0.68 % measured on a real 8 BRL payment (2026-11-04); other sizes depend on the fillers' quotes | Supported |
+| Brazil | wBRL | USD₮ → wBRL (Uniswap V3, fallback) | 3.40 / 3.30 / 3.40 % / refused above 500 USD | Fallback only (pool priced ~3.3 % above market) |
 | Mexico, Colombia | wMXN, wCOP | pay in the same wFIAT, or buy it in pesos through Ripio | no swap: network fee only | Direct payment |
 | Chile, Peru | wCLP, wPEN | pay in the same wFIAT only (no Ripio ramp, no pool) | no swap: network fee only | Limited |
 
@@ -410,7 +411,8 @@ Mainnet transactions are only ever sent by a human. AI coding agents working on 
 | Proof payment 1: USD₮ → wARS (EIP-3009, swap) | [`0x7951aea4…fe07ddc3`](https://celoscan.io/tx/0x7951aea4693affabca3250605dcb43ee8ecebe2597a9dd416a06aa58fe07ddc3): invoice `100 ARS`, payer signs 0.060673 USD₮, swapped on Uniswap V3, merchant receives exactly **100 wARS**, 0.47 wARS surplus refunded to the payer. Sent by the agent, tagged ERC-8021 |
 | Gas grant to a payer with 0 CELO | [`0x0052cc07…02f2af0fe`](https://celoscan.io/tx/0x0052cc07e384c7cd8794b9f0514c298ea3a60719d862097d6d971bb02f2af0fe): the agent sends 0.05 CELO (tagged) so the payer can send their one-time Permit2 approval |
 | Proof payment 2: wARS → wARS (Permit2) | [`0x66cc8e51…52a2fb19`](https://celoscan.io/tx/0x66cc8e5185076c10fd03cc0ce3e591e5e84395885ce6b67a7f42304352a2fb19): invoice `1000 ARS`, same payer, merchant receives exactly **1 000 wARS**, gasless signature relayed by the agent |
-| Proof payment: wBRL | not yet on mainnet (fork test `test_fork_usdt_to_wBRL_buySide`) |
+| Proof payment 3: USD₮ → wARS (router v2) | [`0xf6c4de47…85b61528`](https://celoscan.io/tx/0xf6c4de473e4f3a28559ed42c734cdfc63412e3fb1d53c689c1fb485f85b61528): invoice `100 ARS`, payer signs 0.060274 USD₮, Uniswap V3, merchant receives exactly **100 wARS**. First payment through CobraRouterV2, sent by the agent, tagged ERC-8021 |
+| Proof payment 4: USD₮ → wBRL (Textile FX RFQ) | [`0xe7e62efe…95edfd6f1`](https://celoscan.io/tx/0xe7e62efe850bcad1293c50b0cd5d8aa3d29bc028538db4466ce216095edfd6f1): invoice `8 BRL`, payer signs 1.462224 USD₮, filled by a Textile FX quote inside the same transaction, merchant receives exactly **8 wBRL**, total cost 0.68 % against the reference rate (vs ≈ 3.3 % on the Uniswap pool). Sent by the agent, tagged ERC-8021 |
 | Proof payment: multi-leg split | not yet on mainnet (fork tests `test_fork_twoLegs_usdc3009_usdtPermit2`, `test_fork_threeLegs_mixed_payerSends`) |
 | Web URL | https://cobra-beige.vercel.app |
 | Telegram bot | [@cobra_agent_telegram_bot](https://t.me/cobra_agent_telegram_bot) |
@@ -419,9 +421,10 @@ Mainnet transactions are only ever sent by a human. AI coding agents working on 
 
 ## Known limitations
 
-- **wBRL pool is one-sided**: the wBRL/USD₮ pool holds about 23 USD₮ against 147k wBRL and is priced 2.2 to 3.3 % off
-  market (3.26 % vs AwesomeAPI on 2026-11-03), so Brazilian payments cost about 3.3 to 3.4 % up to 500 USD and selling
-  wBRL is impossible. The solver's price guard is 350 bps for BRL, which leaves only 0.1 to 0.2 point of margin.
+- **Brazil depends on Textile quotes**: the wBRL/USD₮ Uniswap pool is one-sided (about 23 USD₮ against 147k wBRL, priced
+  2.2 to 3.3 % off market on 2026-11-03). Router v2 takes a Textile FX RFQ quote when it beats Uniswap (0.68 % on the
+  first real payment); when no filler quotes, the payment falls back to the pool at about 3.3 to 3.4 %, under a 350 bps
+  price guard. Only one Textile-filled payment so far: costs at larger sizes are not measured yet.
 - **MX, CO, CL, PE**: wMXN, wCOP, wCLP and wPEN have no pool on Celo, so there is no conversion: the payer pays in the
   same wFIAT. In Mexico and Colombia they can buy it in pesos through Ripio's ramp; Chile and Peru have no ramp. A full
   ramp purchase (KYC, fees, limits) has not been tested end to end.
@@ -432,5 +435,7 @@ Mainnet transactions are only ever sent by a human. AI coding agents working on 
   never to contracts and never below the relayer's own gas reserve. A payer could take the grant and not pay: the cost is
   bounded by the daily cap. `GAS_GRANT_CELO=0` on the worker disables it.
 - Payers whose wallet is an EIP-7702-delegated EOA depend on the delegate accepting a raw ECDSA signature (ERC-1271).
+  MetaMask's delegator does (fork-tested); for a delegate that does not, the API checks the account itself before
+  queueing and shows a clear "smart account not supported" message instead of a failed transaction.
 - Mobile wallet support for `eth_signTypedData_v4` (MiniPay) is unverified.
 - The router is an author self-review, not an audit; payments are capped (USD caps in the signer).

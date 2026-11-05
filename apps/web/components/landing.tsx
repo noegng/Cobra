@@ -27,13 +27,13 @@ function FakeQr() {
   const finder = (x: number, y: number) => (
     <g key={`f${x}-${y}`}>
       <rect x={x} y={y} width={7} height={7} fill="currentColor" />
-      <rect x={x + 1} y={y + 1} width={5} height={5} fill="var(--lp-card)" />
+      <rect x={x + 1} y={y + 1} width={5} height={5} fill="var(--qr-bg)" />
       <rect x={x + 2} y={y + 2} width={3} height={3} fill="currentColor" />
     </g>
   );
   return (
     <svg className="lp-qr" viewBox={`-1 -1 ${n + 2} ${n + 2}`} aria-hidden="true" shapeRendering="crispEdges">
-      <rect x={-1} y={-1} width={n + 2} height={n + 2} fill="var(--lp-card)" />
+      <rect x={-1} y={-1} width={n + 2} height={n + 2} fill="var(--qr-bg)" />
       {finder(0, 0)}
       {finder(n - 7, 0)}
       {finder(0, n - 7)}

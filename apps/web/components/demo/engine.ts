@@ -11,8 +11,9 @@ export type DemoCountry = "AR" | "BR";
 export const DEMO_COUNTRIES: Record<DemoCountry, { currency: "ARS" | "BRL"; token: "wARS" | "wBRL"; merchant: string; route: string; costBps: number; rateMilli: bigint }> = {
   // Illustrative rates (local units per USD₮, ×1000) and measured route costs; labelled "illustrative" in the UI.
   AR: { currency: "ARS", token: "wARS", merchant: "Pizzería Don Luis", route: "USD₮ → wARS · Uniswap V3", costBps: 10, rateMilli: 1_650_000n },
-  // BR: today's live route (Uniswap V3, ~3.3% measured). Switch to Textile RFQ (~0.2%) once router v2 is live.
-  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", route: "USD₮ → wBRL · Uniswap V3", costBps: 330, rateMilli: 5_486n },
+  // BR: live route on router v2 = Textile FX RFQ, 68 bps measured on the first real wBRL payment (2026-11-04,
+  // tx 0xe7e62efe…). The Uniswap pool (~3.3 %) is only the fallback when no filler quotes.
+  BR: { currency: "BRL", token: "wBRL", merchant: "Barbearia do Zé", route: "USD₮ → wBRL · Textile FX RFQ", costBps: 68, rateMilli: 5_486n },
 };
 
 /** Simulated payer wallet balance, in USD₮ micro-units (6 decimals). */

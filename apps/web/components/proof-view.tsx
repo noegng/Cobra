@@ -36,10 +36,14 @@ export function ProofView({
         <div className="card tile"><div className="small">{t.proof_payments}</div><div className="v" data-testid="count">{stats.paymentCount}</div></div>
         <div className="card tile"><div className="small">{t.proof_payers}</div><div className="v" data-testid="payers">{stats.distinctPayers}</div></div>
         <div className="card tile"><div className="small">{t.proof_merchants}</div><div className="v" data-testid="merchants">{stats.merchantCount}</div></div>
-        <div className="card tile">
-          <div className="small">{t.proof_savings}</div>
-          <div className="v" data-testid="savings">{stats.avgSavingsBps == null ? "—" : `${(stats.avgSavingsBps / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}</div>
-        </div>
+        {/* Shown only once a saving has actually been measured: a flat 0.00% reads as "no benefit", while it only
+            means no payment has had a cheaper route than the direct one yet (or was recorded before that was measured). */}
+        {stats.avgSavingsBps != null && stats.avgSavingsBps > 0 && (
+          <div className="card tile">
+            <div className="small">{t.proof_savings}</div>
+            <div className="v" data-testid="savings">{`${(stats.avgSavingsBps / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}</div>
+          </div>
+        )}
       </section>
       <section className="card">
         <h2>{t.proof_volume}</h2>
