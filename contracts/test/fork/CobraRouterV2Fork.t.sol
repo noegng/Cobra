@@ -40,7 +40,9 @@ contract CobraRouterV2ForkTest is TextileSigUtils {
     address internal constant SWAP_ROUTER02 = 0x5615CDAb10dc425a742d643d949a7F474C01abc4;
     address internal constant QUOTER_V2 = 0x82825d0554fA07f7FC52Ab63c961F330fdEFa8E8;
     address internal constant REACTOR = 0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3;
-    address internal constant FEE_CONTROLLER = 0x7b005466F905DD882A959888154587fA76cd3Ea7;
+    // Textile swapped its fee controller (re-reviewed 2026-11-08): same bytecode as the previous one
+    // (0x7b005466F905DD882A959888154587fA76cd3Ea7) except the FEE_BPS immutable, 1 -> 2 bps; same fee recipient.
+    address internal constant FEE_CONTROLLER = 0x356f4FBe18893997D2F893AE8860eD6060b4521d;
     address internal constant PREFERRED_FILLER = 0x10B9EbA3a175Df418a35CB8329a527691EE258C5;
     address internal constant USDT = 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e;
     address internal constant WBRL = 0xD76f5Faf6888e24D9F04Bf92a0c8B921FE4390e0;
