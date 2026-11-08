@@ -49,8 +49,9 @@ function errorKey(code: string | undefined): keyof Dict {
     case "insufficient_balance":
       return "insufficient";
     case "no_route":
-    case "price_guard":
       return "no_route";
+    case "price_guard":
+      return "price_guard";
     case "over_cap":
       return "over_cap";
     case "smart_account_unsupported":
