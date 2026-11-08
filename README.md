@@ -36,19 +36,35 @@ counted as users.
 
 ## Contents
 
-1. [Why Cobrá](#why-cobrá)
-2. [Merchant guide: start getting paid](#merchant-guide-start-getting-paid)
-3. [Customer guide: pay a Cobrá QR](#customer-guide-pay-a-cobrá-qr)
-4. [The agent's journey, step by step](#the-agents-journey-step-by-step)
-5. [Tech stack and infrastructure](#tech-stack-and-infrastructure)
-6. [Celo building blocks](#celo-building-blocks)
-7. [Security: why nobody can redirect the money](#security-why-nobody-can-redirect-the-money)
-8. [Coverage and fees (measured)](#coverage-and-fees-measured)
-9. [For developers](#for-developers)
-10. [Deployment](#deployment)
-11. [Known limitations](#known-limitations)
+1. [Who it's for](#who-its-for)
+2. [Why Cobrá](#why-cobrá)
+3. [Path to real users](#path-to-real-users)
+4. [Merchant guide: start getting paid](#merchant-guide-start-getting-paid)
+5. [Customer guide: pay a Cobrá QR](#customer-guide-pay-a-cobrá-qr)
+6. [The agent's journey, step by step](#the-agents-journey-step-by-step)
+7. [Tech stack and infrastructure](#tech-stack-and-infrastructure)
+8. [Celo building blocks](#celo-building-blocks)
+9. [Security: why nobody can redirect the money](#security-why-nobody-can-redirect-the-money)
+10. [Coverage and fees (measured)](#coverage-and-fees-measured)
+11. [For developers](#for-developers)
+12. [Deployment](#deployment)
+13. [Known limitations](#known-limitations)
 
 ---
+
+## Who it's for
+
+Cobrá does not try to convert the whole of Latin America to crypto. It starts with the people who **already earn,
+save or spend in stablecoins** and still hit a wall when they want to buy a coffee:
+
+| Who | Their money problem today | What Cobrá changes |
+| --- | --- | --- |
+| **The crypto-paid worker**: a developer, designer or freelancer in Buenos Aires, São Paulo, Medellín or Mexico City paid in USDC/USD₮ by foreign clients or DAOs | To spend locally they off-ramp through an exchange or a P2P desk, wait, pay a spread, and repeat every week | They pay a local shop straight from their wallet, with the dollars they already hold, in one gasless signature |
+| **The crypto-friendly merchant**: a café, coworking, bar or bakery in tech neighbourhoods (Palermo, Vila Madalena, Pinheiros, El Poblado, Roma/Condesa) whose regulars are those workers | They would accept crypto, but they price, pay rent and pay suppliers in **pesos or reais**, and don't want a terminal, an exchange account or dollar exposure they didn't ask for | They charge `cobrar 4500` on Telegram and receive **exactly 4 500 pesos** in wARS in their own wallet. No dashboard, no custody, no fee |
+| **The community organiser**: meetups, hackathons, crypto pop-up cities and conferences that sell tickets, food or merch to a crypto-native crowd | Collecting in local currency from foreigners and locals holding different stablecoins is manual and error-prone | One fixed QR per stand; every payment is an exact local-currency amount, proven on-chain |
+
+These three groups meet in the same places, physically and online. That is what makes the first users reachable without a sales
+team (see [Path to real users](#path-to-real-users)).
 
 ## Why Cobrá
 
@@ -66,6 +82,49 @@ Cobrá solves the three at once:
 | Receives the **exact** amount asked, in a local-currency stablecoin (wARS, wBRL…) | Pays with whatever stablecoins they hold, split across up to 3 tokens if needed |
 | Money goes **directly to their own wallet**: Cobrá never holds it | **No CELO needed**: Cobrá pays the network fee |
 | No fees taken by Cobrá, no contract owner, no upgrade path | Any surplus from the swap is refunded in the same transaction |
+
+---
+
+## Path to real users
+
+**Where we are, honestly:** the product is live on Celo mainnet and every payment so far is a team test (see
+[Usage on mainnet](#usage-on-mainnet), regenerated from chain data, team wallets excluded). The plan below is how we
+get from team tests to the first merchants who use it without us in the room.
+
+### Why this niche first
+
+- **They already hold the money.** A crypto-paid freelancer has USDC/USD₮ in a wallet today. Cobrá does not need to
+  sell them crypto, only to give them somewhere to spend it. No on-ramp, no KYC, no education step.
+- **The merchant side is one Telegram chat.** Onboarding is a public address and a country, about one minute. There is
+  nothing to install at the shop, so a pitch at the counter can end with a working QR.
+- **The product is measurable in public.** `pnpm verify:payments` counts distinct merchants and payer wallets from the
+  routers' `Paid` events. Anyone can check whether the plan below is working.
+
+### How we reach them
+
+| Step | Channel | Concrete action | Signal of success |
+| --- | --- | --- | --- |
+| 1. Friends of the team (week 1) | Personal network of crypto workers in Buenos Aires and São Paulo | Send the [Brazil pilot guide](docs/pilot/brazil-test-guide.md) and [wallet guide](docs/pilot/brazil-wallet-guide.md) (15 min, small amounts), plus a Spanish version for Argentina | First payments labelled *real* (non-team payer and merchant) in `verify:payments` |
+| 2. Celo-native users (weeks 1–4) | Celo LatAm communities (Celo Colombia DAO, Celo Brasil), MiniPay users, the Celo Discord and Telegram groups | Post a 2-minute demo in Spanish and Portuguese; offer to set up any member who runs or knows a shop; ask MiniPay users to try the payer page from MiniPay's browser | Merchants onboarded through `/start` with a country, payers paying from MiniPay |
+| 3. Merchants who already accept crypto (weeks 2–8) | Public directories of crypto-accepting shops (e.g. [BTC Map](https://btcmap.org)) filtered on the tech neighbourhoods above | Walk in or DM with a printed fixed QR ready to scan. The pitch: "you already accept crypto, now you also get your exact price in pesos, with no volatility and no fee" | Shops with repeat payments over several weeks, not one-off tests |
+| 4. Events (each event) | Ethereum and Celo events in the region (ETH Latam, ETHSamba, Crecimiento in Buenos Aires, local meetups and hackathons) | Offer Cobrá for free to food, merch and ticket stands. One event puts dozens of crypto-paid payers in front of a QR in a single day | Number of distinct payer wallets per event |
+| 5. Wallet distribution (after first traction) | MiniPay Mini Apps, wallet partners | Package the payer page as a MiniPay Mini App so the QR opens inside the wallet that already holds the stablecoins | Share of payments coming from MiniPay |
+
+### What we ask of the first merchants
+
+Nothing to pay and nothing to install. In exchange we ask for **feedback after one week** (what they priced, how often
+customers paid, whether they kept the wARS/wBRL or converted it) and permission to count their payments publicly. The
+feedback drives the next features already analysed in [`docs/backlog.md`](docs/backlog.md), first of all
+**paying by bank transfer or Pix** for customers who don't hold crypto, which opens the same merchants to everyone.
+
+### What could block us, and how we handle it
+
+- **Brazil cost depends on Textile quotes** (0.68 % when a filler quotes, about 3.4 % when it falls back to the pool,
+  see [Coverage and fees](#coverage-and-fees-measured)). We start the merchant push in **Argentina**, where the
+  USD₮/wARS route costs 0.08–0.19 % on everyday amounts.
+- **Merchants may want to cash out to their bank.** Ripio lists wARS and wBRL in Argentina and Brazil, but we have not
+  run a full cash-out end to end yet. We test it and document it in the merchant guide before step 3.
+- **Not audited.** Payments stay capped (200 USD each, 500 USD per day per merchant) until an external review.
 
 ---
 
